@@ -1538,7 +1538,9 @@ git commit -m "feat(llm): LLM client interface and mock"
 - Consumes: `EffectType` (Task 2, for `classify_effect_type`'s return type)
 - Produces: `ParsedEffect` (dataclass: `activation_condition: str | None`, `cost: str | None`, `targeting: str | None`, `effect: str`), `parse_psct(card_text: str) -> ParsedEffect`, `classify_effect_type(card_text: str, *, is_monster: bool) -> EffectType` — consumed by the review agent (Task 15) and the seed script (Task 19).
 
-Known limitation documented by tests below (not hidden): the cost/targeting split is a keyword heuristic, not a full parse. It's expected to be wrong on genuinely ambiguous PSCT — that's exactly what the review agent (Task 15) exists to catch.
+Cost/targeting splitting works in two tiers: first, look for a PSCT connector word (`and if you do`, `then`, `also`, `and`, checked in that priority order so the longer phrase wins when both could match) separating a cost clause from a targeting clause — e.g. Ultimate Slayer's "Send 1 monster from your Extra Deck to the GY, **then** target 1 monster your opponent controls...". If no connector is present, fall back to locating the bare word "target" and using a cost-keyword check on the text before it (handles single-clause effects like "You can target 1 banished monster" with no separate cost).
+
+Known limitation documented by tests below (not hidden): a bare "and" is a genuinely ambiguous PSCT connector — it can separate cost from targeting, or it can join two things being targeted by the same clause (e.g. "target 1 monster and 1 Spell/Trap Card" is one targeting clause, not cost-and-target). The parser applies the same connector rule either way and can get the ambiguous case wrong; that's exactly what the review agent (Task 15) exists to catch, not something the code parser is expected to resolve perfectly.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -1577,7 +1579,7 @@ def test_no_semicolon_means_the_whole_remainder_is_the_effect():
 def test_cost_before_targeting_is_split_on_a_cost_keyword():
     text = "Once per turn: You can banish 1 card from your hand, then target 1 monster on the field; destroy it."
     parsed = parse_psct(text)
-    assert parsed.cost == "You can banish 1 card from your hand, then"
+    assert parsed.cost == "You can banish 1 card from your hand"
     assert parsed.targeting == "target 1 monster on the field"
 
 
@@ -1585,6 +1587,35 @@ def test_targeting_only_segment_with_no_cost_keyword_has_no_cost():
     text = "You can target 1 banished monster; banish it."
     parsed = parse_psct(text)
     assert parsed.cost is None
+
+
+def test_ultimate_slayer_style_cost_then_target_split_on_connector():
+    text = (
+        "Once per turn: Send 1 monster from your Extra Deck to the GY, then target "
+        "1 monster your opponent controls with the same Type as that monster; "
+        "destroy it."
+    )
+    parsed = parse_psct(text)
+    assert parsed.cost == "Send 1 monster from your Extra Deck to the GY"
+    assert parsed.targeting == "target 1 monster your opponent controls with the same Type as that monster"
+
+
+def test_and_if_you_do_connector_is_matched_as_one_phrase_not_split_on_bare_and():
+    text = "Discard 1 card, and if you do, target 1 monster your opponent controls; destroy it."
+    parsed = parse_psct(text)
+    assert parsed.cost == "Discard 1 card"
+    assert parsed.targeting == "target 1 monster your opponent controls"
+
+
+def test_bare_and_can_ambiguously_misparse_a_single_targeting_clause():
+    """Known limitation: 'and' inside a single targeting clause (listing two
+    things targeted, not a cost-then-target split) is indistinguishable from
+    a real cost/target connector by this heuristic. The review agent (Task
+    15) is what's supposed to catch cases like this, not the code parser."""
+    text = "Once per turn: You can target 1 monster and 1 Spell/Trap Card; destroy them."
+    parsed = parse_psct(text)
+    assert parsed.cost == "1 Spell/Trap Card"
+    assert parsed.targeting == "You can target 1 monster"
 
 
 def test_classify_effect_type_for_a_monster_trigger_effect():
@@ -1613,11 +1644,20 @@ Expected: FAIL with `ModuleNotFoundError: No module named 'aijudge.effect_parser
 
 `src/aijudge/effect_parser/parser.py`:
 ```python
+import re
 from dataclasses import dataclass
 
 from aijudge.rules_engine.models import EffectType
 
 _COST_KEYWORDS = ("banish", "discard", "pay", "send", "tribute", "remove", "reveal", "shuffle")
+
+# Checked in this order (longest/most specific first) so that, e.g., "and if
+# you do" is matched as one phrase rather than being cut short at "and".
+_PSCT_CONNECTORS = ("and if you do", "then", "also", "and")
+_CONNECTOR_PATTERN = re.compile(
+    r"\b(" + "|".join(re.escape(word) for word in _PSCT_CONNECTORS) + r")\b",
+    re.IGNORECASE,
+)
 
 
 @dataclass
@@ -1660,6 +1700,20 @@ def _split_cost_and_targeting(segment: str | None) -> tuple[str | None, str | No
     if not segment:
         return None, None
 
+    connector_match = _CONNECTOR_PATTERN.search(segment)
+    if connector_match:
+        left = segment[: connector_match.start()].strip(" ,")
+        right = segment[connector_match.end():].strip(" ,")
+        if "target" in right.lower():
+            return (left or None), (right or None)
+        if "target" in left.lower():
+            return (right or None), (left or None)
+        return segment, None
+
+    return _split_on_target_keyword(segment)
+
+
+def _split_on_target_keyword(segment: str) -> tuple[str | None, str | None]:
     lowered = segment.lower()
     target_index = lowered.find("target")
     if target_index == -1:
