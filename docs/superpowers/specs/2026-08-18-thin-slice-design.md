@@ -73,26 +73,28 @@ a frontend.
   production provider; Ollama with a local open-weight model noted as
   a genuinely $0-cost fallback if a non-mock model is wanted during
   dev). Tools: `lookup_card`, `get_rulings`, `search_rulebook`,
-  `resolve_chain`, `ask_continuous_effect_status`.
-- **CLI**: a REPL loop — question in, clarification/continuous-effect
-  back-and-forth as needed, cited answer or escalation message out.
+  `resolve_chain`.
+- **CLI**: a REPL loop — clarification/continuous-effect back-and-forth
+  upfront, then a cited answer or escalation message out.
 
 ## Data flow
 
 1. User types a free-text question into the CLI.
 2. Orchestrator checks whether the question is specific enough (right
    card names, unambiguous scenario); if not, it asks the user for
-   clarification before proceeding.
-3. Orchestrator sends the clarified question to the LLM with the tool
-   set available.
+   clarification before proceeding. This step also identifies any
+   continuous/lingering-effect cards relevant to the question and asks
+   the user directly (`ask_continuous_effect_status`) whether they're
+   currently active, since the app cannot observe board state. All
+   user-facing questions are gathered upfront here, rather than
+   interrupting the reasoning loop mid-flight.
+3. Orchestrator sends the clarified question (plus any continuous-
+   effect state gathered) to the LLM with the tool set available.
 4. LLM gathers information as needed:
    - `lookup_card` / `get_rulings` — local DB first, live API
      fetch-and-cache on a miss.
    - `search_rulebook` — vector search for conceptual/procedural
      questions.
-   - `ask_continuous_effect_status` — asks the user whether a
-     continuous/lingering effect is currently active, since the app
-     cannot observe board state.
 5. If the question involves chain links, timing, or "can X be
    activated," this is detected before the LLM may finalize an
    answer, and the LLM is code-enforced to parse the described game
@@ -210,6 +212,14 @@ auto-confirms, below threshold queues for human review.
 - **End-to-end**: the informal, growing Q&A set run against the mock
   `LLMClient` for repeatable regression checking, and manually against
   a real model once one is plugged in.
+
+## Development process
+
+Implementation follows the test-driven-development skill: tests are
+written before implementation code for each component, most
+importantly the rules engine (SEGOC ordering, chain resolution, PSCT-
+"and" edge cases) and the effect parser, where a wrong-but-confident
+result is the exact failure mode this project exists to avoid.
 
 ## Tech stack
 
