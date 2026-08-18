@@ -1,0 +1,14 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: aijudge
+      POSTGRES_PASSWORD: aijudge
+      POSTGRES_DB: aijudge
+    ports:
+      - "5432:5432"
+    volumes:
+      - aijudge_pgdata:/var/lib/postgresql/data
+
+volumes:
+  aijudge_pgdata:
