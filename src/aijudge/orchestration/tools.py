@@ -1,8 +1,12 @@
+from dataclasses import asdict
+from typing import Callable
+
 from aijudge.db.cards_repo import get_card_by_name
 from aijudge.db.effects_repo import get_confirmed_effect
 from aijudge.db.rulebook_repo import search_chunks
 from aijudge.db.rulings_repo import get_rulings_for_card
 from aijudge.embeddings.client import EmbeddingClient
+from aijudge.rules_engine.resolve import resolve_chain as _resolve_chain_scenario
 
 DEFAULT_MAX_DISTANCE = 0.15
 
@@ -50,4 +54,18 @@ def _search_rulebook(args: dict, *, embedding_client: EmbeddingClient) -> dict:
             }
             for chunk in chunks
         ]
+    }
+
+
+def resolve_chain(args: dict) -> dict:
+    result = _resolve_chain_scenario(args)
+    return asdict(result)
+
+
+def build_tool_dispatch(embedding_client: EmbeddingClient) -> dict[str, Callable[[dict], dict]]:
+    return {
+        "lookup_card": lookup_card,
+        "get_rulings": get_rulings,
+        "search_rulebook": lambda args: _search_rulebook(args, embedding_client=embedding_client),
+        "resolve_chain": resolve_chain,
     }
