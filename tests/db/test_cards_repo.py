@@ -60,3 +60,21 @@ def test_insert_errata_version_sets_has_errata_flag():
 
     card = get_card_by_name("Card With Errata")
     assert card["has_errata"] is True
+
+
+def test_get_card_by_name_returns_id_as_str():
+    from aijudge.db.cards_repo import get_card_by_name, insert_card
+
+    card_id = insert_card(
+        name="Test Card for ID Type",
+        card_text="Test text",
+        card_type="Normal Monster",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+    )
+
+    card = get_card_by_name("Test Card for ID Type")
+
+    assert card is not None
+    assert isinstance(card["id"], str), f"Expected card['id'] to be str, got {type(card['id'])}"
+    assert card["id"] == card_id
