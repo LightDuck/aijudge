@@ -29,3 +29,21 @@ def list_chunks(source: str | None = None) -> list[dict]:
         {"id": str(r[0]), "chunk_text": r[1], "source": r[2], "section_reference": r[3]}
         for r in rows
     ]
+
+
+def search_chunks(query_embedding: list[float], *, max_distance: float, limit: int = 5) -> list[dict]:
+    with get_connection() as conn:
+        rows = conn.execute(
+            """
+            SELECT id, chunk_text, source, section_reference
+            FROM rulebook_chunks
+            WHERE embedding <=> %s::vector < %s
+            ORDER BY embedding <=> %s::vector
+            LIMIT %s
+            """,
+            (query_embedding, max_distance, query_embedding, limit),
+        ).fetchall()
+    return [
+        {"id": str(r[0]), "chunk_text": r[1], "source": r[2], "section_reference": r[3]}
+        for r in rows
+    ]
