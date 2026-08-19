@@ -1,0 +1,61 @@
+import os
+from datetime import date
+
+import pytest
+
+pytestmark = pytest.mark.skipif("DATABASE_URL" not in os.environ, reason="requires a running Postgres instance")
+
+
+def setup_function():
+    from aijudge.db.connection import get_connection
+    from aijudge.db.migrate import run_migrations
+
+    run_migrations()
+    with get_connection() as conn:
+        conn.execute("TRUNCATE cards CASCADE")
+        conn.commit()
+
+
+def _make_card_id() -> str:
+    from aijudge.db.cards_repo import insert_card
+
+    return insert_card(
+        name="Infinite Impermanence",
+        card_text="Target 1 face-up monster on the field; negate its effects...",
+        card_type="Trap Card",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+    )
+
+
+def test_pending_effect_is_not_returned_as_confirmed():
+    from aijudge.db.effects_repo import get_confirmed_effect, insert_pending_effect
+
+    card_id = _make_card_id()
+    insert_pending_effect(
+        card_id=card_id,
+        effect_type="quick-like",
+        effect="negate its effects, also, if this card is in the Graveyard...",
+        targeting="Target 1 face-up monster on the field",
+    )
+
+    assert get_confirmed_effect(card_id) is None
+
+
+def test_confirm_effect_makes_it_retrievable():
+    from aijudge.db.effects_repo import confirm_effect, get_confirmed_effect, insert_pending_effect
+
+    card_id = _make_card_id()
+    effect_id = insert_pending_effect(
+        card_id=card_id,
+        effect_type="quick-like",
+        effect="negate its effects.",
+        targeting="Target 1 face-up monster on the field",
+    )
+
+    confirm_effect(effect_id)
+    confirmed = get_confirmed_effect(card_id)
+
+    assert confirmed is not None
+    assert confirmed["effect_type"] == "quick-like"
+    assert confirmed["targeting"] == "Target 1 face-up monster on the field"
