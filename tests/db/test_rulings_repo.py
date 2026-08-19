@@ -26,6 +26,7 @@ def test_insert_and_get_rulings_for_card():
         card_type="Effect Monster",
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="14558127",
     )
 
     insert_ruling(
@@ -51,6 +52,7 @@ def test_get_rulings_for_card_returns_empty_list_when_none_exist():
         card_type="Normal Monster",
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="99999999",
     )
 
     assert get_rulings_for_card(card_id) == []

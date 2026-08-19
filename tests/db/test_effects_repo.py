@@ -25,6 +25,7 @@ def _make_card_id() -> str:
         card_type="Trap Card",
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="10045474",
     )
 
 
@@ -78,6 +79,25 @@ def test_get_confirmed_effect_returns_id_as_str():
     assert confirmed is not None
     assert isinstance(confirmed["id"], str), f"Expected confirmed['id'] to be str, got {type(confirmed['id'])}"
     assert confirmed["id"] == effect_id
+
+
+def test_confirmed_effect_includes_has_target():
+    from aijudge.db.effects_repo import confirm_effect, get_confirmed_effect, insert_pending_effect
+
+    card_id = _make_card_id()
+    effect_id = insert_pending_effect(
+        card_id=card_id,
+        effect_type="quick-like",
+        effect="negate its effects.",
+        targeting="Target 1 face-up monster on the field",
+        has_target=True,
+    )
+
+    confirm_effect(effect_id)
+    confirmed = get_confirmed_effect(card_id)
+
+    assert confirmed is not None
+    assert confirmed["has_target"] is True
 
 
 def test_confirm_effect_raises_when_id_does_not_exist():
