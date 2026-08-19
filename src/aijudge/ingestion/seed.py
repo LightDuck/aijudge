@@ -48,8 +48,7 @@ def seed_card(
             ruling_date=date.fromisoformat(raw_date) if raw_date else None,
         )
 
-    is_monster = "Monster" in card_type
-    effect_type = classify_effect_type(card_text, is_monster=is_monster)
+    effect_type = classify_effect_type(card_text, card_type=card_type)
     parsed = parse_psct(card_text)
 
     review = review_parsed_effect(
