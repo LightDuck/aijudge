@@ -32,4 +32,6 @@ def review_parsed_effect(
     )
     response = llm_client.complete(prompt)
     confidence = float(response)
+    if not 0.0 <= confidence <= 1.0:
+        raise ValueError(f"confidence must be between 0.0 and 1.0, got {confidence!r} (raw response: {response!r})")
     return ReviewResult(confidence=confidence, auto_confirmed=confidence >= threshold)
