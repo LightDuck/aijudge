@@ -57,7 +57,9 @@ def get_card_by_name(name: str) -> dict | None:
         ).fetchone()
     if row is None:
         return None
-    return dict(zip(_CARD_COLUMNS, row))
+    row_list = list(row)
+    row_list[0] = str(row_list[0])
+    return dict(zip(_CARD_COLUMNS, row_list))
 
 
 def insert_errata_version(*, card_id: str, errata_date: date, errata_text: str) -> str:
