@@ -25,6 +25,7 @@ def test_seed_card_stores_card_ruling_and_confirms_a_high_confidence_effect():
 
     def fake_fetch_card(name, http_get=None):
         return {
+            "id": 47355498,
             "name": name,
             "type": "Quick-Play Spell",
             "desc": "You can target 1 banished monster; banish it.",
@@ -46,6 +47,7 @@ def test_seed_card_stores_card_ruling_and_confirms_a_high_confidence_effect():
     card = get_card_by_name("Called by the Grave")
     assert card is not None
     assert card["id"] == card_id
+    assert card["ygoprodeck_id"] == "47355498"
 
     rulings = get_rulings_for_card(card_id)
     assert len(rulings) == 1
@@ -53,6 +55,7 @@ def test_seed_card_stores_card_ruling_and_confirms_a_high_confidence_effect():
     confirmed_effect = get_confirmed_effect(card_id)
     assert confirmed_effect is not None
     assert confirmed_effect["targeting"] == "target 1 banished monster"
+    assert confirmed_effect["has_target"] is True
 
     from aijudge.db.connection import get_connection
 
@@ -72,6 +75,7 @@ def test_seed_card_leaves_low_confidence_effect_pending():
 
     def fake_fetch_card(name, http_get=None):
         return {
+            "id": 10045474,
             "name": name,
             "type": "Trap Card",
             "desc": "Target 1 face-up monster; negate its effects.",
@@ -105,6 +109,7 @@ def test_seed_card_classifies_a_tuner_monster_subtype_as_a_monster_effect():
 
     def fake_fetch_card(name, http_get=None):
         return {
+            "id": 97268402,
             "name": name,
             "type": "Tuner Monster",
             "desc": "If this card is Normal Summoned: You can add 1 card from your Deck to your hand.",

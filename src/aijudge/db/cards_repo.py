@@ -5,6 +5,7 @@ from .connection import get_connection
 _CARD_COLUMNS = [
     "id", "name", "card_text", "card_type", "attribute", "monster_type",
     "level", "rank", "link_rating", "archetype", "atk", "def", "has_errata",
+    "ygoprodeck_id", "ygoresources_id",
 ]
 
 
@@ -15,6 +16,7 @@ def insert_card(
     card_type: str,
     source: str,
     fetched_at: date,
+    ygoprodeck_id: str,
     attribute: str | None = None,
     monster_type: str | None = None,
     level: int | None = None,
@@ -23,7 +25,6 @@ def insert_card(
     archetype: str | None = None,
     atk: int | None = None,
     def_: int | None = None,
-    ygoprodeck_id: str | None = None,
     ygoresources_id: str | None = None,
     card_materials: str | None = None,
 ) -> str:
@@ -51,9 +52,42 @@ def get_card_by_name(name: str) -> dict | None:
     with get_connection() as conn:
         row = conn.execute(
             "SELECT id, name, card_text, card_type, attribute, monster_type, "
-            "level, rank, link_rating, archetype, atk, def, has_errata "
+            "level, rank, link_rating, archetype, atk, def, has_errata, "
+            "ygoprodeck_id, ygoresources_id "
             "FROM cards WHERE name = %s",
             (name,),
+        ).fetchone()
+    if row is None:
+        return None
+    row_list = list(row)
+    row_list[0] = str(row_list[0])
+    return dict(zip(_CARD_COLUMNS, row_list))
+
+
+def get_card_by_ygoprodeck_id(ygoprodeck_id: str) -> dict | None:
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT id, name, card_text, card_type, attribute, monster_type, "
+            "level, rank, link_rating, archetype, atk, def, has_errata, "
+            "ygoprodeck_id, ygoresources_id "
+            "FROM cards WHERE ygoprodeck_id = %s",
+            (ygoprodeck_id,),
+        ).fetchone()
+    if row is None:
+        return None
+    row_list = list(row)
+    row_list[0] = str(row_list[0])
+    return dict(zip(_CARD_COLUMNS, row_list))
+
+
+def get_card_by_ygoresources_id(ygoresources_id: str) -> dict | None:
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT id, name, card_text, card_type, attribute, monster_type, "
+            "level, rank, link_rating, archetype, atk, def, has_errata, "
+            "ygoprodeck_id, ygoresources_id "
+            "FROM cards WHERE ygoresources_id = %s",
+            (ygoresources_id,),
         ).fetchone()
     if row is None:
         return None

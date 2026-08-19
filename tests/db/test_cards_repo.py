@@ -24,12 +24,12 @@ def test_insert_and_get_card_by_name():
         card_text=(
             "During either player's turn, if a monster(s) is banished, or a card "
             "or effect in the Graveyard is activated: You can target 1 banished "
-            "monster; banish it. You can only activate 1 \"Called by the Grave\" "
-            "per turn."
+            "monster; banish it."
         ),
         card_type="Quick-Play Spell",
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="47355498",
     )
 
     card = get_card_by_name("Called by the Grave")
@@ -37,6 +37,8 @@ def test_insert_and_get_card_by_name():
     assert card is not None
     assert card["card_type"] == "Quick-Play Spell"
     assert card["has_errata"] is False
+    assert card["ygoprodeck_id"] == "47355498"
+    assert card["ygoresources_id"] is None
 
 
 def test_get_card_by_name_returns_none_when_missing():
@@ -54,6 +56,7 @@ def test_insert_errata_version_sets_has_errata_flag():
         card_type="Normal Monster",
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="11111111",
     )
 
     insert_errata_version(card_id=card_id, errata_date=date(2026, 8, 18), errata_text="Errata'd text.")
@@ -71,6 +74,7 @@ def test_get_card_by_name_returns_id_as_str():
         card_type="Normal Monster",
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="22222222",
     )
 
     card = get_card_by_name("Test Card for ID Type")
@@ -78,3 +82,85 @@ def test_get_card_by_name_returns_id_as_str():
     assert card is not None
     assert isinstance(card["id"], str), f"Expected card['id'] to be str, got {type(card['id'])}"
     assert card["id"] == card_id
+
+
+def test_get_card_by_ygoprodeck_id_finds_inserted_card():
+    from aijudge.db.cards_repo import get_card_by_ygoprodeck_id, insert_card
+
+    card_id = insert_card(
+        name="Effect Veiler",
+        card_text="During your opponent's Main Phase (Quick Effect): You can send this card from your hand to the GY, "
+        "and if you do, target 1 face-up Effect Monster your opponent controls; negate that face-up monster's effects, "
+        "also, if this face-up card is a Level 5 or higher monster, you cannot activate this effect.",
+        card_type="Effect Monster",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="95440946",
+    )
+
+    card = get_card_by_ygoprodeck_id("95440946")
+
+    assert card is not None
+    assert card["id"] == card_id
+    assert card["ygoprodeck_id"] == "95440946"
+
+
+def test_get_card_by_ygoprodeck_id_returns_none_when_missing():
+    from aijudge.db.cards_repo import get_card_by_ygoprodeck_id
+
+    assert get_card_by_ygoprodeck_id("00000000") is None
+
+
+def test_get_card_by_ygoresources_id_finds_inserted_card():
+    from aijudge.db.cards_repo import get_card_by_ygoresources_id, insert_card
+
+    card_id = insert_card(
+        name="Solemn Strike",
+        card_text="Negate the Summon of a monster, or an attack, and if you do, destroy it. If you Tribute a "
+        "monster with 3000 or more ATK: This card gains this effect. You take no damage from battles involving your "
+        "opponent's monsters, until the end of this turn.",
+        card_type="Counter Trap",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="40605147",
+        ygoresources_id="ss-yr-001",
+    )
+
+    card = get_card_by_ygoresources_id("ss-yr-001")
+
+    assert card is not None
+    assert card["id"] == card_id
+    assert card["ygoresources_id"] == "ss-yr-001"
+
+
+def test_get_card_by_ygoresources_id_returns_none_for_unmatched_id():
+    from aijudge.db.cards_repo import get_card_by_ygoresources_id, insert_card
+
+    insert_card(
+        name="Solemn Judgment",
+        card_text="When a monster(s) would be Summoned, OR your opponent Sets a Spell/Trap Card, OR a Spell/Trap "
+        "Card is activated: Pay half your LP, negate the Summon, activation, or Set, and destroy it.",
+        card_type="Counter Trap",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="41420027",
+        ygoresources_id="sj-yr-001",
+    )
+
+    assert get_card_by_ygoresources_id("some-other-id") is None
+
+
+def test_get_card_by_ygoresources_id_returns_none_when_card_has_no_ygoresources_id():
+    from aijudge.db.cards_repo import get_card_by_ygoresources_id, insert_card
+
+    insert_card(
+        name="Ash Blossom & Joyous Spring",
+        card_text="You can only use each of the following effects of \"Ash Blossom & Joyous Spring\" once per turn.",
+        card_type="Effect Monster",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="14558127",
+    )
+
+    assert get_card_by_ygoresources_id("14558127") is None
+    assert get_card_by_ygoresources_id("") is None

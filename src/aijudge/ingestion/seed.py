@@ -36,6 +36,7 @@ def seed_card(
         card_type=card_type,
         source="ygoprodeck",
         fetched_at=datetime.utcnow().date(),
+        ygoprodeck_id=str(card_data["id"]),
     )
 
     for ruling in fetch_rulings_fn(name):
@@ -67,6 +68,7 @@ def seed_card(
         activation_condition=parsed.activation_condition,
         cost=parsed.cost,
         targeting=parsed.targeting,
+        has_target=(parsed.targeting is not None),
         confidence_score=review.confidence,
     )
 
