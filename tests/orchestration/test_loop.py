@@ -69,3 +69,42 @@ def test_malformed_responses_exhausted_surfaces_not_supported():
     result = run_loop("A confusing question", llm_client=llm, tools={})
 
     assert result.kind == "not_supported"
+
+
+def test_tool_call_loop_gives_up_after_max_tool_calls():
+    llm = MockLLMClient()
+    for _ in range(20):
+        llm.queue_response('TOOL: lookup_card {"name": "Ash Blossom & Joyous Spring"}')
+
+    tools = {"lookup_card": lambda args: {"found": True, "id": "abc123", "confirmed_effect": None}}
+
+    result = run_loop("What does this do?", llm_client=llm, tools=tools)
+
+    assert result.kind == "not_supported"
+
+
+def test_malformed_tool_arguments_are_recoverable():
+    llm = MockLLMClient()
+    llm.queue_response("TOOL: lookup_card {}")
+    llm.queue_response('TOOL: lookup_card {"name": "Ash Blossom & Joyous Spring"}')
+    llm.queue_response("FINAL: It negates the effect. ||CITES: card:abc123||")
+
+    def _lookup(args):
+        return {"found": True, "id": "abc123", "confirmed_effect": {"effect": "..."}, "name": args["name"]}
+
+    result = run_loop("What does Ash Blossom do?", llm_client=llm, tools={"lookup_card": _lookup})
+
+    assert result.kind == "answer"
+
+
+def test_malformed_tool_arguments_exhausted_surfaces_not_supported():
+    llm = MockLLMClient()
+    for _ in range(5):
+        llm.queue_response("TOOL: lookup_card {}")
+
+    def _lookup(args):
+        return {"found": True, "id": "abc123", "confirmed_effect": None, "name": args["name"]}
+
+    result = run_loop("What does Ash Blossom do?", llm_client=llm, tools={"lookup_card": _lookup})
+
+    assert result.kind == "not_supported"

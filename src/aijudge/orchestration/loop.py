@@ -9,6 +9,7 @@ from .confidence import DEFAULT_CONFIDENCE_THRESHOLD, SignalState, compute_confi
 from .protocol import FinalAnswer, ProtocolError, ToolCall, build_system_prompt, parse_response
 
 MAX_MALFORMED_RETRIES = 3
+MAX_TOOL_CALLS = 10
 NOT_SUPPORTED_MESSAGE = "not supported yet, contact dev team"
 ESCALATE_MESSAGE = "escalate to a human judge"
 
@@ -33,6 +34,7 @@ def run_loop(
 
     state = SignalState()
     malformed_count = 0
+    tool_call_count = 0
 
     while True:
         response = llm_client.complete(conversation)
@@ -47,11 +49,20 @@ def run_loop(
             continue
 
         if isinstance(parsed, ToolCall):
+            tool_call_count += 1
+            if tool_call_count > MAX_TOOL_CALLS:
+                return LoopResult(kind="not_supported", text=NOT_SUPPORTED_MESSAGE)
             tool = tools[parsed.name]
             try:
                 result = tool(parsed.args)
             except UnsupportedScenarioError:
                 return LoopResult(kind="not_supported", text=NOT_SUPPORTED_MESSAGE)
+            except (KeyError, ValueError, TypeError) as error:
+                malformed_count += 1
+                if malformed_count > MAX_MALFORMED_RETRIES:
+                    return LoopResult(kind="not_supported", text=NOT_SUPPORTED_MESSAGE)
+                conversation += f"\n\nERROR: {error}"
+                continue
             update_signals(state, parsed.name, result)
             conversation += f"\n\nTOOL RESULT ({parsed.name}): {json.dumps(result)}"
             continue
