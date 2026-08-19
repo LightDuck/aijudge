@@ -59,3 +59,29 @@ def test_confirm_effect_makes_it_retrievable():
     assert confirmed is not None
     assert confirmed["effect_type"] == "quick-like"
     assert confirmed["targeting"] == "Target 1 face-up monster on the field"
+
+
+def test_get_confirmed_effect_returns_id_as_str():
+    from aijudge.db.effects_repo import confirm_effect, get_confirmed_effect, insert_pending_effect
+
+    card_id = _make_card_id()
+    effect_id = insert_pending_effect(
+        card_id=card_id,
+        effect_type="quick-like",
+        effect="negate its effects.",
+        targeting="Target 1 face-up monster on the field",
+    )
+
+    confirm_effect(effect_id)
+    confirmed = get_confirmed_effect(card_id)
+
+    assert confirmed is not None
+    assert isinstance(confirmed["id"], str), f"Expected confirmed['id'] to be str, got {type(confirmed['id'])}"
+    assert confirmed["id"] == effect_id
+
+
+def test_confirm_effect_raises_when_id_does_not_exist():
+    from aijudge.db.effects_repo import confirm_effect
+
+    with pytest.raises(ValueError):
+        confirm_effect("00000000-0000-0000-0000-000000000000")

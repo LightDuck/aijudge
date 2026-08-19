@@ -78,6 +78,19 @@ def test_classify_effect_type_for_a_monster_quick_effect():
     assert classify_effect_type(text, is_monster=True) == EffectType.QUICK
 
 
+def test_classify_effect_type_for_a_quick_effect_that_also_starts_with_if():
+    """Real Quick Effects very commonly start with 'If...' or 'When...' AND
+    contain '(Quick Effect)' — e.g. Ash Blossom & Joyous Spring's actual
+    printed text. These must classify as QUICK, not TRIGGER."""
+    text = (
+        'If a card or effect is activated that includes any of these effects '
+        '(Quick Effect): You can discard this card; negate the activation, '
+        'and if you do, banish it. You can only use this effect of "Ash '
+        'Blossom & Joyous Spring" once per turn.'
+    )
+    assert classify_effect_type(text, is_monster=True) == EffectType.QUICK
+
+
 def test_classify_effect_type_for_a_continuous_effect():
     text = "While this card is face-up on the field, as long as you control no other monsters, this card gains 500 ATK."
     assert classify_effect_type(text, is_monster=True) == EffectType.CONTINUOUS

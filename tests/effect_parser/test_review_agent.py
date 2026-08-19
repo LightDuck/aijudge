@@ -1,3 +1,5 @@
+import pytest
+
 from aijudge.effect_parser.review_agent import review_parsed_effect
 from aijudge.llm.client import MockLLMClient
 
@@ -51,3 +53,18 @@ def test_custom_threshold_is_respected():
     )
 
     assert result.auto_confirmed is False
+
+
+def test_out_of_range_confidence_raises_value_error():
+    llm_client = MockLLMClient()
+    llm_client.queue_response("95")  # percent instead of fraction
+
+    with pytest.raises(ValueError):
+        review_parsed_effect(
+            llm_client,
+            raw_text="text",
+            activation_condition=None,
+            cost=None,
+            targeting=None,
+            effect="text",
+        )

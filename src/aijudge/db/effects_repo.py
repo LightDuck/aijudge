@@ -30,10 +30,12 @@ def insert_pending_effect(
 
 def confirm_effect(effect_id: str) -> None:
     with get_connection() as conn:
-        conn.execute(
+        cur = conn.execute(
             "UPDATE card_effects_structured SET status = 'confirmed' WHERE id = %s",
             (effect_id,),
         )
+        if cur.rowcount != 1:
+            raise ValueError(f"no card_effects_structured row with id={effect_id!r} to confirm")
         conn.commit()
 
 
@@ -49,4 +51,6 @@ def get_confirmed_effect(card_id: str) -> dict | None:
         ).fetchone()
     if row is None:
         return None
-    return dict(zip(_EFFECT_COLUMNS, row))
+    row_list = list(row)
+    row_list[0] = str(row_list[0])
+    return dict(zip(_EFFECT_COLUMNS, row_list))

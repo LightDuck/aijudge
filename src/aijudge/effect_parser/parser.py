@@ -86,11 +86,11 @@ def _split_on_target_keyword(segment: str) -> tuple[str | None, str | None]:
 def classify_effect_type(card_text: str, *, is_monster: bool) -> EffectType:
     lowered = card_text.lower()
 
-    if lowered.startswith("if ") or lowered.startswith("when "):
-        return EffectType.TRIGGER if is_monster else EffectType.TRIGGER_LIKE
-
     if "(quick effect)" in lowered:
         return EffectType.QUICK if is_monster else EffectType.QUICK_LIKE
+
+    if lowered.startswith("if ") or lowered.startswith("when "):
+        return EffectType.TRIGGER if is_monster else EffectType.TRIGGER_LIKE
 
     if "as long as" in lowered or lowered.startswith("while "):
         return EffectType.CONTINUOUS

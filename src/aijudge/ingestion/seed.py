@@ -18,8 +18,6 @@ HAND_PICKED_CARDS: list[str] = [
     "Solemn Strike",
 ]
 
-_MONSTER_TYPES = {"Effect Monster", "Normal Monster", "Fusion Monster", "Synchro Monster", "Xyz Monster", "Link Monster"}
-
 
 def seed_card(
     name: str,
@@ -49,18 +47,9 @@ def seed_card(
             ruling_date=date.fromisoformat(raw_date) if raw_date else None,
         )
 
-    is_monster = card_type in _MONSTER_TYPES
+    is_monster = "Monster" in card_type
     effect_type = classify_effect_type(card_text, is_monster=is_monster)
     parsed = parse_psct(card_text)
-
-    effect_id = insert_pending_effect(
-        card_id=card_id,
-        effect_type=effect_type.value,
-        effect=parsed.effect,
-        activation_condition=parsed.activation_condition,
-        cost=parsed.cost,
-        targeting=parsed.targeting,
-    )
 
     review = review_parsed_effect(
         llm_client,
@@ -70,6 +59,17 @@ def seed_card(
         targeting=parsed.targeting,
         effect=parsed.effect,
     )
+
+    effect_id = insert_pending_effect(
+        card_id=card_id,
+        effect_type=effect_type.value,
+        effect=parsed.effect,
+        activation_condition=parsed.activation_condition,
+        cost=parsed.cost,
+        targeting=parsed.targeting,
+        confidence_score=review.confidence,
+    )
+
     if review.auto_confirmed:
         confirm_effect(effect_id)
 
@@ -78,10 +78,3 @@ def seed_card(
 
 def run_seed(llm_client: LLMClient) -> list[str]:
     return [seed_card(name, llm_client=llm_client) for name in HAND_PICKED_CARDS]
-
-
-if __name__ == "__main__":
-    from aijudge.llm.client import MockLLMClient
-
-    ids = run_seed(MockLLMClient())
-    print(f"seeded {len(ids)} cards")
