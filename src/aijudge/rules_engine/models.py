@@ -17,12 +17,15 @@ class EffectType(str, Enum):
 class SpellSpeed(int, Enum):
     NORMAL = 1
     QUICK = 2
+    COUNTER = 3
 
 
 _QUICK_EFFECT_TYPES = {EffectType.QUICK, EffectType.QUICK_LIKE}
 
 
-def spell_speed_for(effect_type: EffectType) -> SpellSpeed:
+def spell_speed_for(effect_type: EffectType, *, card_type: str | None = None) -> SpellSpeed:
+    if card_type and "Counter" in card_type:
+        return SpellSpeed.COUNTER
     return SpellSpeed.QUICK if effect_type in _QUICK_EFFECT_TYPES else SpellSpeed.NORMAL
 
 
@@ -32,6 +35,8 @@ class Effect:
     card_name: str
     effect_type: EffectType
     controller: str
+    spell_speed: SpellSpeed = SpellSpeed.NORMAL
+    prevents_response: bool = False
 
 
 @dataclass
