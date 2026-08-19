@@ -64,7 +64,27 @@ a frontend.
 - **Rules engine**: pure Python module, no LLM or DB dependency —
   chain building, LIFO + SEGOC resolution order, effect-type
   awareness, priority/spell-speed windows, missing-timing checks for
-  quick effects.
+  quick effects. Spell speed has three values (1/2/3, Counter Traps
+  are Spell Speed 3). Activation-window rule: Spell Speed 1 may only
+  activate when the chain is empty (or, under SEGOC, when being
+  placed as part of the same simultaneous-trigger batch — SEGOC
+  placement is not "responding" and bypasses this check entirely, the
+  player orders their own simultaneous triggers freely). Spell Speed
+  2/3 may activate if its spell speed is **at or above** the top
+  chain link's spell speed (an empty chain counts as speed 0, so
+  Spell Speed 2/3 can always start a chain), **never below** — unless
+  the top chain link's card carries a "cannot be responded to" flag,
+  which blocks all response regardless of spell speed. Missing
+  timing: a "when"-conditioned effect's valid activation window is
+  the moment immediately after **the event the condition names** —
+  for Spell Speed 1 that means immediately after the previous chain
+  link **fully resolves**, or immediately after a non-chain **game
+  action** (Summon, phase change, etc.); for Spell Speed 2/3 it means
+  immediately after the specific chain link that **activated**
+  matching the condition (not necessarily resolved yet — quick
+  effects can respond to another card's activation itself). Any other
+  intervening step means timing is missed. (Missing timing for
+  *optional trigger* effects is still deferred, per Non-goals below.)
 - **Retrieval layer**: exact lookups (`get_card`, `get_rulings`) with
   live API fallback-and-cache on a local-DB miss, plus vector search
   over rulebook/PSCT chunks for conceptual questions.
@@ -123,8 +143,12 @@ a frontend.
 - `type` (monster-only: Dragon/Spellcaster/Warrior/etc.)
 - `level`, `rank`, `link`, `archetype`, `atk`, `def` (monster-only
   fields)
-- external ids from both YGOPRODeck and db.ygoresources, to reconcile
-  cases where the two sources disagree on identity
+- `ygoprodeck_id` (**NOT NULL** — always available from YGOPRODeck's
+  response), `ygoresources_id` (nullable — db.ygoresources' real API
+  shape is still unverified, so this can't be populated reliably yet;
+  a local reconciliation lookup, keyed on either id, lets a caller
+  check whether the two external id spaces already agree or diverge
+  for a given card once ygoresources_id starts being populated)
 - `source` (ygoprodeck), `fetched_at` (date only, DD/MM/YYYY)
 - `has_errata` flag + relation to `card_errata_versions`
 - `card_materials` (fusion/synchro/xyz/link material requirements
@@ -155,8 +179,45 @@ a frontend.
 - `effect` (everything after the semicolon)
 - `status` (`pending` / `confirmed`), set by the effect-parse review
   agent's confidence score against a configurable threshold (default
-  ~90–95%)
+  ~90–95%, to be tuned further as more real cards go through the
+  pipeline)
+- `has_target` (boolean, default `false`) — whether the effect
+  requires targeting, set alongside `targeting`; lets a caller check
+  "does this need a target" without parsing the `targeting` text
 - more fields to be added later in dev
+
+### `classify_effect_type` heuristics
+
+Refined classification rules (supersede the original simple
+if/when-prefix heuristic):
+
+- **Quick** (monster) — has "(Quick Effect)" in parentheses. Checked
+  first, before any trigger-condition check, since real Quick Effects
+  very commonly *also* start with "If"/"When" (e.g. Ash Blossom &
+  Joyous Spring).
+- **Trigger** (monster) — activation condition is that a game action
+  has been fulfilled and/or an effect has just resolved (the
+  "if"/"when" prefix check, once Quick has been ruled out).
+- **Ignition** (monster) — the activation condition (if any, before
+  the colon) lacks real conditional/triggering language — e.g. "Once
+  per turn:" or a bare colon-based activation with no "if"/"when".
+- **Continuous** — no colon and no semicolon anywhere in the whole
+  effect text (a purely continuous, non-PSCT-activation-grammar
+  effect).
+- **Unclassified** (monster) — none of the above; hard to detect
+  automatically.
+- **Trigger-like** (spell/trap) — the spell/trap equivalent of
+  Trigger, same "if"/"when" condition logic.
+- **Quick-like** (spell/trap) — depends on the card's actual type,
+  not just its text: Quick-Play Spell activation, or any Trap card
+  activation/effect, defaults to quick-like (both are inherently
+  Spell Speed 2 by game rule). This means `classify_effect_type`
+  takes the real `card_type` string (not just an `is_monster` flag),
+  so it can apply this type-driven default correctly.
+- **Condition** — text that restricts activation or use rather than
+  describing an effect, e.g. "You can only Special Summon Fusion
+  Monsters from your Extra Deck" or "You can only activate
+  [card_name] once per turn."
 
 Known parsing trap to build test cases against: PSCT's structural
 "and" (separating listed conditions/costs) versus a natural-language
@@ -220,6 +281,16 @@ written before implementation code for each component, most
 importantly the rules engine (SEGOC ordering, chain resolution, PSCT-
 "and" edge cases) and the effect parser, where a wrong-but-confident
 result is the exact failure mode this project exists to avoid.
+
+Before running anything that touches Postgres, check `DATABASE_URL`
+and Docker's actual state first (`docker ps`) rather than attempting
+the operation and discovering it's unavailable — cheaper to catch a
+misconfigured environment before a test run than after.
+
+Ingestion clients (YGOPRODeck, db.ygoresources) fetch only the fields
+this project actually uses, not a full mirror of each API's response
+— keep the local footprint minimal, and only store what's needed per
+the schema, not "everything available" from a source.
 
 ## Tech stack
 
