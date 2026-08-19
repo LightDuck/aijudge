@@ -1,0 +1,87 @@
+from datetime import date, datetime
+from typing import Callable
+
+from aijudge.db.cards_repo import insert_card
+from aijudge.db.effects_repo import confirm_effect, insert_pending_effect
+from aijudge.db.rulings_repo import insert_ruling
+from aijudge.effect_parser.parser import classify_effect_type, parse_psct
+from aijudge.effect_parser.review_agent import review_parsed_effect
+from aijudge.ingestion.ygoprodeck_client import fetch_card
+from aijudge.ingestion.ygoresources_client import fetch_rulings
+from aijudge.llm.client import LLMClient
+
+HAND_PICKED_CARDS: list[str] = [
+    "Ash Blossom & Joyous Spring",
+    "Called by the Grave",
+    "Infinite Impermanence",
+    "Effect Veiler",
+    "Solemn Strike",
+]
+
+_MONSTER_TYPES = {"Effect Monster", "Normal Monster", "Fusion Monster", "Synchro Monster", "Xyz Monster", "Link Monster"}
+
+
+def seed_card(
+    name: str,
+    *,
+    llm_client: LLMClient,
+    fetch_card_fn: Callable[..., dict] = fetch_card,
+    fetch_rulings_fn: Callable[..., list[dict]] = fetch_rulings,
+) -> str:
+    card_data = fetch_card_fn(name)
+    card_type = card_data["type"]
+    card_text = card_data["desc"]
+
+    card_id = insert_card(
+        name=card_data["name"],
+        card_text=card_text,
+        card_type=card_type,
+        source="ygoprodeck",
+        fetched_at=datetime.utcnow().date(),
+    )
+
+    for ruling in fetch_rulings_fn(name):
+        raw_date = ruling.get("date")
+        insert_ruling(
+            card_id=card_id,
+            ruling_text=ruling["text"],
+            source="db.ygoresources",
+            ruling_date=date.fromisoformat(raw_date) if raw_date else None,
+        )
+
+    is_monster = card_type in _MONSTER_TYPES
+    effect_type = classify_effect_type(card_text, is_monster=is_monster)
+    parsed = parse_psct(card_text)
+
+    effect_id = insert_pending_effect(
+        card_id=card_id,
+        effect_type=effect_type.value,
+        effect=parsed.effect,
+        activation_condition=parsed.activation_condition,
+        cost=parsed.cost,
+        targeting=parsed.targeting,
+    )
+
+    review = review_parsed_effect(
+        llm_client,
+        raw_text=card_text,
+        activation_condition=parsed.activation_condition,
+        cost=parsed.cost,
+        targeting=parsed.targeting,
+        effect=parsed.effect,
+    )
+    if review.auto_confirmed:
+        confirm_effect(effect_id)
+
+    return card_id
+
+
+def run_seed(llm_client: LLMClient) -> list[str]:
+    return [seed_card(name, llm_client=llm_client) for name in HAND_PICKED_CARDS]
+
+
+if __name__ == "__main__":
+    from aijudge.llm.client import MockLLMClient
+
+    ids = run_seed(MockLLMClient())
+    print(f"seeded {len(ids)} cards")
