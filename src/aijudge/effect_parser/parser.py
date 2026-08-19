@@ -83,19 +83,48 @@ def _split_on_target_keyword(segment: str) -> tuple[str | None, str | None]:
     return (cost or None), targeting
 
 
-def classify_effect_type(card_text: str, *, is_monster: bool) -> EffectType:
-    lowered = card_text.lower()
+def classify_effect_type(card_text: str, *, card_type: str) -> EffectType:
+    """Classify a card's effect type from its raw PSCT text and card type.
+
+    Checked in this order:
+    1. "(Quick Effect)" anywhere in the text -> QUICK (monster) /
+       QUICK_LIKE (spell-trap). Checked first since real Quick Effects
+       very commonly also start with "If"/"When".
+    2. No colon AND no semicolon anywhere in the text (no PSCT
+       activation grammar at all): a restriction pattern ("you can
+       only") -> CONDITION; otherwise -> CONTINUOUS.
+    3. Text starts with "if " or "when " (a game-action-fulfilled or
+       effect-just-resolved condition) -> TRIGGER (monster) /
+       TRIGGER_LIKE (spell-trap).
+    4. Otherwise (has PSCT grammar, didn't match above): for a
+       monster, IGNITION (an activation condition that lacks
+       conditional/triggering terms). For a spell/trap: QUICK_LIKE if
+       card_type contains "Quick-Play" or "Trap" (both are inherently
+       Spell Speed 2 by game rule, regardless of text pattern) --
+       otherwise EFFECT (e.g. a Normal Spell, Continuous Spell not
+       caught by the no-colon-no-semicolon check, Field Spell, etc.).
+
+    is_monster is derived internally from card_type (whether it
+    contains the substring "Monster") rather than taken as a separate
+    parameter.
+    """
+    is_monster = "Monster" in card_type
+    text = card_text.strip()
+    lowered = text.lower()
 
     if "(quick effect)" in lowered:
         return EffectType.QUICK if is_monster else EffectType.QUICK_LIKE
 
+    if ":" not in text and ";" not in text:
+        if "you can only" in lowered:
+            return EffectType.CONDITION
+        return EffectType.CONTINUOUS
+
     if lowered.startswith("if ") or lowered.startswith("when "):
         return EffectType.TRIGGER if is_monster else EffectType.TRIGGER_LIKE
 
-    if "as long as" in lowered or lowered.startswith("while "):
-        return EffectType.CONTINUOUS
-
-    if ":" in card_text:
-        return EffectType.IGNITION if is_monster else EffectType.EFFECT
-
-    return EffectType.UNCLASSIFIED if is_monster else EffectType.CONDITION
+    if is_monster:
+        return EffectType.IGNITION
+    if "Quick-Play" in card_type or "Trap" in card_type:
+        return EffectType.QUICK_LIKE
+    return EffectType.EFFECT
