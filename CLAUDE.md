@@ -123,9 +123,41 @@ spec:
 
 - **`embeddings/` and `llm/`** — thin `Protocol` interfaces (`EmbeddingClient.embed`, `LLMClient.complete`) with
   mock implementations (`MockEmbeddingClient` — deterministic SHA256-derived 384-dim vectors;
-  `MockLLMClient` — FIFO `queue_response()`/`complete()`, raises `AssertionError` on an empty queue). No real
-  provider is wired in yet; production target is Claude, with Ollama noted as a $0-cost local fallback for
-  non-mock dev testing.
+  `MockLLMClient` — FIFO `queue_response()`/`complete()`, raises `AssertionError` on an empty queue). A real
+  provider now exists — `llm/openrouter_client.py`'s `OpenRouterLLMClient` hits OpenRouter's chat-completions API
+  (default model `meta-llama/llama-3.3-70b-instruct:free`) — but nothing in `src/` constructs one; it's exercised
+  only from tests so far. Ollama remains noted as a $0-cost local fallback for non-mock dev testing, not yet
+  implemented.
+
+- **`orchestration/`** — the agentic tool-use loop that turns a user question into an answer, escalation, or
+  "not supported":
+  - `protocol.py` — `build_system_prompt()` describes the `TOOL: <name> {json}` / `FINAL: <text>||CITES:
+    id1, id2||` response format the LLM must follow; `parse_response()` parses one into a `ToolCall` or
+    `FinalAnswer`, raising `ProtocolError` on anything else (missing prefix, bad JSON, unknown tool, malformed or
+    missing `||CITES: ...||` trailer).
+  - `tools.py` — `build_tool_dispatch()` wires the DB/embedding-backed tool implementations
+    (`lookup_card`, `get_rulings`, `search_rulebook`, `resolve_chain`) into the `{name: callable}` dict the loop
+    dispatches against. `resolve_chain` delegates to `rules_engine.resolve.resolve_chain`, which raises
+    `UnsupportedScenarioError` for step kinds it doesn't recognize.
+  - `confidence.py` — `compute_confidence()`: starts at `1.0`, returns `0.0` outright if the answer cites an id
+    no tool result actually surfaced (`known_ids`), otherwise subtracts `RETRIEVAL_GAP_PENALTY` (0.3) if any
+    `get_rulings`/`search_rulebook` call came back empty and `MISSING_STRUCTURED_EFFECT_PENALTY` (0.2) if a
+    looked-up card had no `confirmed_effect`. `update_signals()` accumulates these signals per tool call.
+  - `loop.py` — `run_loop()`: repeatedly calls the LLM, dispatches `ToolCall`s and folds results back into the
+    conversation, and on a `FinalAnswer` scores it via `compute_confidence()` against `threshold` (default
+    `DEFAULT_CONFIDENCE_THRESHOLD = 0.9`) — below threshold escalates instead of answering. Malformed
+    LLM responses or tool-arg errors (`KeyError`/`ValueError`/`TypeError`) get fed back as `ERROR:` context, capped
+    at `MAX_MALFORMED_RETRIES = 3`; total tool calls are capped at `MAX_TOOL_CALLS = 10`. Either cap, or an
+    `UnsupportedScenarioError` from `resolve_chain`, ends the loop with `kind="not_supported"` rather than looping
+    forever or guessing.
+  - `clarify.py` — a pre-loop pass: `build_clarification_prompt()` asks the LLM whether the question is
+    ambiguous or hinges on an unobservable continuous/lingering effect; `parse_clarification_response()` turns
+    `CLARIFY:`/`CONTINUOUS_CHECK:` lines into `ClarificationItem`s (or an empty list on `PROCEED`);
+    `format_clarification_context()` folds the user's answers back into context passed to `run_loop`.
+
+- **`cli.py`** — `run_cli()`: a REPL (`input_fn`/`print_fn` are injectable for testing) that, per question, runs
+  the clarification pass, prompts for answers to any `CLARIFY`/`CONTINUOUS_CHECK` items, then calls `run_loop`
+  and prints the result. Not yet wired to a real entrypoint (see "Not yet built").
 
 - **`ingestion/`** — `ygoprodeck_client.fetch_card()` and `ygoresources_client.fetch_rulings()` pull only the
   fields this project uses (not a full API mirror). `seed.py` ties it together: `seed_card()` fetches card +
@@ -136,10 +168,12 @@ spec:
 
 ## Not yet built
 
-Per the spec's non-goals / deferred list: no LLM orchestration loop (`lookup_card`/`get_rulings`/
-`search_rulebook`/`resolve_chain` tool wiring), no CLI/REPL, no real LLM provider, no missing-timing check for
-optional trigger effects, no automated ingestion pipeline beyond the hand-picked seed list, no formal eval harness
-(an informal `qa_test_cases` table exists in the schema for this, unused so far). Don't assume these exist when
+The LLM orchestration loop, tool wiring, CLI/REPL, and a real LLM provider (`OpenRouterLLMClient`) all now exist
+under `src/` (see `orchestration/`, `cli.py`, `llm/openrouter_client.py` above) — but nothing assembles them into
+a runnable program: no `__main__.py` or console script constructs a real `LLMClient`/`EmbeddingClient` and calls
+`cli.run_cli`. Also still missing, per the spec's non-goals / deferred list: missing-timing check for optional
+trigger effects, any automated ingestion pipeline beyond the hand-picked seed list, and a formal eval harness (an
+informal `qa_test_cases` table exists in the schema for this, unused so far). Don't assume these exist when
 reading code — check before referencing a tool/module that spec sections 4–7 describe but that isn't under `src/`.
 
 ## Development process
