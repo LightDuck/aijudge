@@ -68,6 +68,20 @@ def test_bare_and_can_ambiguously_misparse_a_single_targeting_clause():
     assert parsed.targeting == "You can target 1 monster"
 
 
+def test_connector_present_but_neither_side_mentions_target_treats_whole_segment_as_cost():
+    text = "Once per turn: Send 1 card from your Deck to the GY, then draw 1 card; that resolves."
+    parsed = parse_psct(text)
+    assert parsed.cost == "Send 1 card from your Deck to the GY, then draw 1 card"
+    assert parsed.targeting is None
+
+
+def test_cost_keyword_before_target_with_no_connector_is_split_via_target_keyword_scan():
+    text = "Once per turn: You can discard 1 card to target 1 monster on the field; destroy it."
+    parsed = parse_psct(text)
+    assert parsed.cost == "You can discard 1 card to"
+    assert parsed.targeting == "target 1 monster on the field"
+
+
 def test_classify_effect_type_for_a_monster_trigger_effect():
     text = "If this card is Normal Summoned: You can add 1 \"Junk\" card from your Deck to your hand."
     assert classify_effect_type(text, card_type="Effect Monster") == EffectType.TRIGGER
