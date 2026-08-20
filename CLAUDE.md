@@ -9,13 +9,22 @@ sources or explicitly escalates to a human judge rather than hallucinate. Guidin
 orchestrates and explains; the rules engine and database decide.** Anywhere LLM reasoning can be replaced with a
 deterministic lookup or algorithm, it is — that's where accuracy-critical bugs live.
 
-The project is currently mid-way through its first "thin slice": the rules engine, DB layer, effect parser, and
-ingestion/seed script exist; LLM orchestration (the agentic tool-use loop) and the CLI are not wired up yet. See
+The project has completed its first "thin slice": the rules engine, DB layer, effect parser, ingestion/seed
+script, LLM orchestration (the agentic tool-use loop), and a REPL CLI all exist and are tested, and
+`python -m aijudge` (`src/aijudge/entrypoint.py` + `src/aijudge/__main__.py`) wires real providers end-to-end —
+`OpenRouterLLMClient` for the LLM and `OpenAIEmbeddingClient` for embeddings — reading `OPENROUTER_API_KEY` and
+`OPENAI_API_KEY` from the environment (`.env` via `python-dotenv`). See
 `docs/superpowers/specs/2026-08-18-thin-slice-design.md` for the full design spec and
 `docs/superpowers/plans/2026-08-18-foundations.md` for the implementation plan this codebase was built from
 (both are useful for *why*, but the actual code is ground truth for *what exists now* — the plan doc is a
 historical scaffold and has already drifted in places, e.g. `has_target`, `ygoprodeck_id NOT NULL`, and the
-`SpellSpeed.COUNTER` / `prevents_response` additions below post-date it).
+`SpellSpeed.COUNTER` / `prevents_response` additions below post-date it). Provider-wiring decisions (OpenAI over
+Voyage/Ollama for embeddings, the `dimensions=384` truncation to match the pgvector schema) are logged in
+`docs/superpowers/specs/2026-08-20-provider-wiring-design.md`.
+
+Still missing for a public v1.0: broader card coverage (currently 5 hand-picked cards), an HTTP/API service layer
+in front of the orchestration loop (the CLI is a blocking stdin/stdout REPL, not something a web frontend can
+call), and the frontend itself — each is its own separate sub-project, not yet designed.
 
 ## Commands
 
