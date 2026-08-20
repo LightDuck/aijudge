@@ -42,3 +42,30 @@ def test_list_chunks_filters_by_source():
 
     assert list_chunks(source="konami_rulebook") == []
     assert len(list_chunks(source="psct_guide")) == 1
+
+
+def test_search_chunks_returns_matches_within_threshold():
+    from aijudge.db.rulebook_repo import insert_chunk, search_chunks
+    from aijudge.embeddings.client import MockEmbeddingClient
+
+    embed = MockEmbeddingClient().embed
+    text = "Priority is the ability to activate a card or effect in response to something."
+    insert_chunk(chunk_text=text, source="konami_rulebook", embedding=embed(text))
+
+    results = search_chunks(embed(text), max_distance=0.1)
+
+    assert len(results) == 1
+    assert results[0]["chunk_text"] == text
+
+
+def test_search_chunks_excludes_matches_over_threshold():
+    from aijudge.db.rulebook_repo import insert_chunk, search_chunks
+    from aijudge.embeddings.client import MockEmbeddingClient
+
+    embed = MockEmbeddingClient().embed
+    text = "Priority is the ability to activate a card or effect in response to something."
+    insert_chunk(chunk_text=text, source="konami_rulebook", embedding=embed(text))
+
+    results = search_chunks(embed("something completely unrelated to card games entirely"), max_distance=0.1)
+
+    assert results == []
