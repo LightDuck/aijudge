@@ -50,6 +50,16 @@ def test_complete_uses_custom_model_when_given():
     assert captured["json"]["model"] == "some/other-model:free"
 
 
+def test_complete_returns_empty_string_when_content_is_null():
+    def fake_post(url, *, headers, json, timeout):
+        return FakeResponse(200, {"choices": [{"message": {"content": None}}]})
+
+    client = OpenRouterLLMClient("test-key", http_post=fake_post)
+    result = client.complete("question")
+
+    assert result == ""
+
+
 def test_complete_raises_on_http_error():
     def fake_post(url, *, headers, json, timeout):
         return FakeResponse(401, {})

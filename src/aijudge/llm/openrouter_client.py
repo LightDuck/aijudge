@@ -29,4 +29,5 @@ class OpenRouterLLMClient:
             timeout=30,
         )
         response.raise_for_status()
-        return response.json()["choices"][0]["message"]["content"]
+        content = response.json()["choices"][0]["message"]["content"]
+        return content or ""
