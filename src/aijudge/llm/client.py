@@ -56,8 +56,8 @@ class OllamaLLMClient:
         timeout: float = 120.0,
         http_post: Callable[..., "requests.Response"] = requests.post,
     ) -> None:
-        self.model = model or os.environ.get("OLLAMA_MODEL", DEFAULT_OLLAMA_MODEL)
-        self.base_url = (base_url or os.environ.get("OLLAMA_BASE_URL", DEFAULT_OLLAMA_BASE_URL)).rstrip("/")
+        self.model = model or os.environ.get("OLLAMA_MODEL") or DEFAULT_OLLAMA_MODEL
+        self.base_url = (base_url or os.environ.get("OLLAMA_BASE_URL") or DEFAULT_OLLAMA_BASE_URL).rstrip("/")
         self.think = think
         self.timeout = timeout
         self._http_post = http_post

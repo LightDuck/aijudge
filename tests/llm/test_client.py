@@ -99,3 +99,20 @@ def test_ollama_client_defaults_model_and_base_url_from_env(monkeypatch):
 
     assert captured["url"] == "http://otherhost:11434/api/generate"
     assert captured["json"]["model"] == "qwen3:8b-custom"
+
+
+def test_ollama_client_falls_back_to_defaults_when_env_vars_are_set_but_empty(monkeypatch):
+    monkeypatch.setenv("OLLAMA_MODEL", "")
+    monkeypatch.setenv("OLLAMA_BASE_URL", "")
+    captured = {}
+
+    def fake_post(url, json, timeout):
+        captured["url"] = url
+        captured["json"] = json
+        return FakeResponse({"response": "ok"})
+
+    client = OllamaLLMClient(http_post=fake_post)
+    client.complete("prompt")
+
+    assert captured["url"] == "http://localhost:11434/api/generate"
+    assert captured["json"]["model"] == "qwen3:8b"

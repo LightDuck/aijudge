@@ -11,9 +11,11 @@ deterministic lookup or algorithm, it is — that's where accuracy-critical bugs
 
 The project has completed its first "thin slice": the rules engine, DB layer, effect parser, ingestion/seed
 script, LLM orchestration (the agentic tool-use loop), and a REPL CLI all exist and are tested, and
-`python -m aijudge` (`src/aijudge/entrypoint.py` + `src/aijudge/__main__.py`) wires real providers end-to-end —
-`OpenRouterLLMClient` for the LLM and `OpenAIEmbeddingClient` for embeddings — reading `OPENROUTER_API_KEY` and
-`OPENAI_API_KEY` from the environment (`.env` via `python-dotenv`). See
+`python -m aijudge` runs end-to-end. `src/aijudge/__main__.py` wires the default, $0-cost path — a real
+`OllamaLLMClient` (local Qwen3-8B via Ollama) and `MockEmbeddingClient` — since `search_rulebook` still has no
+real embedding provider. `src/aijudge/entrypoint.py` is an alternate wiring using `OpenRouterLLMClient` and
+`OpenAIEmbeddingClient`, reading `OPENROUTER_API_KEY` and `OPENAI_API_KEY` from the environment (`.env` via
+`python-dotenv`), for when a hosted LLM is preferred over local Ollama. See
 `docs/superpowers/specs/2026-08-18-thin-slice-design.md` for the full design spec and
 `docs/superpowers/plans/2026-08-18-foundations.md` for the implementation plan this codebase was built from
 (both are useful for *why*, but the actual code is ground truth for *what exists now* — the plan doc is a
@@ -121,13 +123,18 @@ spec:
     bare `0.0`–`1.0` confidence string back, and returns `auto_confirmed = confidence >= threshold` (default
     `DEFAULT_CONFIDENCE_THRESHOLD = 0.9`).
 
-- **`embeddings/` and `llm/`** — thin `Protocol` interfaces (`EmbeddingClient.embed`, `LLMClient.complete`) with
-  mock implementations (`MockEmbeddingClient` — deterministic SHA256-derived 384-dim vectors;
-  `MockLLMClient` — FIFO `queue_response()`/`complete()`, raises `AssertionError` on an empty queue). A real
-  provider now exists — `llm/openrouter_client.py`'s `OpenRouterLLMClient` hits OpenRouter's chat-completions API
-  (default model `meta-llama/llama-3.3-70b-instruct:free`) — but nothing in `src/` constructs one; it's exercised
-  only from tests so far. Ollama remains noted as a $0-cost local fallback for non-mock dev testing, not yet
-  implemented.
+- **`embeddings/` and `llm/`** — thin `Protocol` interfaces (`EmbeddingClient.embed`, `LLMClient.complete`).
+  `embeddings/` has `MockEmbeddingClient` (deterministic SHA256-derived 384-dim vectors) and
+  `OpenAIEmbeddingClient` (real provider, `dimensions=384` truncation to match the pgvector schema — see
+  `docs/superpowers/specs/2026-08-20-provider-wiring-design.md`), constructed by `entrypoint.py` only.
+  `llm/` has `MockLLMClient` (FIFO `queue_response()`/`complete()`, raises `AssertionError` on an empty queue),
+  `OpenRouterLLMClient` (hosted, pinned to a specific free model — see
+  `docs/superpowers/specs/2026-08-20-openrouter-llm-client-design.md`), and `OllamaLLMClient` — a local Qwen3-8B
+  client via Ollama's HTTP API, $0 cost, no API key. `OllamaLLMClient` is the one `python -m aijudge` /
+  `aijudge.__main__.main()` constructs by default (`OLLAMA_BASE_URL` / `OLLAMA_MODEL` env vars, default
+  `http://localhost:11434` / `qwen3:8b`); it disables Qwen's thinking mode and strips any `<think>...</think>`
+  block defensively, since `run_loop`'s protocol parses an exact `TOOL:`/`FINAL:` text format that a reasoning
+  preamble would break. Claude remains the eventual production target per the original spec, not yet wired in.
 
 - **`orchestration/`** — the agentic tool-use loop that turns a user question into an answer, escalation, or
   "not supported":
@@ -157,7 +164,8 @@ spec:
 
 - **`cli.py`** — `run_cli()`: a REPL (`input_fn`/`print_fn` are injectable for testing) that, per question, runs
   the clarification pass, prompts for answers to any `CLARIFY`/`CONTINUOUS_CHECK` items, then calls `run_loop`
-  and prints the result. Not yet wired to a real entrypoint (see "Not yet built").
+  and prints the result. Wired to a real entrypoint by both `__main__.py` (Ollama, default) and `entrypoint.py`
+  (OpenRouter/OpenAI, alternate).
 
 - **`ingestion/`** — `ygoprodeck_client.fetch_card()` and `ygoresources_client.fetch_rulings()` pull only the
   fields this project uses (not a full API mirror). `seed.py` ties it together: `seed_card()` fetches card +
@@ -168,13 +176,13 @@ spec:
 
 ## Not yet built
 
-The LLM orchestration loop, tool wiring, CLI/REPL, and a real LLM provider (`OpenRouterLLMClient`) all now exist
-under `src/` (see `orchestration/`, `cli.py`, `llm/openrouter_client.py` above) — but nothing assembles them into
-a runnable program: no `__main__.py` or console script constructs a real `LLMClient`/`EmbeddingClient` and calls
-`cli.run_cli`. Also still missing, per the spec's non-goals / deferred list: missing-timing check for optional
-trigger effects, any automated ingestion pipeline beyond the hand-picked seed list, and a formal eval harness (an
-informal `qa_test_cases` table exists in the schema for this, unused so far). Don't assume these exist when
-reading code — check before referencing a tool/module that spec sections 4–7 describe but that isn't under `src/`.
+Per the spec's non-goals / deferred list: no missing-timing check for optional trigger effects, no automated
+ingestion pipeline beyond the hand-picked seed list, no structured-output protocol for the orchestration loop, no
+formal eval harness (an informal `qa_test_cases` table exists in the schema for this, unused so far). The default
+`python -m aijudge` path (`__main__.py`) still uses `MockEmbeddingClient`, so `search_rulebook` returns nothing
+useful there — a real embedding provider (`OpenAIEmbeddingClient`) exists but is only wired through the alternate
+`entrypoint.py` path, not the default one. Don't assume these exist when reading code — check before referencing
+a tool/module that spec sections 4–7 describe but that isn't under `src/`.
 
 ## Development process
 
