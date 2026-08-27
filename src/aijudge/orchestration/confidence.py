@@ -8,6 +8,7 @@ MISSING_STRUCTURED_EFFECT_PENALTY = 0.2
 @dataclass
 class SignalState:
     known_ids: set[str] = field(default_factory=set)
+    citation_index: dict[str, dict] = field(default_factory=dict)
     missing_structured_effect: bool = False
     retrieval_gap: bool = False
 
@@ -15,7 +16,12 @@ class SignalState:
 def update_signals(state: SignalState, tool_name: str, result: dict) -> None:
     if tool_name == "lookup_card":
         if result.get("found"):
-            state.known_ids.add(f"card:{result['id']}")
+            card_id = f"card:{result['id']}"
+            state.known_ids.add(card_id)
+            state.citation_index[card_id] = {
+                "label": result.get("name", ""),
+                "text": result.get("card_text", ""),
+            }
             if result.get("confirmed_effect") is None:
                 state.missing_structured_effect = True
     elif tool_name == "get_rulings":
@@ -23,13 +29,23 @@ def update_signals(state: SignalState, tool_name: str, result: dict) -> None:
         if not rulings:
             state.retrieval_gap = True
         for ruling in rulings:
-            state.known_ids.add(f"ruling:{ruling['id']}")
+            ruling_id = f"ruling:{ruling['id']}"
+            state.known_ids.add(ruling_id)
+            state.citation_index[ruling_id] = {
+                "label": ruling.get("source", ""),
+                "text": ruling.get("ruling_text", ""),
+            }
     elif tool_name == "search_rulebook":
         chunks = result.get("chunks", [])
         if not chunks:
             state.retrieval_gap = True
         for chunk in chunks:
-            state.known_ids.add(f"chunk:{chunk['id']}")
+            chunk_id = f"chunk:{chunk['id']}"
+            state.known_ids.add(chunk_id)
+            state.citation_index[chunk_id] = {
+                "label": chunk.get("source", ""),
+                "text": chunk.get("chunk_text", ""),
+            }
 
 
 def compute_confidence(cited_ids: set[str], state: SignalState) -> float:

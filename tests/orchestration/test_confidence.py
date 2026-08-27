@@ -73,3 +73,48 @@ def test_compute_confidence_applies_missing_structured_effect_penalty():
 def test_compute_confidence_applies_both_penalties_together():
     state = SignalState(retrieval_gap=True, missing_structured_effect=True)
     assert compute_confidence(set(), state) == pytest.approx(1.0 - RETRIEVAL_GAP_PENALTY - MISSING_STRUCTURED_EFFECT_PENALTY)
+
+
+def test_update_signals_indexes_card_citation_label_and_text():
+    state = SignalState()
+    update_signals(
+        state,
+        "lookup_card",
+        {
+            "found": True,
+            "id": "abc",
+            "name": "Ash Blossom & Joyous Spring",
+            "card_text": "You can discard this card...",
+            "confirmed_effect": {"effect": "..."},
+        },
+    )
+    assert state.citation_index["card:abc"] == {
+        "label": "Ash Blossom & Joyous Spring",
+        "text": "You can discard this card...",
+    }
+
+
+def test_update_signals_indexes_card_citation_with_missing_optional_fields():
+    state = SignalState()
+    update_signals(state, "lookup_card", {"found": True, "id": "abc", "confirmed_effect": None})
+    assert state.citation_index["card:abc"] == {"label": "", "text": ""}
+
+
+def test_update_signals_indexes_ruling_citation_label_and_text():
+    state = SignalState()
+    update_signals(
+        state,
+        "get_rulings",
+        {"rulings": [{"id": "r1", "ruling_text": "This does X.", "source": "ygoresources"}]},
+    )
+    assert state.citation_index["ruling:r1"] == {"label": "ygoresources", "text": "This does X."}
+
+
+def test_update_signals_indexes_chunk_citation_label_and_text():
+    state = SignalState()
+    update_signals(
+        state,
+        "search_rulebook",
+        {"chunks": [{"id": "c1", "chunk_text": "Rule text.", "source": "rulebook"}]},
+    )
+    assert state.citation_index["chunk:c1"] == {"label": "rulebook", "text": "Rule text."}
