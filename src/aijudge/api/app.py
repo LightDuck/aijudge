@@ -43,11 +43,14 @@ def create_app(
     tools = build_tool_dispatch(embedding_client)
 
     def _backend_unavailable_handler(request: Request, exc: Exception) -> JSONResponse:
-        logger.exception("backend connection error")
+        # Starlette dispatches sync exception handlers via run_in_threadpool, so
+        # sys.exc_info() is empty on that worker thread -- exc_info=True (the
+        # logger.exception() default) would log nothing. Pass exc explicitly.
+        logger.exception("backend connection error", exc_info=exc)
         return JSONResponse(status_code=503, content={"detail": "backend unavailable"})
 
     def _unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-        logger.exception("unhandled error")
+        logger.exception("unhandled error", exc_info=exc)
         return JSONResponse(status_code=500, content={"detail": "internal server error"})
 
     app.add_exception_handler(requests.exceptions.ConnectionError, _backend_unavailable_handler)

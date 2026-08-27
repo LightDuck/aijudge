@@ -1,3 +1,7 @@
+import logging
+import traceback
+
+import psycopg
 import requests
 from fastapi.testclient import TestClient
 
@@ -131,3 +135,58 @@ def test_post_questions_returns_generic_500_without_leaking_exception_details():
     assert response.status_code == 500
     assert response.json() == {"detail": "internal server error"}
     assert "something internal broke" not in response.text
+
+
+class _OperationalErrorLLMClient:
+    def complete(self, prompt: str) -> str:
+        raise psycopg.OperationalError("could not connect to server")
+
+
+def test_post_questions_returns_503_when_db_backend_unreachable():
+    app = create_app(_OperationalErrorLLMClient(), MockEmbeddingClient())
+    client = TestClient(app)
+
+    response = client.post("/questions", json={"question": "What does Ash Blossom do?"})
+
+    assert response.status_code == 503
+    assert response.json() == {"detail": "backend unavailable"}
+
+
+def _exc_log_records(caplog, logger_name: str = "aijudge.api.app") -> list[logging.LogRecord]:
+    return [record for record in caplog.records if record.name == logger_name]
+
+
+def test_post_questions_503_logs_the_actual_exception_traceback(caplog):
+    app = create_app(_ConnectionErrorLLMClient(), MockEmbeddingClient())
+    client = TestClient(app)
+
+    with caplog.at_level(logging.ERROR):
+        client.post("/questions", json={"question": "What does Ash Blossom do?"})
+
+    records = _exc_log_records(caplog)
+    assert len(records) == 1
+    exc_info = records[0].exc_info
+    # Starlette dispatches sync exception handlers via run_in_threadpool, so
+    # sys.exc_info() is empty on that worker thread -- logger.exception() must
+    # be given the handler's own `exc` explicitly via exc_info=exc, or the
+    # exception type/traceback is silently lost.
+    assert exc_info is not None
+    assert exc_info[0] is requests.exceptions.ConnectionError
+    formatted = "".join(traceback.format_exception(*exc_info))
+    assert "no route to host" in formatted
+
+
+def test_post_questions_500_logs_the_actual_exception_traceback(caplog):
+    app = create_app(_BrokenLLMClient(), MockEmbeddingClient())
+    client = TestClient(app, raise_server_exceptions=False)
+
+    with caplog.at_level(logging.ERROR):
+        client.post("/questions", json={"question": "What does Ash Blossom do?"})
+
+    records = _exc_log_records(caplog)
+    assert len(records) == 1
+    exc_info = records[0].exc_info
+    assert exc_info is not None
+    assert exc_info[0] is RuntimeError
+    formatted = "".join(traceback.format_exception(*exc_info))
+    assert "something internal broke" in formatted
