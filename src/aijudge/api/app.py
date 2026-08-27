@@ -19,7 +19,7 @@ from aijudge.orchestration.clarify import (
 from aijudge.orchestration.loop import LoopResult, run_loop
 from aijudge.orchestration.tools import build_tool_dispatch
 
-from .schemas import AnswerRequest, QuestionRequest
+from .schemas import AnswerRequest, NeedsClarificationResponse, QuestionRequest, ResultResponse
 
 DEFAULT_CORS_ORIGINS = ["http://localhost:3000", "http://localhost:5173"]
 
@@ -69,7 +69,7 @@ def create_app(
         allow_headers=["*"],
     )
 
-    @app.post("/questions")
+    @app.post("/questions", response_model=ResultResponse | NeedsClarificationResponse)
     def post_question(body: QuestionRequest) -> dict:
         question = body.question.strip()
         if not question:
@@ -87,7 +87,7 @@ def create_app(
         result = run_loop(question, llm_client=llm_client, tools=tools)
         return _result_response(result)
 
-    @app.post("/questions/answer")
+    @app.post("/questions/answer", response_model=ResultResponse)
     def post_answer(body: AnswerRequest) -> dict:
         question = body.question.strip()
         if not question:

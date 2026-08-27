@@ -82,6 +82,56 @@ def test_post_questions_serializes_citation_content_without_leaking_raw_ids():
     assert "abc123" not in response.text
 
 
+def test_post_questions_route_declares_a_pydantic_response_model():
+    # Structural enforcement, not convention: the spec states "the API's
+    # Pydantic response models simply don't include an id field, so they
+    # can never leak into a JSON response by accident" -- that guarantee
+    # requires an actual response_model on the route, not just correct
+    # hand-built dicts in _result_response.
+    app = create_app(MockLLMClient(), MockEmbeddingClient())
+    route = next(r for r in app.routes if getattr(r, "path", None) == "/questions")
+
+    assert route.response_model is not None
+    assert route.response_model is not dict
+
+
+def test_post_questions_answer_route_declares_result_response_model():
+    import aijudge.api.schemas as schemas
+
+    app = create_app(MockLLMClient(), MockEmbeddingClient())
+    route = next(r for r in app.routes if getattr(r, "path", None) == "/questions/answer")
+
+    assert route.response_model is schemas.ResultResponse
+
+
+def test_post_questions_response_model_strips_fields_not_declared_on_the_model(monkeypatch):
+    # Behavioral proof, not just a structural check: even if _result_response
+    # has a bug and includes a stray internal field, the declared
+    # response_model must strip it before serialization -- that's the actual
+    # leak-prevention guarantee, not merely "some response_model exists."
+    import aijudge.api.app as app_module
+
+    llm = MockLLMClient()
+    llm.queue_response("PROCEED")
+    llm.queue_response("FINAL: ok. ||CITES: ||")
+
+    def _leaky_result_response(result):
+        return {
+            "status": result.kind,
+            "text": result.text,
+            "citations": result.citations if result.kind == "answer" else None,
+            "id": "card:leaked-internal-id",
+        }
+
+    monkeypatch.setattr(app_module, "_result_response", _leaky_result_response)
+
+    response = _client(llm).post("/questions", json={"question": "x"})
+
+    assert response.status_code == 200
+    assert "id" not in response.json()
+    assert "leaked-internal-id" not in response.text
+
+
 def test_post_questions_cors_allows_configured_origin():
     llm = MockLLMClient()
     llm.queue_response("PROCEED")
