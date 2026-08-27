@@ -176,7 +176,7 @@ class _RecordingLLMClient:
         self._response = response
         self.prompts: list[str] = []
 
-    def complete(self, prompt: str) -> str:
+    def complete(self, prompt: str, *, system: str | None = None) -> str:
         self.prompts.append(prompt)
         return self._response
 

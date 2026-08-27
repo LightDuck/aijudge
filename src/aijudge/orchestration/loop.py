@@ -29,7 +29,8 @@ def run_loop(
     clarification_context: str = "",
     threshold: float = DEFAULT_CONFIDENCE_THRESHOLD,
 ) -> LoopResult:
-    conversation = build_system_prompt() + "\n\nQuestion: " + question
+    system_prompt = build_system_prompt()
+    conversation = "Question: " + question
     if clarification_context:
         conversation += "\n\n" + clarification_context
 
@@ -38,7 +39,7 @@ def run_loop(
     tool_call_count = 0
 
     while True:
-        response = llm_client.complete(conversation)
+        response = llm_client.complete(conversation, system=system_prompt)
 
         try:
             parsed = parse_response(response)

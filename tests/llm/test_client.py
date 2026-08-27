@@ -116,3 +116,66 @@ def test_ollama_client_falls_back_to_defaults_when_env_vars_are_set_but_empty(mo
 
     assert captured["url"] == "http://localhost:11434/api/generate"
     assert captured["json"]["model"] == "qwen3:8b"
+
+
+def test_ollama_client_posts_to_chat_endpoint_with_system_and_user_roles_when_system_given():
+    captured = {}
+
+    def fake_post(url, json, timeout):
+        captured["url"] = url
+        captured["json"] = json
+        captured["timeout"] = timeout
+        return FakeResponse({"message": {"role": "assistant", "content": "the answer"}})
+
+    client = OllamaLLMClient(model="qwen3:8b", base_url="http://localhost:11434", http_post=fake_post)
+
+    result = client.complete("Question: what does Ash Blossom do?", system="You are a Yu-Gi-Oh! rules assistant.")
+
+    assert result == "the answer"
+    assert captured["url"] == "http://localhost:11434/api/chat"
+    assert captured["json"]["model"] == "qwen3:8b"
+    assert captured["json"]["messages"] == [
+        {"role": "system", "content": "You are a Yu-Gi-Oh! rules assistant."},
+        {"role": "user", "content": "Question: what does Ash Blossom do?"},
+    ]
+    assert captured["json"]["stream"] is False
+    assert captured["json"]["think"] is False
+
+
+def test_ollama_client_strips_thinking_blocks_from_chat_response():
+    def fake_post(url, json, timeout):
+        return FakeResponse({"message": {"content": "<think>reasoning</think>\nthe answer"}})
+
+    client = OllamaLLMClient(http_post=fake_post)
+
+    result = client.complete("prompt", system="system text")
+
+    assert result == "the answer"
+
+
+def test_ollama_client_raises_on_http_error_from_chat_endpoint():
+    def fake_post(url, json, timeout):
+        return FakeResponse({}, status_code=500)
+
+    client = OllamaLLMClient(http_post=fake_post)
+
+    with pytest.raises(requests.HTTPError):
+        client.complete("prompt", system="system text")
+
+
+def test_mock_llm_client_accepts_and_records_system_kwarg():
+    client = MockLLMClient()
+    client.queue_response("answer")
+
+    client.complete("prompt", system="You are a Yu-Gi-Oh! rules assistant.")
+
+    assert client.system_prompts == ["You are a Yu-Gi-Oh! rules assistant."]
+
+
+def test_mock_llm_client_records_none_when_system_not_given():
+    client = MockLLMClient()
+    client.queue_response("answer")
+
+    client.complete("prompt")
+
+    assert client.system_prompts == [None]

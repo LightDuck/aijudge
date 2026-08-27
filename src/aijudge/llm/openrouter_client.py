@@ -18,13 +18,18 @@ class OpenRouterLLMClient:
         self._model = model
         self._http_post = http_post
 
-    def complete(self, prompt: str) -> str:
+    def complete(self, prompt: str, *, system: str | None = None) -> str:
+        messages = []
+        if system is not None:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+
         response = self._http_post(
             API_URL,
             headers={"Authorization": f"Bearer {self._api_key}"},
             json={
                 "model": self._model,
-                "messages": [{"role": "user", "content": prompt}],
+                "messages": messages,
             },
             timeout=30,
         )

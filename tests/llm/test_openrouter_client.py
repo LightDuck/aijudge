@@ -60,6 +60,22 @@ def test_complete_returns_empty_string_when_content_is_null():
     assert result == ""
 
 
+def test_complete_includes_system_message_before_user_message_when_given():
+    captured = {}
+
+    def fake_post(url, *, headers, json, timeout):
+        captured["json"] = json
+        return FakeResponse(200, {"choices": [{"message": {"content": "the answer"}}]})
+
+    client = OpenRouterLLMClient("test-key", http_post=fake_post)
+    client.complete("what is Ash Blossom's timing?", system="You are a Yu-Gi-Oh! rules assistant.")
+
+    assert captured["json"]["messages"] == [
+        {"role": "system", "content": "You are a Yu-Gi-Oh! rules assistant."},
+        {"role": "user", "content": "what is Ash Blossom's timing?"},
+    ]
+
+
 def test_complete_raises_on_http_error():
     def fake_post(url, *, headers, json, timeout):
         return FakeResponse(401, {})

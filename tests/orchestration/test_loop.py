@@ -1,5 +1,6 @@
 from aijudge.llm.client import MockLLMClient
 from aijudge.orchestration.loop import run_loop
+from aijudge.orchestration.protocol import build_system_prompt
 from aijudge.rules_engine.resolve import UnsupportedScenarioError
 
 
@@ -185,3 +186,15 @@ def test_multiple_citations_are_sorted_by_id():
         {"label": "Card A", "text": "Card A text"},
         {"label": "Card Z", "text": "Card Z text"},
     ]
+
+
+def test_run_loop_passes_the_system_prompt_on_every_llm_call():
+    llm = MockLLMClient()
+    llm.queue_response('TOOL: lookup_card {"name": "Ash Blossom & Joyous Spring"}')
+    llm.queue_response("FINAL: It negates the effect. ||CITES: card:abc123||")
+
+    tools = {"lookup_card": lambda args: {"found": True, "id": "abc123", "confirmed_effect": {"effect": "..."}}}
+
+    run_loop("What does Ash Blossom do?", llm_client=llm, tools=tools)
+
+    assert llm.system_prompts == [build_system_prompt(), build_system_prompt()]
