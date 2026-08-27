@@ -150,3 +150,38 @@ def test_escalated_answer_has_empty_citations_list():
 
     assert result.kind == "escalate"
     assert result.citations == []
+
+
+def test_multiple_citations_are_sorted_by_id():
+    llm = MockLLMClient()
+    llm.queue_response('TOOL: lookup_card {"name": "Card Z"}')
+    llm.queue_response('TOOL: lookup_card {"name": "Card A"}')
+    llm.queue_response("FINAL: Both cards matter. ||CITES: card:z9, card:a1||")
+
+    def lookup_tool(args):
+        name = args.get("name", "")
+        if "Z" in name:
+            return {
+                "found": True,
+                "id": "z9",
+                "name": "Card Z",
+                "card_text": "Card Z text",
+                "confirmed_effect": {"effect": "..."},
+            }
+        else:
+            return {
+                "found": True,
+                "id": "a1",
+                "name": "Card A",
+                "card_text": "Card A text",
+                "confirmed_effect": {"effect": "..."},
+            }
+
+    result = run_loop("Compare Card Z and Card A", llm_client=llm, tools={"lookup_card": lookup_tool})
+
+    assert result.kind == "answer"
+    # Citations should be sorted by ID, so card:a1 before card:z9 (not in lookup order)
+    assert result.citations == [
+        {"label": "Card A", "text": "Card A text"},
+        {"label": "Card Z", "text": "Card Z text"},
+    ]
