@@ -115,6 +115,40 @@ def test_post_questions_answer_returns_final_result():
     assert response.json() == {"status": "answer", "text": "Yes, it does that.", "citations": []}
 
 
+class _RecordingLLMClient:
+    """Records every prompt it's called with, unlike MockLLMClient which
+    ignores `prompt` entirely -- needed to prove post_answer actually
+    threads clarification_context into the prompt sent to the LLM, not
+    just that some hardcoded response comes back regardless.
+    """
+
+    def __init__(self, response: str):
+        self._response = response
+        self.prompts: list[str] = []
+
+    def complete(self, prompt: str) -> str:
+        self.prompts.append(prompt)
+        return self._response
+
+
+def test_post_questions_answer_threads_clarification_context_into_llm_prompt():
+    llm = _RecordingLLMClient("FINAL: Yes, it does that. ||CITES: ||")
+
+    response = TestClient(create_app(llm, MockEmbeddingClient())).post(
+        "/questions/answer",
+        json={
+            "question": "Is X active?",
+            "items": [{"kind": "continuous_check", "text": "Some Card"}],
+            "answers": ["Yes, Ash Blossom is on the field."],
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "answer", "text": "Yes, it does that.", "citations": []}
+    assert len(llm.prompts) == 1
+    assert "Yes, Ash Blossom is on the field." in llm.prompts[-1]
+
+
 def test_post_questions_answer_rejects_mismatched_items_and_answers_length():
     llm = MockLLMClient()
 
