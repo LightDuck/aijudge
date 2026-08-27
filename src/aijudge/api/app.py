@@ -1,5 +1,11 @@
+import logging
+
+import psycopg
+import requests
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
 from aijudge.embeddings.client import EmbeddingClient
 from aijudge.llm.client import LLMClient
@@ -15,6 +21,8 @@ from aijudge.orchestration.tools import build_tool_dispatch
 from .schemas import AnswerRequest, QuestionRequest
 
 DEFAULT_CORS_ORIGINS = ["http://localhost:3000", "http://localhost:5173"]
+
+logger = logging.getLogger(__name__)
 
 
 def _result_response(result: LoopResult) -> dict:
@@ -33,6 +41,18 @@ def create_app(
 ) -> FastAPI:
     app = FastAPI()
     tools = build_tool_dispatch(embedding_client)
+
+    def _backend_unavailable_handler(request: Request, exc: Exception) -> JSONResponse:
+        logger.exception("backend connection error")
+        return JSONResponse(status_code=503, content={"detail": "backend unavailable"})
+
+    def _unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+        logger.exception("unhandled error")
+        return JSONResponse(status_code=500, content={"detail": "internal server error"})
+
+    app.add_exception_handler(requests.exceptions.ConnectionError, _backend_unavailable_handler)
+    app.add_exception_handler(psycopg.OperationalError, _backend_unavailable_handler)
+    app.add_exception_handler(Exception, _unhandled_exception_handler)
 
     app.add_middleware(
         CORSMiddleware,

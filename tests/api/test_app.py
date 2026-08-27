@@ -1,3 +1,4 @@
+import requests
 from fastapi.testclient import TestClient
 
 from aijudge.api.app import create_app
@@ -96,3 +97,37 @@ def test_post_questions_answer_rejects_empty_question():
 
     assert response.status_code == 400
     assert response.json() == {"detail": "question must not be empty"}
+
+
+class _ConnectionErrorLLMClient:
+    def complete(self, prompt: str) -> str:
+        raise requests.exceptions.ConnectionError("no route to host")
+
+
+class _BrokenLLMClient:
+    def complete(self, prompt: str) -> str:
+        raise RuntimeError("something internal broke")
+
+
+def test_post_questions_returns_503_when_llm_backend_unreachable():
+    app = create_app(_ConnectionErrorLLMClient(), MockEmbeddingClient())
+    client = TestClient(app)
+
+    response = client.post("/questions", json={"question": "What does Ash Blossom do?"})
+
+    assert response.status_code == 503
+    assert response.json() == {"detail": "backend unavailable"}
+
+
+def test_post_questions_returns_generic_500_without_leaking_exception_details():
+    app = create_app(_BrokenLLMClient(), MockEmbeddingClient())
+    # ServerErrorMiddleware re-raises after building the response, specifically so
+    # unhandled errors stay visible to the ASGI server/logs -- TestClient must be
+    # told not to propagate that re-raised exception into the test itself.
+    client = TestClient(app, raise_server_exceptions=False)
+
+    response = client.post("/questions", json={"question": "What does Ash Blossom do?"})
+
+    assert response.status_code == 500
+    assert response.json() == {"detail": "internal server error"}
+    assert "something internal broke" not in response.text
