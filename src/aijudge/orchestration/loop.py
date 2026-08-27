@@ -1,5 +1,5 @@
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Callable
 
 from aijudge.llm.client import LLMClient
@@ -18,6 +18,7 @@ ESCALATE_MESSAGE = "escalate to a human judge"
 class LoopResult:
     kind: str
     text: str
+    citations: list[dict] = field(default_factory=list)
 
 
 def run_loop(
@@ -71,4 +72,5 @@ def run_loop(
         score = compute_confidence(parsed.cited_ids, state)
         if score < threshold:
             return LoopResult(kind="escalate", text=ESCALATE_MESSAGE)
-        return LoopResult(kind="answer", text=parsed.text)
+        citations = [state.citation_index[cid] for cid in sorted(parsed.cited_ids)]
+        return LoopResult(kind="answer", text=parsed.text, citations=citations)

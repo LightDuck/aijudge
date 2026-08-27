@@ -108,3 +108,45 @@ def test_malformed_tool_arguments_exhausted_surfaces_not_supported():
     result = run_loop("What does Ash Blossom do?", llm_client=llm, tools={"lookup_card": _lookup})
 
     assert result.kind == "not_supported"
+
+
+def test_tool_call_then_final_answer_includes_citation_text():
+    llm = MockLLMClient()
+    llm.queue_response('TOOL: lookup_card {"name": "Ash Blossom & Joyous Spring"}')
+    llm.queue_response("FINAL: It negates the effect. ||CITES: card:abc123||")
+
+    tools = {
+        "lookup_card": lambda args: {
+            "found": True,
+            "id": "abc123",
+            "name": "Ash Blossom & Joyous Spring",
+            "card_text": "You can discard this card...",
+            "confirmed_effect": {"effect": "..."},
+        }
+    }
+
+    result = run_loop("What does Ash Blossom do?", llm_client=llm, tools=tools)
+
+    assert result.kind == "answer"
+    assert result.citations == [
+        {"label": "Ash Blossom & Joyous Spring", "text": "You can discard this card..."}
+    ]
+
+
+def test_final_answer_with_no_citations_has_empty_citations_list():
+    llm = MockLLMClient()
+    llm.queue_response("FINAL: Ash Blossom negates that effect. ||CITES: ||")
+
+    result = run_loop("What does Ash Blossom do?", llm_client=llm, tools={})
+
+    assert result.citations == []
+
+
+def test_escalated_answer_has_empty_citations_list():
+    llm = MockLLMClient()
+    llm.queue_response("FINAL: It negates the effect. ||CITES: card:never-looked-up||")
+
+    result = run_loop("What does Ash Blossom do?", llm_client=llm, tools={})
+
+    assert result.kind == "escalate"
+    assert result.citations == []
