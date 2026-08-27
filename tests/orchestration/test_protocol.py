@@ -33,6 +33,16 @@ def test_rejects_final_answer_missing_cites_trailer():
         parse_response("FINAL: This card negates the effect.")
 
 
+def test_rejects_tool_line_with_no_json_part():
+    with pytest.raises(ProtocolError):
+        parse_response("TOOL: lookup_card")
+
+
+def test_rejects_final_answer_whose_cites_trailer_is_not_closed():
+    with pytest.raises(ProtocolError):
+        parse_response("FINAL: This card negates the effect. ||CITES: card:1")
+
+
 def test_rejects_response_with_no_recognized_prefix():
     with pytest.raises(ProtocolError):
         parse_response("I think the answer is yes.")
