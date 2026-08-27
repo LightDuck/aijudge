@@ -23,9 +23,11 @@ historical scaffold and has already drifted in places, e.g. `has_target`, `ygopr
 Voyage/Ollama for embeddings, the `dimensions=384` truncation to match the pgvector schema) are logged in
 `docs/superpowers/specs/2026-08-20-provider-wiring-design.md`.
 
-Still missing for a public v1.0: broader card coverage (currently 5 hand-picked cards), an HTTP/API service layer
-in front of the orchestration loop (the CLI is a blocking stdin/stdout REPL, not something a web frontend can
-call), and the frontend itself — each is its own separate sub-project, not yet designed.
+Still missing for a public v1.0: broader card coverage (currently 5 hand-picked cards) and the frontend itself —
+each is its own separate sub-project. The HTTP/API service layer (`src/aijudge/api/`) now exists, wrapping the
+orchestration loop and clarification flow behind two stateless REST endpoints — see
+`docs/superpowers/specs/2026-08-27-api-layer-design.md` for the design and the `api/` bullet under Architecture
+below. The frontend is not yet designed; it will consume that API's contract.
 
 ## Commands
 
@@ -168,6 +170,21 @@ spec:
   the clarification pass, prompts for answers to any `CLARIFY`/`CONTINUOUS_CHECK` items, then calls `run_loop`
   and prints the result. Wired to a real entrypoint by both `__main__.py` (Ollama, default) and `entrypoint.py`
   (OpenRouter/OpenAI, alternate).
+
+- **`api/`** — `create_app(llm_client, embedding_client, *, cors_origins=None, tools=None) -> FastAPI` wires the
+  same orchestration functions the CLI uses behind two stateless REST endpoints (no server-side session store):
+  `POST /questions` runs the clarification pass and either returns `{"status": "needs_clarification", ...}` or,
+  if no clarification is needed, runs `run_loop` directly; `POST /questions/answer` takes the client's echoed-back
+  question/items/answers, rebuilds `ClarificationItem`s, and runs `run_loop` with the resulting context. Both
+  return a `ResultResponse`/`NeedsClarificationResponse` (Pydantic models in `schemas.py`) — `citations` are
+  always `{"label", "text"}` pairs; the internal `card:<id>`/`ruling:<id>`/`chunk:<id>` ids `LoopResult.citations`
+  carries (see `orchestration/` below) never reach the response body. Backend connection errors
+  (`requests.exceptions.ConnectionError`, `psycopg.OperationalError`) become a generic `503`, any other unhandled
+  exception a generic `500` — both log the real exception server-side via `logger.exception(..., exc_info=exc)`
+  (exception handlers run in Starlette's threadpool, where bare `logger.exception()` without `exc_info=exc` logs
+  nothing) but never leak exception text to the client. `__main__.py` wires real `OllamaLLMClient`/
+  `OllamaEmbeddingClient` and runs `uvicorn` (`AIJUDGE_API_HOST`/`AIJUDGE_API_PORT`/`AIJUDGE_API_CORS_ORIGINS` env
+  vars). See `docs/superpowers/specs/2026-08-27-api-layer-design.md`.
 
 - **`ingestion/`** — `ygoprodeck_client.fetch_card()` and `ygoresources_client.fetch_rulings()` pull only the
   fields this project uses (not a full API mirror). `seed.py` ties it together: `seed_card()` fetches card +
