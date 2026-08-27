@@ -1,4 +1,5 @@
 import logging
+from typing import Callable
 
 import psycopg
 import requests
@@ -38,9 +39,13 @@ def create_app(
     embedding_client: EmbeddingClient,
     *,
     cors_origins: list[str] | None = None,
+    tools: dict[str, Callable[[dict], dict]] | None = None,
 ) -> FastAPI:
     app = FastAPI()
-    tools = build_tool_dispatch(embedding_client)
+    # Test-only seam: real callers never pass `tools` and get the DB/embedding-
+    # backed dispatch below; tests can inject a stub dispatch to exercise the
+    # citation-serialization path (lookup_card, etc.) without a live DB.
+    tools = tools if tools is not None else build_tool_dispatch(embedding_client)
 
     def _backend_unavailable_handler(request: Request, exc: Exception) -> JSONResponse:
         # Starlette dispatches sync exception handlers via run_in_threadpool, so

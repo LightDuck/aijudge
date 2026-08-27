@@ -49,6 +49,39 @@ def test_post_questions_rejects_empty_question():
     assert response.json() == {"detail": "question must not be empty"}
 
 
+def test_post_questions_serializes_citation_content_without_leaking_raw_ids():
+    # Mirrors tests/orchestration/test_loop.py's
+    # test_tool_call_then_final_answer_includes_citation_text, but driven
+    # through the actual HTTP/JSON response body -- proving citation
+    # {label, text} pairs serialize correctly over the wire and that no
+    # raw internal id (card:<uuid>, etc.) ever appears in the response.
+    llm = MockLLMClient()
+    llm.queue_response("PROCEED")
+    llm.queue_response('TOOL: lookup_card {"name": "Ash Blossom & Joyous Spring"}')
+    llm.queue_response("FINAL: It negates the effect. ||CITES: card:abc123||")
+
+    stub_tools = {
+        "lookup_card": lambda args: {
+            "found": True,
+            "id": "abc123",
+            "name": "Ash Blossom & Joyous Spring",
+            "card_text": "You can discard this card...",
+            "confirmed_effect": {"effect": "..."},
+        }
+    }
+
+    response = _client(llm, tools=stub_tools).post(
+        "/questions", json={"question": "What does Ash Blossom do?"}
+    )
+
+    assert response.status_code == 200
+    assert response.json()["citations"] == [
+        {"label": "Ash Blossom & Joyous Spring", "text": "You can discard this card..."}
+    ]
+    assert "card:" not in response.text
+    assert "abc123" not in response.text
+
+
 def test_post_questions_cors_allows_configured_origin():
     llm = MockLLMClient()
     llm.queue_response("PROCEED")
