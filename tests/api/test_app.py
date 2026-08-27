@@ -58,3 +58,41 @@ def test_post_questions_cors_allows_configured_origin():
 
     assert response.status_code == 200
     assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
+
+
+def test_post_questions_answer_returns_final_result():
+    llm = MockLLMClient()
+    llm.queue_response("FINAL: Yes, it does that. ||CITES: ||")
+
+    response = _client(llm).post(
+        "/questions/answer",
+        json={
+            "question": "Is X active?",
+            "items": [{"kind": "continuous_check", "text": "Some Card"}],
+            "answers": ["Yes, it's on the field."],
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "answer", "text": "Yes, it does that.", "citations": []}
+
+
+def test_post_questions_answer_rejects_mismatched_items_and_answers_length():
+    llm = MockLLMClient()
+
+    response = _client(llm).post(
+        "/questions/answer",
+        json={"question": "Is X active?", "items": [{"kind": "clarify", "text": "Which card?"}], "answers": []},
+    )
+
+    assert response.status_code == 400
+    assert response.json() == {"detail": "items and answers must be the same length"}
+
+
+def test_post_questions_answer_rejects_empty_question():
+    llm = MockLLMClient()
+
+    response = _client(llm).post("/questions/answer", json={"question": " ", "items": [], "answers": []})
+
+    assert response.status_code == 400
+    assert response.json() == {"detail": "question must not be empty"}

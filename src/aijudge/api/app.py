@@ -3,11 +3,16 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from aijudge.embeddings.client import EmbeddingClient
 from aijudge.llm.client import LLMClient
-from aijudge.orchestration.clarify import build_clarification_prompt, parse_clarification_response
+from aijudge.orchestration.clarify import (
+    ClarificationItem,
+    build_clarification_prompt,
+    format_clarification_context,
+    parse_clarification_response,
+)
 from aijudge.orchestration.loop import LoopResult, run_loop
 from aijudge.orchestration.tools import build_tool_dispatch
 
-from .schemas import QuestionRequest
+from .schemas import AnswerRequest, QuestionRequest
 
 DEFAULT_CORS_ORIGINS = ["http://localhost:3000", "http://localhost:5173"]
 
@@ -52,6 +57,19 @@ def create_app(
             }
 
         result = run_loop(question, llm_client=llm_client, tools=tools)
+        return _result_response(result)
+
+    @app.post("/questions/answer")
+    def post_answer(body: AnswerRequest) -> dict:
+        question = body.question.strip()
+        if not question:
+            raise HTTPException(status_code=400, detail="question must not be empty")
+        if len(body.items) != len(body.answers):
+            raise HTTPException(status_code=400, detail="items and answers must be the same length")
+
+        items = [ClarificationItem(kind=item.kind, text=item.text) for item in body.items]
+        context = format_clarification_context(items, body.answers)
+        result = run_loop(question, llm_client=llm_client, tools=tools, clarification_context=context)
         return _result_response(result)
 
     return app
