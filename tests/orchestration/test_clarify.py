@@ -26,6 +26,21 @@ def test_parse_clarification_response_parses_continuous_check_lines():
     ]
 
 
+def test_parse_clarification_response_dedupes_identical_clarify_lines():
+    response = "CLARIFY: Which monster do you mean?\nCLARIFY: Which monster do you mean?"
+    items = parse_clarification_response(response)
+    assert items == [ClarificationItem(kind="clarify", text="Which monster do you mean?")]
+
+
+def test_parse_clarification_response_keeps_distinct_lines_of_the_same_kind():
+    response = "CLARIFY: Which monster do you mean?\nCLARIFY: Are you the turn player?"
+    items = parse_clarification_response(response)
+    assert items == [
+        ClarificationItem(kind="clarify", text="Which monster do you mean?"),
+        ClarificationItem(kind="clarify", text="Are you the turn player?"),
+    ]
+
+
 def test_build_clarification_prompt_includes_the_question():
     prompt = build_clarification_prompt("Can I activate Solemn Strike here?")
     assert "Can I activate Solemn Strike here?" in prompt

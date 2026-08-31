@@ -23,14 +23,22 @@ def build_clarification_prompt(question: str) -> str:
 
 def parse_clarification_response(response: str) -> list[ClarificationItem]:
     items = []
+    seen = set()
     for line in response.strip().splitlines():
         line = line.strip()
         if not line or line == "PROCEED":
             continue
         if line.startswith("CLARIFY:"):
-            items.append(ClarificationItem(kind="clarify", text=line[len("CLARIFY:"):].strip()))
+            item = ClarificationItem(kind="clarify", text=line[len("CLARIFY:"):].strip())
         elif line.startswith("CONTINUOUS_CHECK:"):
-            items.append(ClarificationItem(kind="continuous_check", text=line[len("CONTINUOUS_CHECK:"):].strip()))
+            item = ClarificationItem(kind="continuous_check", text=line[len("CONTINUOUS_CHECK:"):].strip())
+        else:
+            continue
+        key = (item.kind, item.text)
+        if key in seen:
+            continue
+        seen.add(key)
+        items.append(item)
     return items
 
 

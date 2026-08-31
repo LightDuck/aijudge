@@ -1,6 +1,7 @@
 from aijudge.cli import run_cli
 from aijudge.embeddings.client import MockEmbeddingClient
 from aijudge.llm.client import MockLLMClient
+from aijudge.orchestration.protocol import build_system_prompt
 
 
 class _CapturingLLMClient:
@@ -65,6 +66,25 @@ def test_run_cli_answers_a_question_with_no_clarification_needed():
     )
 
     assert "It does X." in printed
+
+
+def test_run_cli_passes_the_system_prompt_to_the_clarification_call():
+    printed = []
+    inputs = iter(["What does Card X do?", "quit"])
+
+    llm = MockLLMClient()
+    llm.queue_response("PROCEED")
+    llm.queue_response("FINAL: It does X. ||CITES: ||")
+
+    run_cli(
+        llm,
+        MockEmbeddingClient(),
+        input_fn=lambda _: next(inputs),
+        print_fn=printed.append,
+        find_matched_cards_fn=lambda question: [],
+    )
+
+    assert llm.system_prompts[0] == build_system_prompt()
 
 
 def test_run_cli_asks_clarification_questions_before_answering():

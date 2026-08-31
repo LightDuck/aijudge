@@ -16,6 +16,7 @@ HAND_PICKED_CARDS: list[str] = [
     "Infinite Impermanence",
     "Effect Veiler",
     "Solemn Strike",
+    "Baronne de Fleur",
 ]
 
 
@@ -50,7 +51,11 @@ def seed_card(
 
     effect_type = classify_effect_type(card_text, card_type=card_type)
     parsed = parse_psct(card_text)
-    damage_step_category = classify_damage_step_category(parsed.effect)
+    damage_step_category = classify_damage_step_category(
+        parsed.effect,
+        activation_condition=parsed.activation_condition,
+        effect_type=effect_type,
+    )
     usage_limit_text = extract_usage_limit_text(card_text)
 
     review = review_parsed_effect(

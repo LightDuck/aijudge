@@ -12,6 +12,7 @@ from .orchestration.clarify import (
 )
 from .orchestration.loop import run_loop
 from .orchestration.preflight import build_known_facts_context, find_matched_cards, find_mentioned_card_names
+from .orchestration.protocol import build_system_prompt
 from .orchestration.tools import build_tool_dispatch
 
 
@@ -50,7 +51,7 @@ def run_cli(
                 )
             )
 
-        clarify_response = llm_client.complete(build_clarification_prompt(stripped))
+        clarify_response = llm_client.complete(build_clarification_prompt(stripped), system=build_system_prompt())
         items = disambiguation_items + parse_clarification_response(clarify_response)
         answers = [input_fn(f"{clarification_prompt_text(item)} ") for item in items]
 

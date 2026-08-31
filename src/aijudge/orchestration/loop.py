@@ -6,7 +6,7 @@ from aijudge.llm.client import LLMClient
 from aijudge.rules_engine.resolve import UnsupportedScenarioError
 
 from .confidence import DEFAULT_CONFIDENCE_THRESHOLD, SignalState, compute_confidence, update_signals
-from .protocol import FinalAnswer, ProtocolError, ToolCall, build_system_prompt, parse_response
+from .protocol import FinalAnswer, ProtocolError, Refusal, ToolCall, build_system_prompt, parse_response
 
 MAX_MALFORMED_RETRIES = 3
 MAX_TOOL_CALLS = 10
@@ -49,6 +49,9 @@ def run_loop(
                 return LoopResult(kind="not_supported", text=NOT_SUPPORTED_MESSAGE)
             conversation += f"\n\nERROR: {error}"
             continue
+
+        if isinstance(parsed, Refusal):
+            return LoopResult(kind="off_topic", text=parsed.text)
 
         if isinstance(parsed, ToolCall):
             tool_call_count += 1

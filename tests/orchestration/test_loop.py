@@ -48,6 +48,16 @@ def test_retrieval_gap_lowers_confidence_below_threshold():
     assert result.kind == "escalate"
 
 
+def test_refusal_returns_off_topic_result():
+    llm = MockLLMClient()
+    llm.queue_response("REFUSE: This assistant only answers Yu-Gi-Oh! TCG rules questions.")
+
+    result = run_loop("What's the capital of France?", llm_client=llm, tools={})
+
+    assert result.kind == "off_topic"
+    assert result.text == "This assistant only answers Yu-Gi-Oh! TCG rules questions."
+
+
 def test_unsupported_scenario_error_from_resolve_chain_short_circuits():
     llm = MockLLMClient()
     llm.queue_response(

@@ -1,6 +1,13 @@
 import pytest
 
-from aijudge.orchestration.protocol import FinalAnswer, ProtocolError, ToolCall, build_system_prompt, parse_response
+from aijudge.orchestration.protocol import (
+    FinalAnswer,
+    ProtocolError,
+    Refusal,
+    ToolCall,
+    build_system_prompt,
+    parse_response,
+)
 
 
 def test_parses_tool_call_line():
@@ -58,3 +65,13 @@ def test_build_system_prompt_documents_damage_step_fields_for_resolve_chain():
     prompt = build_system_prompt()
     assert "in_damage_step" in prompt
     assert "damage_step_category" in prompt
+
+
+def test_build_system_prompt_instructs_refusal_for_off_topic_questions():
+    prompt = build_system_prompt()
+    assert "REFUSE:" in prompt
+
+
+def test_parses_refusal_line():
+    parsed = parse_response("REFUSE: This assistant only answers Yu-Gi-Oh! TCG rules questions.")
+    assert parsed == Refusal(text="This assistant only answers Yu-Gi-Oh! TCG rules questions.")

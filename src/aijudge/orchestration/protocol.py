@@ -33,23 +33,34 @@ class FinalAnswer:
     cited_ids: set[str]
 
 
+@dataclass
+class Refusal:
+    text: str
+
+
 def build_system_prompt() -> str:
     tool_lines = "\n".join(f"- {desc}" for desc in TOOL_DESCRIPTIONS.values())
     return (
         "You are a Yu-Gi-Oh! TCG rules-adjudication assistant. Answer only "
         "questions about Yu-Gi-Oh! rules and card interactions, citing your "
-        "sources. You may call one tool per turn by responding with a line "
-        "starting with 'TOOL:' followed by the tool name and a JSON object "
-        "of arguments. When you have a final answer, respond with a line "
-        "starting with 'FINAL:' followed by your answer text, then "
-        "'||CITES: id1, id2||' listing every source id (card:<id>, "
-        "ruling:<id>, chunk:<id>) your answer relies on -- use '||CITES: ||' "
-        "if none apply.\n\nAvailable tools:\n" + tool_lines
+        "sources. If the question is not about Yu-Gi-Oh! TCG rules or card "
+        "interactions, do not answer it -- respond with a line starting "
+        "with 'REFUSE:' followed by a brief explanation that you only "
+        "handle Yu-Gi-Oh! TCG rules questions. You may call one tool per "
+        "turn by responding with a line starting with 'TOOL:' followed by "
+        "the tool name and a JSON object of arguments. When you have a "
+        "final answer, respond with a line starting with 'FINAL:' followed "
+        "by your answer text, then '||CITES: id1, id2||' listing every "
+        "source id (card:<id>, ruling:<id>, chunk:<id>) your answer relies "
+        "on -- use '||CITES: ||' if none apply.\n\nAvailable tools:\n" + tool_lines
     )
 
 
-def parse_response(response: str) -> ToolCall | FinalAnswer:
+def parse_response(response: str) -> ToolCall | FinalAnswer | Refusal:
     response = response.strip()
+
+    if response.startswith("REFUSE:"):
+        return Refusal(text=response[len("REFUSE:"):].strip())
 
     if response.startswith("TOOL:"):
         remainder = response[len("TOOL:"):].strip()

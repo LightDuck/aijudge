@@ -8,11 +8,31 @@ from fastapi.testclient import TestClient
 from aijudge.api.app import create_app
 from aijudge.embeddings.client import MockEmbeddingClient
 from aijudge.llm.client import MockLLMClient
+from aijudge.orchestration.protocol import build_system_prompt
 
 
 def _client(llm: MockLLMClient, **kwargs) -> TestClient:
+    # Default to no preflight card matches so existing tests -- which don't
+    # care about preflight -- don't accidentally hit a real (unconfigured)
+    # DB via the real find_matched_cards. Tests that want to exercise
+    # preflight override find_matched_cards_fn explicitly.
+    kwargs.setdefault("find_matched_cards_fn", lambda question: [])
     app = create_app(llm, MockEmbeddingClient(), **kwargs)
     return TestClient(app)
+
+
+class _CapturingLLMClient:
+    """A FIFO-response fake that also records every prompt it receives, so
+    tests can assert on what actually reached the LLM (mirrors test_cli.py's
+    helper of the same name)."""
+
+    def __init__(self, responses):
+        self._queue = list(responses)
+        self.prompts: list[str] = []
+
+    def complete(self, prompt: str, *, system: str | None = None) -> str:
+        self.prompts.append(prompt)
+        return self._queue.pop(0)
 
 
 def test_post_questions_returns_answer_when_no_clarification_needed():
@@ -38,6 +58,16 @@ def test_post_questions_returns_needs_clarification_when_llm_asks():
         "question": "What does it do?",
         "items": [{"kind": "clarify", "text": "Which card's effect are you asking about?"}],
     }
+
+
+def test_post_questions_passes_the_system_prompt_to_the_clarification_call():
+    llm = MockLLMClient()
+    llm.queue_response("PROCEED")
+    llm.queue_response("FINAL: ok. ||CITES: ||")
+
+    _client(llm).post("/questions", json={"question": "x"})
+
+    assert llm.system_prompts[0] == build_system_prompt()
 
 
 def test_post_questions_rejects_empty_question():
@@ -148,6 +178,151 @@ def test_post_questions_cors_allows_configured_origin():
     assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
 
 
+def test_post_questions_folds_known_facts_for_a_single_matched_card_into_the_llm_prompt():
+    llm = _CapturingLLMClient(["PROCEED", "FINAL: Yes. ||CITES: ||"])
+
+    app = create_app(
+        llm,
+        MockEmbeddingClient(),
+        find_matched_cards_fn=lambda question: [
+            {"id": "1", "name": "Baronne de Fleur", "card_type": "Synchro Monster"}
+        ],
+        build_known_facts_context_fn=lambda card: f"KNOWN FACTS: {card['name']}",
+    )
+
+    response = TestClient(app).post(
+        "/questions", json={"question": "Is Baronne de Fleur usable in the Damage Step?"}
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "answer"
+    assert any("KNOWN FACTS: Baronne de Fleur" in p for p in llm.prompts)
+
+
+def test_post_questions_returns_disambiguate_card_item_when_multiple_cards_match():
+    llm = _CapturingLLMClient(["PROCEED"])
+
+    app = create_app(
+        llm,
+        MockEmbeddingClient(),
+        find_matched_cards_fn=lambda question: [
+            {"id": "1", "name": "Effect Veiler", "card_type": "Effect Monster"},
+            {"id": "2", "name": "Effector", "card_type": "Effect Monster"},
+        ],
+    )
+
+    response = TestClient(app).post(
+        "/questions", json={"question": "Can I chain Effect Veiler or Effector here?"}
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "needs_clarification",
+        "question": "Can I chain Effect Veiler or Effector here?",
+        "items": [
+            {
+                "kind": "disambiguate_card",
+                "text": "Multiple cards match your question: Effect Veiler, Effector. Which one do you mean?",
+            }
+        ],
+    }
+
+
+def test_post_questions_answer_resolves_disambiguation_answer_to_known_facts():
+    llm = _CapturingLLMClient(["FINAL: Yes. ||CITES: ||"])
+
+    app = create_app(
+        llm,
+        MockEmbeddingClient(),
+        find_matched_cards_fn=lambda question: [
+            {"id": "1", "name": "Effect Veiler", "card_type": "Effect Monster"},
+            {"id": "2", "name": "Effector", "card_type": "Effect Monster"},
+        ],
+        build_known_facts_context_fn=lambda card: f"KNOWN FACTS: {card['name']}",
+    )
+
+    response = TestClient(app).post(
+        "/questions/answer",
+        json={
+            "question": "Can I chain Effect Veiler or Effector here?",
+            "items": [
+                {
+                    "kind": "disambiguate_card",
+                    "text": "Multiple cards match your question: Effect Veiler, Effector. Which one do you mean?",
+                }
+            ],
+            "answers": ["Effect Veiler"],
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "answer"
+    assert any("KNOWN FACTS: Effect Veiler" in p for p in llm.prompts)
+
+
+def test_post_questions_answer_resolves_disambiguation_answer_case_insensitive_fuzzy():
+    llm = _CapturingLLMClient(["FINAL: Yes. ||CITES: ||"])
+
+    app = create_app(
+        llm,
+        MockEmbeddingClient(),
+        find_matched_cards_fn=lambda question: [
+            {"id": "1", "name": "Effect Veiler", "card_type": "Effect Monster"},
+            {"id": "2", "name": "Effector", "card_type": "Effect Monster"},
+        ],
+        build_known_facts_context_fn=lambda card: f"KNOWN FACTS: {card['name']}",
+    )
+
+    response = TestClient(app).post(
+        "/questions/answer",
+        json={
+            "question": "Can I chain Effect Veiler or Effector here?",
+            "items": [
+                {
+                    "kind": "disambiguate_card",
+                    "text": "Multiple cards match your question: Effect Veiler, Effector. Which one do you mean?",
+                }
+            ],
+            "answers": ["effect veiler"],
+        },
+    )
+
+    assert response.status_code == 200
+    assert any("KNOWN FACTS: Effect Veiler" in p for p in llm.prompts)
+
+
+def test_post_questions_answer_proceeds_without_known_facts_when_disambiguation_answer_matches_nothing():
+    llm = _CapturingLLMClient(["FINAL: Yes. ||CITES: ||"])
+
+    app = create_app(
+        llm,
+        MockEmbeddingClient(),
+        find_matched_cards_fn=lambda question: [
+            {"id": "1", "name": "Effect Veiler", "card_type": "Effect Monster"},
+            {"id": "2", "name": "Effector", "card_type": "Effect Monster"},
+        ],
+        build_known_facts_context_fn=lambda card: f"KNOWN FACTS: {card['name']}",
+    )
+
+    response = TestClient(app).post(
+        "/questions/answer",
+        json={
+            "question": "Can I chain Effect Veiler or Effector here?",
+            "items": [
+                {
+                    "kind": "disambiguate_card",
+                    "text": "Multiple cards match your question: Effect Veiler, Effector. Which one do you mean?",
+                }
+            ],
+            "answers": ["I have no idea what you mean"],
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "answer"
+    assert not any("KNOWN FACTS" in p for p in llm.prompts)
+
+
 def test_post_questions_answer_returns_final_result():
     llm = MockLLMClient()
     llm.queue_response("FINAL: Yes, it does that. ||CITES: ||")
@@ -184,7 +359,9 @@ class _RecordingLLMClient:
 def test_post_questions_answer_threads_clarification_context_into_llm_prompt():
     llm = _RecordingLLMClient("FINAL: Yes, it does that. ||CITES: ||")
 
-    response = TestClient(create_app(llm, MockEmbeddingClient())).post(
+    response = TestClient(
+        create_app(llm, MockEmbeddingClient(), find_matched_cards_fn=lambda question: [])
+    ).post(
         "/questions/answer",
         json={
             "question": "Is X active?",
@@ -221,17 +398,17 @@ def test_post_questions_answer_rejects_empty_question():
 
 
 class _ConnectionErrorLLMClient:
-    def complete(self, prompt: str) -> str:
+    def complete(self, prompt: str, *, system: str | None = None) -> str:
         raise requests.exceptions.ConnectionError("no route to host")
 
 
 class _BrokenLLMClient:
-    def complete(self, prompt: str) -> str:
+    def complete(self, prompt: str, *, system: str | None = None) -> str:
         raise RuntimeError("something internal broke")
 
 
 def test_post_questions_returns_503_when_llm_backend_unreachable():
-    app = create_app(_ConnectionErrorLLMClient(), MockEmbeddingClient())
+    app = create_app(_ConnectionErrorLLMClient(), MockEmbeddingClient(), find_matched_cards_fn=lambda question: [])
     client = TestClient(app)
 
     response = client.post("/questions", json={"question": "What does Ash Blossom do?"})
@@ -241,7 +418,7 @@ def test_post_questions_returns_503_when_llm_backend_unreachable():
 
 
 def test_post_questions_returns_generic_500_without_leaking_exception_details():
-    app = create_app(_BrokenLLMClient(), MockEmbeddingClient())
+    app = create_app(_BrokenLLMClient(), MockEmbeddingClient(), find_matched_cards_fn=lambda question: [])
     # ServerErrorMiddleware re-raises after building the response, specifically so
     # unhandled errors stay visible to the ASGI server/logs -- TestClient must be
     # told not to propagate that re-raised exception into the test itself.
@@ -255,12 +432,12 @@ def test_post_questions_returns_generic_500_without_leaking_exception_details():
 
 
 class _OperationalErrorLLMClient:
-    def complete(self, prompt: str) -> str:
+    def complete(self, prompt: str, *, system: str | None = None) -> str:
         raise psycopg.OperationalError("could not connect to server")
 
 
 def test_post_questions_returns_503_when_db_backend_unreachable():
-    app = create_app(_OperationalErrorLLMClient(), MockEmbeddingClient())
+    app = create_app(_OperationalErrorLLMClient(), MockEmbeddingClient(), find_matched_cards_fn=lambda question: [])
     client = TestClient(app)
 
     response = client.post("/questions", json={"question": "What does Ash Blossom do?"})
@@ -274,7 +451,7 @@ def _exc_log_records(caplog, logger_name: str = "aijudge.api.app") -> list[loggi
 
 
 def test_post_questions_503_logs_the_actual_exception_traceback(caplog):
-    app = create_app(_ConnectionErrorLLMClient(), MockEmbeddingClient())
+    app = create_app(_ConnectionErrorLLMClient(), MockEmbeddingClient(), find_matched_cards_fn=lambda question: [])
     client = TestClient(app)
 
     with caplog.at_level(logging.ERROR):
@@ -294,7 +471,7 @@ def test_post_questions_503_logs_the_actual_exception_traceback(caplog):
 
 
 def test_post_questions_500_logs_the_actual_exception_traceback(caplog):
-    app = create_app(_BrokenLLMClient(), MockEmbeddingClient())
+    app = create_app(_BrokenLLMClient(), MockEmbeddingClient(), find_matched_cards_fn=lambda question: [])
     client = TestClient(app, raise_server_exceptions=False)
 
     with caplog.at_level(logging.ERROR):
