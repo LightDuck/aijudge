@@ -35,6 +35,25 @@ def test_seed_rulebook_file_chunks_and_stores_every_paragraph(tmp_path):
     assert "Damage Step" in chunks[0]["chunk_text"]
 
 
+def test_seed_rulebook_file_is_idempotent_when_run_twice(tmp_path):
+    from aijudge.db.rulebook_repo import list_chunks
+    from aijudge.embeddings.client import MockEmbeddingClient
+    from aijudge.ingestion.rulebook_seed import seed_rulebook_file
+
+    rulebook_path = tmp_path / "rulebook.txt"
+    rulebook_path.write_text(
+        "Priority is the ability of a player to activate a card or effect.\n\n"
+        "During the Damage Step, only specific effects may be activated.",
+        encoding="utf-8",
+    )
+
+    seed_rulebook_file(rulebook_path, embedding_client=MockEmbeddingClient(), source="konami_rulebook")
+    seed_rulebook_file(rulebook_path, embedding_client=MockEmbeddingClient(), source="konami_rulebook")
+
+    chunks = list_chunks(source="konami_rulebook")
+    assert len(chunks) == 1
+
+
 def test_seed_rulebook_file_splits_long_content_into_multiple_chunks(tmp_path):
     from aijudge.db.rulebook_repo import list_chunks
     from aijudge.embeddings.client import MockEmbeddingClient

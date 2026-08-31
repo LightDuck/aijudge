@@ -58,6 +58,22 @@ def test_search_chunks_returns_matches_within_threshold():
     assert results[0]["chunk_text"] == text
 
 
+def test_delete_chunks_by_source_removes_only_matching_source():
+    from aijudge.db.rulebook_repo import delete_chunks_by_source, insert_chunk, list_chunks
+    from aijudge.embeddings.client import MockEmbeddingClient
+
+    embed = MockEmbeddingClient().embed
+    insert_chunk(chunk_text="chunk one", source="konami_rulebook", embedding=embed("chunk one"))
+    insert_chunk(chunk_text="chunk two", source="konami_rulebook", embedding=embed("chunk two"))
+    insert_chunk(chunk_text="other chunk", source="psct_guide", embedding=embed("other chunk"))
+
+    deleted_count = delete_chunks_by_source("konami_rulebook")
+
+    assert deleted_count == 2
+    assert list_chunks(source="konami_rulebook") == []
+    assert len(list_chunks(source="psct_guide")) == 1
+
+
 def test_search_chunks_excludes_matches_over_threshold():
     from aijudge.db.rulebook_repo import insert_chunk, search_chunks
     from aijudge.embeddings.client import MockEmbeddingClient

@@ -17,6 +17,13 @@ def insert_chunk(
         return str(row[0])
 
 
+def delete_chunks_by_source(source: str) -> int:
+    with get_connection() as conn:
+        cursor = conn.execute("DELETE FROM rulebook_chunks WHERE source = %s", (source,))
+        conn.commit()
+        return cursor.rowcount
+
+
 def list_chunks(source: str | None = None) -> list[dict]:
     query = "SELECT id, chunk_text, source, section_reference FROM rulebook_chunks"
     params: tuple = ()
