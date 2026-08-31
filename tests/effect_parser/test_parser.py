@@ -1,4 +1,4 @@
-from aijudge.effect_parser.parser import classify_effect_type, parse_psct
+from aijudge.effect_parser.parser import classify_damage_step_category, classify_effect_type, parse_psct
 from aijudge.rules_engine.models import EffectType
 
 
@@ -179,3 +179,23 @@ def test_classify_effect_type_monster_with_colon_and_no_trigger_language_is_igni
 def test_classify_effect_type_spell_with_colon_and_non_quick_type_is_effect():
     text = "Target 1 monster on the field; destroy it."
     assert classify_effect_type(text, card_type="Normal Spell") == EffectType.EFFECT
+
+
+def test_classify_damage_step_category_detects_negates_activation():
+    text = "negate the activation of that card or effect, and if you do, destroy it."
+    assert classify_damage_step_category(text) == "negates_activation"
+
+
+def test_classify_damage_step_category_detects_atk_def_alter():
+    text = "until the end of this turn, negate the effects of 1 Effect Monster your opponent controls, also its ATK becomes 0."
+    assert classify_damage_step_category(text) == "atk_def_alter"
+
+
+def test_classify_damage_step_category_prefers_negates_activation_when_both_phrases_present():
+    text = "negate the activation of that card or effect; also, the ATK of that monster becomes 0."
+    assert classify_damage_step_category(text) == "negates_activation"
+
+
+def test_classify_damage_step_category_returns_none_when_neither_pattern_matches():
+    text = "target 1 banished monster; banish it."
+    assert classify_damage_step_category(text) is None

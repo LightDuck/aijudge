@@ -13,6 +13,9 @@ _CONNECTOR_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
+_NEGATES_ACTIVATION_PATTERN = re.compile(r"negate the activation", re.IGNORECASE)
+_ATK_DEF_PATTERN = re.compile(r"\bATK\b|\bDEF\b")
+
 
 @dataclass
 class ParsedEffect:
@@ -128,3 +131,20 @@ def classify_effect_type(card_text: str, *, card_type: str) -> EffectType:
     if "Quick-Play" in card_type or "Trap" in card_type:
         return EffectType.QUICK_LIKE
     return EffectType.EFFECT
+
+
+def classify_damage_step_category(effect_text: str) -> str | None:
+    """Classify which (if any) of the two Spell-Speed-2 Damage-Step-legal
+    categories this effect text falls into, per the current official
+    rulebook: effects that negate an activation, or effects that alter a
+    monster's ATK/DEF. Checked in this order since "negate the activation"
+    is the more specific phrase -- an effect can mention ATK/DEF changes
+    incidentally while its Damage-Step-relevant behavior is really the
+    negation. Returns None when neither pattern is found, rather than
+    guessing.
+    """
+    if _NEGATES_ACTIVATION_PATTERN.search(effect_text):
+        return "negates_activation"
+    if _ATK_DEF_PATTERN.search(effect_text):
+        return "atk_def_alter"
+    return None
