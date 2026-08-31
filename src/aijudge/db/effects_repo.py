@@ -49,9 +49,9 @@ def confirm_effect(effect_id: str) -> None:
         conn.commit()
 
 
-def get_confirmed_effect(card_id: str) -> dict | None:
+def get_confirmed_effects(card_id: str) -> list[dict]:
     with get_connection() as conn:
-        row = conn.execute(
+        rows = conn.execute(
             """
             SELECT id, effect_type, activation_condition, cost, targeting, has_target, effect,
                    damage_step_category, usage_limit_text
@@ -59,9 +59,10 @@ def get_confirmed_effect(card_id: str) -> dict | None:
             WHERE card_id = %s AND status = 'confirmed'
             """,
             (card_id,),
-        ).fetchone()
-    if row is None:
-        return None
-    row_list = list(row)
-    row_list[0] = str(row_list[0])
-    return dict(zip(_EFFECT_COLUMNS, row_list))
+        ).fetchall()
+    results = []
+    for row in rows:
+        row_list = list(row)
+        row_list[0] = str(row_list[0])
+        results.append(dict(zip(_EFFECT_COLUMNS, row_list)))
+    return results
