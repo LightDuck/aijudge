@@ -14,7 +14,16 @@ _CONNECTOR_PATTERN = re.compile(
 )
 
 _NEGATES_ACTIVATION_PATTERN = re.compile(r"negate the activation", re.IGNORECASE)
-_ATK_DEF_PATTERN = re.compile(r"\bATK\b|\bDEF\b")
+# Matches only an ATK/DEF *alteration* (a change-indicating verb within a
+# short distance of the ATK/DEF token), not a bare mention/comparison like
+# "if that monster's ATK is higher than 1000". ATK/DEF stays case-sensitive
+# (official card text always renders these uppercase); the change-verb is
+# matched case-insensitively via a scoped inline flag.
+_CHANGE_VERBS = r"(?:become|gain|lose|increase|decrease|halve|double)\w*"
+_ATK_DEF_PATTERN = re.compile(
+    rf"\b(?:ATK|DEF)\b.{{0,20}}?(?i:\b{_CHANGE_VERBS}\b)"
+    rf"|(?i:\b{_CHANGE_VERBS}\b).{{0,20}}?\b(?:ATK|DEF)\b"
+)
 
 _USAGE_LIMIT_PATTERN = re.compile(r"You can only [^.]*\bper turn\.", re.IGNORECASE)
 

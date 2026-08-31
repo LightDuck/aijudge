@@ -201,6 +201,11 @@ def test_classify_damage_step_category_returns_none_when_neither_pattern_matches
     assert classify_damage_step_category(text) is None
 
 
+def test_classify_damage_step_category_returns_none_for_a_bare_atk_mention_with_no_change_verb():
+    text = "You can target 1 monster; if that monster's ATK is higher than 1000, banish it."
+    assert classify_damage_step_category(text) is None
+
+
 def test_extract_usage_limit_text_finds_a_trailing_once_per_turn_sentence():
     text = (
         "During your opponent's Main Phase (Quick Effect): You can send this "
