@@ -19,6 +19,7 @@ def review_parsed_effect(
     cost: str | None,
     targeting: str | None,
     effect: str,
+    damage_step_category: str | None = None,
     threshold: float = DEFAULT_CONFIDENCE_THRESHOLD,
 ) -> ReviewResult:
     prompt = (
@@ -28,7 +29,8 @@ def review_parsed_effect(
         f"Activation condition: {activation_condition}\n"
         f"Cost: {cost}\n"
         f"Targeting: {targeting}\n"
-        f"Effect: {effect}"
+        f"Effect: {effect}\n"
+        f"Damage Step category: {damage_step_category}"
     )
     response = llm_client.complete(prompt)
     confidence = float(response)
