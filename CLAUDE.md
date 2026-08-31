@@ -280,8 +280,8 @@ spec:
   list (Ash Blossom & Joyous Spring, Called by the Grave, Infinite Impermanence, Effect Veiler, Solemn Strike,
   Baronne de Fleur) — this is a one-off seed script, not a scheduled ingestion pipeline (out of scope for this
   slice). Baronne de Fleur is a deliberate multi-effect stress case: unlike the other five, its card text packs
-  three separate effect clauses (a continuous "cannot be destroyed by battle," a targeted-negation Quick Effect,
-  and a Main Phase ATK-boost Quick Effect) into one blob. The clause splitter now correctly decomposes such cards
+  three separate effect clauses (an Ignition effect destroying 1 card, a Quick Effect negating activations, and a
+  Standby Phase effect returning to the Extra Deck to Special Summon) into one blob. The clause splitter now correctly decomposes such cards
   into multiple confirmed effect rows (one per real effect), unless one of the two safety gates fails, in which case
   it falls back to single-row behavior. `effect_parser/clause_splitter.py` exports `split_effect_clauses()`,
   `score_split_confidence()`, and `resolve_effect_clauses()`.
