@@ -42,7 +42,13 @@ def test_run_cli_answers_a_question_with_no_clarification_needed():
     llm.queue_response("PROCEED")
     llm.queue_response("FINAL: It does X. ||CITES: ||")
 
-    run_cli(llm, MockEmbeddingClient(), input_fn=lambda _: next(inputs), print_fn=printed.append)
+    run_cli(
+        llm,
+        MockEmbeddingClient(),
+        input_fn=lambda _: next(inputs),
+        print_fn=printed.append,
+        find_matched_cards_fn=lambda question: [],
+    )
 
     assert "It does X." in printed
 
@@ -55,6 +61,59 @@ def test_run_cli_asks_clarification_questions_before_answering():
     llm.queue_response("CLARIFY: Which monster do you control?")
     llm.queue_response("FINAL: Yes, you can respond. ||CITES: ||")
 
-    run_cli(llm, MockEmbeddingClient(), input_fn=lambda _: next(inputs), print_fn=printed.append)
+    run_cli(
+        llm,
+        MockEmbeddingClient(),
+        input_fn=lambda _: next(inputs),
+        print_fn=printed.append,
+        find_matched_cards_fn=lambda question: [],
+    )
 
     assert "Yes, you can respond." in printed
+
+
+def test_run_cli_disambiguates_when_multiple_cards_match():
+    printed = []
+    inputs = iter(["Can I chain Effect Veiler or Effector here?", "Effect Veiler", "quit"])
+
+    llm = MockLLMClient()
+    llm.queue_response("PROCEED")
+    llm.queue_response("FINAL: Yes. ||CITES: ||")
+
+    matches = [
+        {"id": "1", "name": "Effect Veiler", "card_type": "Effect Monster"},
+        {"id": "2", "name": "Effector", "card_type": "Effect Monster"},
+    ]
+
+    run_cli(
+        llm,
+        MockEmbeddingClient(),
+        input_fn=lambda _: next(inputs),
+        print_fn=printed.append,
+        find_matched_cards_fn=lambda question: matches,
+        build_known_facts_context_fn=lambda card: f"KNOWN FACTS: {card['name']}",
+    )
+
+    assert "Yes." in printed
+
+
+def test_run_cli_folds_preflight_facts_in_for_a_single_match():
+    printed = []
+    inputs = iter(["Can I activate Effect Veiler here?", "quit"])
+
+    llm = MockLLMClient()
+    llm.queue_response("PROCEED")
+    llm.queue_response("FINAL: Yes. ||CITES: ||")
+
+    card = {"id": "1", "name": "Effect Veiler", "card_type": "Effect Monster"}
+
+    run_cli(
+        llm,
+        MockEmbeddingClient(),
+        input_fn=lambda _: next(inputs),
+        print_fn=printed.append,
+        find_matched_cards_fn=lambda question: [card],
+        build_known_facts_context_fn=lambda c: f"KNOWN FACTS: {c['name']}",
+    )
+
+    assert "Yes." in printed

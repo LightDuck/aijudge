@@ -40,9 +40,16 @@ def clarification_prompt_text(item: ClarificationItem) -> str:
     return item.text
 
 
+_LABELS = {
+    "clarify": "Clarification",
+    "continuous_check": "Continuous effect status",
+    "disambiguate_card": "Card disambiguation",
+}
+
+
 def format_clarification_context(items: list[ClarificationItem], answers: list[str]) -> str:
     lines = []
     for item, answer in zip(items, answers):
-        label = "Clarification" if item.kind == "clarify" else "Continuous effect status"
+        label = _LABELS.get(item.kind, "Clarification")
         lines.append(f"{label} - {clarification_prompt_text(item)}: {answer}")
     return "\n".join(lines)
