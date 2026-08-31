@@ -18,6 +18,7 @@ HAND_PICKED_CARDS: list[str] = [
     "Effect Veiler",
     "Solemn Strike",
     "Baronne de Fleur",
+    "Borreload Dragon",
 ]
 
 

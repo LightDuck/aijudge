@@ -278,8 +278,8 @@ spec:
   resulting effect through the parser and review agent, inserts one `card_effects_structured` row per effect,
   and auto-confirms if the review score clears threshold. `run_seed()` iterates the hand-picked `HAND_PICKED_CARDS`
   list (Ash Blossom & Joyous Spring, Called by the Grave, Infinite Impermanence, Effect Veiler, Solemn Strike,
-  Baronne de Fleur) — this is a one-off seed script, not a scheduled ingestion pipeline (out of scope for this
-  slice). Baronne de Fleur is a deliberate multi-effect stress case: unlike the other five, its card text packs
+  Baronne de Fleur, Borreload Dragon) — this is a one-off seed script, not a scheduled ingestion pipeline (out of
+  scope for this slice). Baronne de Fleur is a deliberate multi-effect stress case: unlike the other five, its card text packs
   three separate effect clauses (an Ignition effect destroying 1 card, a Quick Effect negating activations, and a
   Standby Phase effect returning to the Extra Deck to Special Summon) into one blob. The clause splitter now correctly decomposes such cards
   into multiple confirmed effect rows (one per real effect), unless one of the two safety gates fails, in which case
