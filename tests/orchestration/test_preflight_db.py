@@ -77,6 +77,61 @@ def test_build_known_facts_context_includes_effect_type_and_spell_speed():
     assert "activatable: True" in context
 
 
+def test_build_known_facts_context_includes_optional_fields_when_present():
+    from aijudge.db.cards_repo import get_card_by_name, insert_card
+    from aijudge.db.effects_repo import confirm_effect, insert_pending_effect
+    from aijudge.orchestration.preflight import build_known_facts_context
+
+    card_id = insert_card(
+        name="Effect Veiler",
+        card_text=_EFFECT_VEILER_TEXT,
+        card_type="Effect Monster",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="95440946",
+    )
+    effect_id = insert_pending_effect(
+        card_id=card_id,
+        effect_type="quick",
+        effect="negate the effects of 1 Effect Monster your opponent controls, also its ATK becomes 0.",
+        activation_condition="During your opponent's Main Phase (Quick Effect)",
+        damage_step_category="atk_def_alter",
+        usage_limit_text='You can only use this effect of "Effect Veiler" once per turn.',
+    )
+    confirm_effect(effect_id)
+
+    context = build_known_facts_context(get_card_by_name("Effect Veiler"))
+
+    assert "During your opponent's Main Phase (Quick Effect)" in context
+    assert "atk_def_alter" in context
+    assert 'You can only use this effect of "Effect Veiler" once per turn.' in context
+
+
+def test_build_known_facts_context_omits_optional_fields_when_none():
+    from aijudge.db.cards_repo import get_card_by_name, insert_card
+    from aijudge.db.effects_repo import confirm_effect, insert_pending_effect
+    from aijudge.orchestration.preflight import build_known_facts_context
+
+    card_id = insert_card(
+        name="Effect Veiler",
+        card_text=_EFFECT_VEILER_TEXT,
+        card_type="Effect Monster",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="95440946",
+    )
+    effect_id = insert_pending_effect(
+        card_id=card_id,
+        effect_type="quick",
+        effect="negate the effects of 1 Effect Monster your opponent controls, also its ATK becomes 0.",
+    )
+    confirm_effect(effect_id)
+
+    context = build_known_facts_context(get_card_by_name("Effect Veiler"))
+
+    assert "None" not in context
+
+
 def test_build_known_facts_context_is_empty_when_no_confirmed_effect():
     from aijudge.db.cards_repo import get_card_by_name, insert_card
     from aijudge.orchestration.preflight import build_known_facts_context

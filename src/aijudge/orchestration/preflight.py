@@ -59,8 +59,15 @@ def build_known_facts_context(card: dict) -> str:
         return ""
     effect_type = EffectType(confirmed["effect_type"])
     speed = spell_speed_for(effect_type, card_type=card["card_type"])
-    return (
+    line = (
         "KNOWN FACTS (deterministic -- do not contradict):\n"
         f"- {card['name']}: effect type {effect_type.value}, spell speed {speed.value}, "
         f"activatable: {is_activatable(effect_type)}"
     )
+    if confirmed.get("activation_condition") is not None:
+        line += f", activation condition: {confirmed['activation_condition']}"
+    if confirmed.get("damage_step_category") is not None:
+        line += f", damage step category: {confirmed['damage_step_category']}"
+    if confirmed.get("usage_limit_text") is not None:
+        line += f", usage limit: {confirmed['usage_limit_text']}"
+    return line
