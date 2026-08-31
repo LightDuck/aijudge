@@ -76,6 +76,9 @@ spec:
 - **`rules_engine/`** — pure Python, zero DB/LLM dependency. This is the deterministic core the spec is protecting:
   - `models.py` — `EffectType`, `SpellSpeed` (NORMAL=1, QUICK=2, COUNTER=3), `Effect`, `ChainLink`.
     `spell_speed_for()` special-cases Counter Traps (Spell Speed 3) via a `card_type` check, not effect type alone.
+    `is_activatable(effect_type)` says whether an effect of that type can be activated at all (as opposed to a
+    passive `CONTINUOUS`/`CONDITION` effect) — checked by `resolve.resolve_chain` before anything else on an
+    `"activate"` step.
   - `chain.py` — `Chain`: LIFO resolution order (`resolution_order()` reverses insertion order; `resolve_next()`
     pops the top).
   - `segoc.py` — `apply_segoc()`: the module the spec calls out as the most common source of wrong answers. **The
@@ -84,7 +87,15 @@ spec:
   - `priority.py` — `can_activate_now()`: Spell Speed 1 can only activate into an empty chain (never responds, not
     even to another Speed-1 effect). Speed 2/3 can respond if its speed is **at or above** the top chain link's
     speed (empty chain counts as speed 0), unless the top link's effect sets `prevents_response=True`, which
-    blocks all response regardless of speed.
+    blocks all response regardless of speed. `can_activate_during_damage_step(effect)` is a separate, additional
+    check for the Damage Step: only Spell Speed 3 (Counter Traps), or a Spell Speed 2 effect whose
+    `damage_step_category` is `"atk_def_alter"` or `"negates_activation"`, may activate then — both this check
+    and `can_activate_now` must pass for a Damage Step activation to be legal.
+  - `resolve.py` — `resolve_chain(scenario)` drives a scenario's `"segoc_batch"`/`"activate"` steps through the
+    above checks, returning a `ResolutionResult` with the resolution order and, on a failed step, a `Violation`.
+    `Violation.reason` includes `"not_activatable"` (fails `is_activatable`) and `"damage_step_restricted"` (an
+    `"activate"` step with `"in_damage_step": true` fails `can_activate_during_damage_step`), alongside the
+    priority-check violations. Raises `UnsupportedScenarioError` for step kinds it doesn't recognize.
   - `timing.py` — `check_missing_timing()`: a "when"-conditioned effect's activation window is the moment right
     after the event its condition names. At the trigger step itself, whether the window is open depends on the
     checking effect's own spell speed: Spell Speed 1 needs the last event to be a chain link fully `RESOLVED` or a
@@ -100,7 +111,9 @@ spec:
   - `card_effects_structured` rows are `pending` by default; only `effects_repo.confirm_effect()` (called after
     the review agent passes threshold, or manually) makes a row visible to `get_confirmed_effect()`. **A `pending`
     effect must never be treated as ground truth** — this distinction exists at the repo level specifically so the
-    future orchestration layer can't accidentally skip it.
+    future orchestration layer can't accidentally skip it. Two nullable columns, `damage_step_category` (CHECK
+    constrained to `'atk_def_alter'`/`'negates_activation'`/`NULL`) and `usage_limit_text`, round out the row;
+    `get_confirmed_effect()` and `insert_pending_effect()` both read/write them.
   - Errata is never overwritten: `insert_errata_version()` adds a new `card_errata_versions` row and flips
     `cards.has_errata`; the original `card_text` stays as originally ingested.
   - `cards.ygoprodeck_id` is `NOT NULL` (always available from the source API); `ygoresources_id` is nullable
@@ -120,9 +133,18 @@ spec:
     only") or CONTINUOUS; starts with "if "/"when " → TRIGGER/TRIGGER_LIKE; otherwise IGNITION for monsters, or
     for spells/traps QUICK_LIKE if `card_type` contains "Quick-Play" or "Trap" (both inherently Spell Speed 2 by
     game rule) else EFFECT.
+    `classify_damage_step_category(effect_text)` returns `"negates_activation"`, `"atk_def_alter"`, or `None` --
+    checked in that order since "negate the activation" is the more specific phrase. The ATK/DEF-alter pattern
+    requires a change-indicating verb (becomes/gains/loses/increases/decreases/halved/doubled) within a short
+    distance of an ATK/DEF token, not just a bare mention/comparison, so text like "if that monster's ATK is
+    higher than 1000" does not falsely classify as an alteration. `extract_usage_limit_text(card_text)` pulls a
+    trailing "You can only ... per turn." restriction sentence independent of `parse_psct`'s Condition/Cost/Effect
+    split, since that clause sits outside all three. Both return `None` when their pattern isn't found, rather
+    than guessing; both feed the `damage_step_category`/`usage_limit_text` columns in `db/`.
   - `review_agent.py` — `review_parsed_effect()` sends the raw text + parsed fields to an `LLMClient`, expects a
     bare `0.0`–`1.0` confidence string back, and returns `auto_confirmed = confidence >= threshold` (default
-    `DEFAULT_CONFIDENCE_THRESHOLD = 0.9`).
+    `DEFAULT_CONFIDENCE_THRESHOLD = 0.9`). Takes an optional `damage_step_category` parameter, included in the
+    review prompt alongside the other parsed fields when present.
 
 - **`embeddings/` and `llm/`** — thin `Protocol` interfaces (`EmbeddingClient.embed`, `LLMClient.complete`).
   `embeddings/` has `MockEmbeddingClient` (deterministic SHA256-derived 384-dim vectors),
@@ -165,10 +187,29 @@ spec:
     ambiguous or hinges on an unobservable continuous/lingering effect; `parse_clarification_response()` turns
     `CLARIFY:`/`CONTINUOUS_CHECK:` lines into `ClarificationItem`s (or an empty list on `PROCEED`);
     `format_clarification_context()` folds the user's answers back into context passed to `run_loop`.
+    `ClarificationItem.kind` has a third value, `"disambiguate_card"` (alongside `"clarify"`/`"continuous_check"`),
+    used when `cli.py` detects the user's question plausibly matches more than one known card and needs to know
+    which one before it can render `preflight.py`'s KNOWN FACTS block.
+  - `preflight.py` — deterministic pre-loop card grounding, independent of the clarification pass above.
+    `find_mentioned_card_names(question, known_names)` matches an exact case-insensitive word-boundary substring
+    first, falling back to a `difflib`-based fuzzy comparison (`_FUZZY_CUTOFF = 0.75`) against every equal-length
+    word-window of the question, so a slightly misspelled or differently-cased name (e.g. "effect veiler") still
+    matches. `find_matched_cards(question)` runs that against every known card name and returns the full card
+    dict for each match. `build_known_facts_context(card)` renders a "KNOWN FACTS (deterministic -- do not
+    contradict)" block from the card's confirmed effect (effect type, spell speed, `is_activatable`, and, when
+    non-`None`, activation condition, damage step category, and usage limit text) -- returns `""` if the card has
+    no confirmed effect, so callers fall back to unaided LLM reasoning.
 
-- **`cli.py`** — `run_cli()`: a REPL (`input_fn`/`print_fn` are injectable for testing) that, per question, runs
-  the clarification pass, prompts for answers to any `CLARIFY`/`CONTINUOUS_CHECK` items, then calls `run_loop`
-  and prints the result. Wired to a real entrypoint by both `__main__.py` (Ollama, default) and `entrypoint.py`
+- **`cli.py`** — `run_cli()`: a REPL (`input_fn`/`print_fn`, plus `find_matched_cards_fn`/`build_known_facts_context_fn`
+  defaulting to `preflight.find_matched_cards`/`preflight.build_known_facts_context`, are all injectable for
+  testing) that, per question, first runs `find_matched_cards_fn` -- if more than one card plausibly matches, it
+  adds a `"disambiguate_card"` clarification item asking the user which one they mean -- then runs the
+  clarification pass, prompts for answers to any `CLARIFY`/`CONTINUOUS_CHECK`/`disambiguate_card` items, resolves
+  the disambiguation answer back to a candidate card via `preflight.find_mentioned_card_names` (fuzzy,
+  case-insensitive -- not a bare `==`, so "effect veiler" still resolves to "Effect Veiler"; an unresolvable
+  answer prints a one-line notice via `print_fn` rather than silently dropping the card's KNOWN FACTS), folds the
+  resulting `build_known_facts_context_fn` block ahead of the clarification context, then calls `run_loop` and
+  prints the result. Wired to a real entrypoint by both `__main__.py` (Ollama, default) and `entrypoint.py`
   (OpenRouter/OpenAI, alternate).
 
 - **`api/`** — `create_app(llm_client, embedding_client, *, cors_origins=None, tools=None) -> FastAPI` wires the
@@ -192,6 +233,10 @@ spec:
   review score clears threshold. `run_seed()` iterates the hand-picked `HAND_PICKED_CARDS` list (Ash Blossom &
   Joyous Spring, Called by the Grave, Infinite Impermanence, Effect Veiler, Solemn Strike) — this is a one-off
   seed script, not a scheduled ingestion pipeline (out of scope for this slice).
+  `rulebook_seed.py` — `seed_rulebook_file(path, embedding_client=..., source=...)` chunks a rulebook text file
+  (via `rulebook_loader.load_rulebook_file`) and embeds+inserts each chunk into `rulebook_chunks`. It deletes any
+  existing chunks for that `source` first (`rulebook_repo.delete_chunks_by_source()`), so re-running it against
+  the same source re-seeds rather than duplicates — expected to be re-run whenever the live rulebook page changes.
 
 ## Not yet built
 
