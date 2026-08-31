@@ -4,6 +4,7 @@ from typing import Callable
 from aijudge.db.cards_repo import insert_card
 from aijudge.db.effects_repo import confirm_effect, insert_pending_effect
 from aijudge.db.rulings_repo import insert_ruling
+from aijudge.effect_parser.clause_splitter import resolve_effect_clauses
 from aijudge.effect_parser.parser import classify_damage_step_category, classify_effect_type, extract_usage_limit_text, parse_psct
 from aijudge.effect_parser.review_agent import review_parsed_effect
 from aijudge.ingestion.ygoprodeck_client import fetch_card
@@ -49,40 +50,43 @@ def seed_card(
             ruling_date=date.fromisoformat(raw_date) if raw_date else None,
         )
 
-    effect_type = classify_effect_type(card_text, card_type=card_type)
-    parsed = parse_psct(card_text)
-    damage_step_category = classify_damage_step_category(
-        parsed.effect,
-        activation_condition=parsed.activation_condition,
-        effect_type=effect_type,
-    )
-    usage_limit_text = extract_usage_limit_text(card_text)
+    effect_texts = resolve_effect_clauses(llm_client, card_text)
 
-    review = review_parsed_effect(
-        llm_client,
-        raw_text=card_text,
-        activation_condition=parsed.activation_condition,
-        cost=parsed.cost,
-        targeting=parsed.targeting,
-        effect=parsed.effect,
-        damage_step_category=damage_step_category,
-    )
+    for effect_text in effect_texts:
+        effect_type = classify_effect_type(effect_text, card_type=card_type)
+        parsed = parse_psct(effect_text)
+        damage_step_category = classify_damage_step_category(
+            parsed.effect,
+            activation_condition=parsed.activation_condition,
+            effect_type=effect_type,
+        )
+        usage_limit_text = extract_usage_limit_text(effect_text)
 
-    effect_id = insert_pending_effect(
-        card_id=card_id,
-        effect_type=effect_type.value,
-        effect=parsed.effect,
-        activation_condition=parsed.activation_condition,
-        cost=parsed.cost,
-        targeting=parsed.targeting,
-        has_target=(parsed.targeting is not None),
-        confidence_score=review.confidence,
-        damage_step_category=damage_step_category,
-        usage_limit_text=usage_limit_text,
-    )
+        review = review_parsed_effect(
+            llm_client,
+            raw_text=effect_text,
+            activation_condition=parsed.activation_condition,
+            cost=parsed.cost,
+            targeting=parsed.targeting,
+            effect=parsed.effect,
+            damage_step_category=damage_step_category,
+        )
 
-    if review.auto_confirmed:
-        confirm_effect(effect_id)
+        effect_id = insert_pending_effect(
+            card_id=card_id,
+            effect_type=effect_type.value,
+            effect=parsed.effect,
+            activation_condition=parsed.activation_condition,
+            cost=parsed.cost,
+            targeting=parsed.targeting,
+            has_target=(parsed.targeting is not None),
+            confidence_score=review.confidence,
+            damage_step_category=damage_step_category,
+            usage_limit_text=usage_limit_text,
+        )
+
+        if review.auto_confirmed:
+            confirm_effect(effect_id)
 
     return card_id
 
