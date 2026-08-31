@@ -3,6 +3,20 @@ from aijudge.embeddings.client import MockEmbeddingClient
 from aijudge.llm.client import MockLLMClient
 
 
+class _CapturingLLMClient:
+    """A FIFO-response fake that also records every prompt it receives, so
+    tests can assert on what actually reached the LLM (MockLLMClient only
+    records `system_prompts`, not the `prompt` argument itself)."""
+
+    def __init__(self, responses):
+        self._queue = list(responses)
+        self.prompts = []
+
+    def complete(self, prompt, *, system=None):
+        self.prompts.append(prompt)
+        return self._queue.pop(0)
+
+
 def test_run_cli_exits_immediately_on_quit():
     printed = []
     inputs = iter(["quit"])
@@ -76,9 +90,7 @@ def test_run_cli_disambiguates_when_multiple_cards_match():
     printed = []
     inputs = iter(["Can I chain Effect Veiler or Effector here?", "Effect Veiler", "quit"])
 
-    llm = MockLLMClient()
-    llm.queue_response("PROCEED")
-    llm.queue_response("FINAL: Yes. ||CITES: ||")
+    llm = _CapturingLLMClient(["PROCEED", "FINAL: Yes. ||CITES: ||"])
 
     matches = [
         {"id": "1", "name": "Effect Veiler", "card_type": "Effect Monster"},
@@ -95,15 +107,14 @@ def test_run_cli_disambiguates_when_multiple_cards_match():
     )
 
     assert "Yes." in printed
+    assert any("KNOWN FACTS: Effect Veiler" in p for p in llm.prompts)
 
 
 def test_run_cli_folds_preflight_facts_in_for_a_single_match():
     printed = []
     inputs = iter(["Can I activate Effect Veiler here?", "quit"])
 
-    llm = MockLLMClient()
-    llm.queue_response("PROCEED")
-    llm.queue_response("FINAL: Yes. ||CITES: ||")
+    llm = _CapturingLLMClient(["PROCEED", "FINAL: Yes. ||CITES: ||"])
 
     card = {"id": "1", "name": "Effect Veiler", "card_type": "Effect Monster"}
 
@@ -117,3 +128,4 @@ def test_run_cli_folds_preflight_facts_in_for_a_single_match():
     )
 
     assert "Yes." in printed
+    assert any("KNOWN FACTS: Effect Veiler" in p for p in llm.prompts)
