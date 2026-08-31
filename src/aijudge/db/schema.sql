@@ -48,7 +48,10 @@ CREATE TABLE IF NOT EXISTS card_effects_structured (
     effect TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'pending',
     confidence_score REAL,
-    CHECK (status IN ('pending', 'confirmed'))
+    damage_step_category TEXT,
+    usage_limit_text TEXT,
+    CHECK (status IN ('pending', 'confirmed')),
+    CHECK (damage_step_category IN ('atk_def_alter', 'negates_activation') OR damage_step_category IS NULL)
 );
 
 CREATE TABLE IF NOT EXISTS rulebook_chunks (
