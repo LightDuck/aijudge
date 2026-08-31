@@ -52,3 +52,12 @@ def test_format_clarification_context_joins_items_and_answers():
 
     assert "Which monster do you control?: Blue-Eyes White Dragon" in context
     assert "Is Skill Drain's effect currently active?: yes" in context
+
+
+def test_format_clarification_context_labels_disambiguate_card_items():
+    items = [ClarificationItem(kind="disambiguate_card", text="Multiple cards match: Effect Veiler, Effector. Which one?")]
+    answers = ["Effect Veiler"]
+
+    context = format_clarification_context(items, answers)
+
+    assert "Card disambiguation - Multiple cards match: Effect Veiler, Effector. Which one?: Effect Veiler" in context
