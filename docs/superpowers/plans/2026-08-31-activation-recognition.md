@@ -777,11 +777,15 @@ Append to `tests/effect_parser/test_review_agent.py`:
 
 ```python
 def test_damage_step_category_is_included_in_the_review_prompt():
-    llm_client = MockLLMClient()
-    llm_client.queue_response("0.9")
+    captured = {}
+
+    class _CapturingLLMClient:
+        def complete(self, prompt, *, system=None):
+            captured["prompt"] = prompt
+            return "0.9"
 
     review_parsed_effect(
-        llm_client,
+        _CapturingLLMClient(),
         raw_text="its ATK becomes 0.",
         activation_condition=None,
         cost=None,
@@ -790,12 +794,7 @@ def test_damage_step_category_is_included_in_the_review_prompt():
         damage_step_category="atk_def_alter",
     )
 
-    # MockLLMClient doesn't record the prompt text itself, only system
-    # prompts -- so this test drives the call with the new parameter and
-    # relies on Step 2 (it currently fails with a TypeError, proving the
-    # parameter doesn't exist yet) plus Step 4 passing to confirm the
-    # parameter is accepted and threaded through without error.
-    assert True
+    assert "Damage Step category: atk_def_alter" in captured["prompt"]
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
