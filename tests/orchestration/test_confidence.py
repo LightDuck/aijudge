@@ -11,14 +11,14 @@ from aijudge.orchestration.confidence import (
 
 def test_update_signals_tracks_found_card_id():
     state = SignalState()
-    update_signals(state, "lookup_card", {"found": True, "id": "abc", "confirmed_effect": {"effect": "..."}})
+    update_signals(state, "lookup_card", {"found": True, "id": "abc", "confirmed_effects": [{"effect": "..."}]})
     assert state.known_ids == {"card:abc"}
     assert state.missing_structured_effect is False
 
 
 def test_update_signals_flags_missing_structured_effect():
     state = SignalState()
-    update_signals(state, "lookup_card", {"found": True, "id": "abc", "confirmed_effect": None})
+    update_signals(state, "lookup_card", {"found": True, "id": "abc", "confirmed_effects": []})
     assert state.missing_structured_effect is True
 
 
@@ -85,7 +85,7 @@ def test_update_signals_indexes_card_citation_label_and_text():
             "id": "abc",
             "name": "Ash Blossom & Joyous Spring",
             "card_text": "You can discard this card...",
-            "confirmed_effect": {"effect": "..."},
+            "confirmed_effects": [{"effect": "..."}],
         },
     )
     assert state.citation_index["card:abc"] == {
@@ -96,7 +96,7 @@ def test_update_signals_indexes_card_citation_label_and_text():
 
 def test_update_signals_indexes_card_citation_with_missing_optional_fields():
     state = SignalState()
-    update_signals(state, "lookup_card", {"found": True, "id": "abc", "confirmed_effect": None})
+    update_signals(state, "lookup_card", {"found": True, "id": "abc", "confirmed_effects": []})
     assert state.citation_index["card:abc"] == {"label": "", "text": ""}
 
 
