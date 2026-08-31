@@ -1,4 +1,4 @@
-from aijudge.effect_parser.parser import classify_damage_step_category, classify_effect_type, parse_psct
+from aijudge.effect_parser.parser import classify_damage_step_category, classify_effect_type, extract_usage_limit_text, parse_psct
 from aijudge.rules_engine.models import EffectType
 
 
@@ -199,3 +199,24 @@ def test_classify_damage_step_category_prefers_negates_activation_when_both_phra
 def test_classify_damage_step_category_returns_none_when_neither_pattern_matches():
     text = "target 1 banished monster; banish it."
     assert classify_damage_step_category(text) is None
+
+
+def test_extract_usage_limit_text_finds_a_trailing_once_per_turn_sentence():
+    text = (
+        "During your opponent's Main Phase (Quick Effect): You can send this "
+        "card from your hand to the GY; until the end of this turn, negate "
+        "the effects of 1 Effect Monster your opponent controls, also its "
+        'ATK becomes 0. You can only use this effect of "Effect Veiler" once '
+        "per turn."
+    )
+    assert extract_usage_limit_text(text) == 'You can only use this effect of "Effect Veiler" once per turn.'
+
+
+def test_extract_usage_limit_text_finds_a_bare_restriction_sentence():
+    text = 'You can only Special Summon "X" Monster(s) from your Extra Deck once per turn.'
+    assert extract_usage_limit_text(text) == text
+
+
+def test_extract_usage_limit_text_returns_none_when_absent():
+    text = "You can target 1 banished monster; banish it."
+    assert extract_usage_limit_text(text) is None

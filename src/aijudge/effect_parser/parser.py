@@ -16,6 +16,8 @@ _CONNECTOR_PATTERN = re.compile(
 _NEGATES_ACTIVATION_PATTERN = re.compile(r"negate the activation", re.IGNORECASE)
 _ATK_DEF_PATTERN = re.compile(r"\bATK\b|\bDEF\b")
 
+_USAGE_LIMIT_PATTERN = re.compile(r"You can only [^.]*\bper turn\.", re.IGNORECASE)
+
 
 @dataclass
 class ParsedEffect:
@@ -148,3 +150,15 @@ def classify_damage_step_category(effect_text: str) -> str | None:
     if _ATK_DEF_PATTERN.search(effect_text):
         return "atk_def_alter"
     return None
+
+
+def extract_usage_limit_text(card_text: str) -> str | None:
+    """Extract a usage-count restriction sentence ("You can only ... per
+    turn.") from raw card text, independent of `parse_psct`'s Condition/
+    Cost/Effect split -- this kind of clause is a trailing sentence that
+    split doesn't decompose (see Effect Veiler: it follows the semicolon-
+    delimited effect clause, not inside it). Stored for reference only;
+    never enforced, since this project tracks no live game state.
+    """
+    match = _USAGE_LIMIT_PATTERN.search(card_text)
+    return match.group(0) if match else None
