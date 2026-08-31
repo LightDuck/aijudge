@@ -68,3 +68,24 @@ def test_out_of_range_confidence_raises_value_error():
             targeting=None,
             effect="text",
         )
+
+
+def test_damage_step_category_is_included_in_the_review_prompt():
+    captured = {}
+
+    class _CapturingLLMClient:
+        def complete(self, prompt, *, system=None):
+            captured["prompt"] = prompt
+            return "0.9"
+
+    review_parsed_effect(
+        _CapturingLLMClient(),
+        raw_text="its ATK becomes 0.",
+        activation_condition=None,
+        cost=None,
+        targeting=None,
+        effect="its ATK becomes 0.",
+        damage_step_category="atk_def_alter",
+    )
+
+    assert "Damage Step category: atk_def_alter" in captured["prompt"]
