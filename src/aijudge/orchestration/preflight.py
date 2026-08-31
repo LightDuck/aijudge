@@ -35,3 +35,32 @@ def _fuzzy_mentions_name(name: str, question: str) -> bool:
         difflib.SequenceMatcher(None, window, name_lower).ratio() >= _FUZZY_CUTOFF
         for window in windows
     )
+
+
+from aijudge.db.cards_repo import get_card_by_name, list_card_names
+from aijudge.db.effects_repo import get_confirmed_effect
+from aijudge.rules_engine.models import EffectType, is_activatable, spell_speed_for
+
+
+def find_matched_cards(question: str) -> list[dict]:
+    """Return the full card dict (as `get_card_by_name` returns it) for
+    every card plausibly mentioned in `question`."""
+    names = find_mentioned_card_names(question, list_card_names())
+    return [get_card_by_name(name) for name in names]
+
+
+def build_known_facts_context(card: dict) -> str:
+    """Render a deterministic "KNOWN FACTS" block for one already-resolved
+    card, from its confirmed structured effect. Returns "" if the card has
+    no confirmed effect -- callers fall back to unaided LLM reasoning in
+    that case, same as when no card is matched at all."""
+    confirmed = get_confirmed_effect(card["id"])
+    if confirmed is None:
+        return ""
+    effect_type = EffectType(confirmed["effect_type"])
+    speed = spell_speed_for(effect_type, card_type=card["card_type"])
+    return (
+        "KNOWN FACTS (deterministic -- do not contradict):\n"
+        f"- {card['name']}: effect type {effect_type.value}, spell speed {speed.value}, "
+        f"activatable: {is_activatable(effect_type)}"
+    )

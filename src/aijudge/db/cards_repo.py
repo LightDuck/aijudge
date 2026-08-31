@@ -109,3 +109,9 @@ def insert_errata_version(*, card_id: str, errata_date: date, errata_text: str) 
         conn.execute("UPDATE cards SET has_errata = TRUE WHERE id = %s", (card_id,))
         conn.commit()
         return str(row[0])
+
+
+def list_card_names() -> list[str]:
+    with get_connection() as conn:
+        rows = conn.execute("SELECT name FROM cards").fetchall()
+    return [row[0] for row in rows]

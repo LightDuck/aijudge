@@ -164,3 +164,32 @@ def test_get_card_by_ygoresources_id_returns_none_when_card_has_no_ygoresources_
 
     assert get_card_by_ygoresources_id("14558127") is None
     assert get_card_by_ygoresources_id("") is None
+
+
+def test_list_card_names_returns_every_inserted_card_name():
+    from aijudge.db.cards_repo import insert_card, list_card_names
+
+    insert_card(
+        name="Effect Veiler",
+        card_text="text",
+        card_type="Effect Monster",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="95440946",
+    )
+    insert_card(
+        name="Solemn Strike",
+        card_text="text",
+        card_type="Counter Trap",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="40605147",
+    )
+
+    assert set(list_card_names()) == {"Effect Veiler", "Solemn Strike"}
+
+
+def test_list_card_names_returns_empty_list_when_no_cards():
+    from aijudge.db.cards_repo import list_card_names
+
+    assert list_card_names() == []
