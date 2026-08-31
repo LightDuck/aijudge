@@ -2,7 +2,7 @@ from dataclasses import asdict
 from typing import Callable
 
 from aijudge.db.cards_repo import get_card_by_name
-from aijudge.db.effects_repo import get_confirmed_effect
+from aijudge.db.effects_repo import get_confirmed_effects
 from aijudge.db.rulebook_repo import search_chunks
 from aijudge.db.rulings_repo import get_rulings_for_card
 from aijudge.embeddings.client import EmbeddingClient
@@ -15,14 +15,14 @@ def lookup_card(args: dict) -> dict:
     card = get_card_by_name(args["name"])
     if card is None:
         return {"found": False}
-    confirmed_effect = get_confirmed_effect(card["id"])
+    confirmed_effects = get_confirmed_effects(card["id"])
     return {
         "found": True,
         "id": card["id"],
         "name": card["name"],
         "card_text": card["card_text"],
         "card_type": card["card_type"],
-        "confirmed_effect": confirmed_effect,
+        "confirmed_effects": confirmed_effects,
     }
 
 
