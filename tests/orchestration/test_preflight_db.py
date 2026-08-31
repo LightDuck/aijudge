@@ -146,3 +146,42 @@ def test_build_known_facts_context_is_empty_when_no_confirmed_effect():
     )
 
     assert build_known_facts_context(get_card_by_name("Effect Veiler")) == ""
+
+
+def test_build_known_facts_context_covers_every_confirmed_effect_with_damage_step_legality():
+    from aijudge.db.cards_repo import get_card_by_name, insert_card
+    from aijudge.db.effects_repo import confirm_effect, insert_pending_effect
+    from aijudge.orchestration.preflight import build_known_facts_context
+
+    card_id = insert_card(
+        name="Baronne de Fleur",
+        card_text="Once per turn: ... Once while face-up on the field, when a card or effect is activated (Quick Effect): ...",
+        card_type="Synchro Monster",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="84812061",
+    )
+    ignition_id = insert_pending_effect(
+        card_id=card_id,
+        effect_type="ignition",
+        effect="destroy it.",
+        activation_condition="Once per turn",
+    )
+    confirm_effect(ignition_id)
+    quick_id = insert_pending_effect(
+        card_id=card_id,
+        effect_type="quick",
+        effect="You can negate the activation, and if you do, destroy that card.",
+        activation_condition="Once while face-up on the field, when a card or effect is activated (Quick Effect)",
+        damage_step_category="negates_activation",
+    )
+    confirm_effect(quick_id)
+
+    context = build_known_facts_context(get_card_by_name("Baronne de Fleur"))
+    lines = context.splitlines()
+
+    assert len(lines) == 3  # header + 2 effect lines
+    ignition_line = next(line for line in lines if "effect type ignition" in line)
+    quick_line = next(line for line in lines if "effect type quick" in line)
+    assert "damage-step legal: False" in ignition_line
+    assert "damage-step legal: True" in quick_line
