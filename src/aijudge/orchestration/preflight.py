@@ -38,8 +38,9 @@ def _fuzzy_mentions_name(name: str, question: str) -> bool:
 
 
 from aijudge.db.cards_repo import get_card_by_name, list_card_names
-from aijudge.db.effects_repo import get_confirmed_effect
-from aijudge.rules_engine.models import EffectType, is_activatable, spell_speed_for
+from aijudge.db.effects_repo import get_confirmed_effects
+from aijudge.rules_engine.models import Effect, EffectType, is_activatable, spell_speed_for
+from aijudge.rules_engine.priority import can_activate_during_damage_step
 
 
 def find_matched_cards(question: str) -> list[dict]:
@@ -50,24 +51,39 @@ def find_matched_cards(question: str) -> list[dict]:
 
 
 def build_known_facts_context(card: dict) -> str:
-    """Render a deterministic "KNOWN FACTS" block for one already-resolved
-    card, from its confirmed structured effect. Returns "" if the card has
-    no confirmed effect -- callers fall back to unaided LLM reasoning in
-    that case, same as when no card is matched at all."""
-    confirmed = get_confirmed_effect(card["id"])
-    if confirmed is None:
+    """Render a deterministic "KNOWN FACTS" block covering every one of a
+    card's confirmed effects -- not just one -- so a question about any of
+    them can be grounded. Each line's facts (effect type, spell speed,
+    activatable, Damage Step legality) come entirely from existing
+    `rules_engine` functions; nothing here interprets the question. Returns
+    "" if the card has no confirmed effects at all -- callers fall back to
+    unaided LLM reasoning in that case, same as before."""
+    confirmed_effects = get_confirmed_effects(card["id"])
+    if not confirmed_effects:
         return ""
-    effect_type = EffectType(confirmed["effect_type"])
-    speed = spell_speed_for(effect_type, card_type=card["card_type"])
-    line = (
-        "KNOWN FACTS (deterministic -- do not contradict):\n"
-        f"- {card['name']}: effect type {effect_type.value}, spell speed {speed.value}, "
-        f"activatable: {is_activatable(effect_type)}"
-    )
-    if confirmed.get("activation_condition") is not None:
-        line += f", activation condition: {confirmed['activation_condition']}"
-    if confirmed.get("damage_step_category") is not None:
-        line += f", damage step category: {confirmed['damage_step_category']}"
-    if confirmed.get("usage_limit_text") is not None:
-        line += f", usage limit: {confirmed['usage_limit_text']}"
-    return line
+    lines = ["KNOWN FACTS (deterministic -- do not contradict):"]
+    for index, confirmed in enumerate(confirmed_effects, start=1):
+        effect_type = EffectType(confirmed["effect_type"])
+        speed = spell_speed_for(effect_type, card_type=card["card_type"])
+        effect = Effect(
+            card_id=card["id"],
+            card_name=card["name"],
+            effect_type=effect_type,
+            controller="unknown",
+            spell_speed=speed,
+            damage_step_category=confirmed.get("damage_step_category"),
+        )
+        line = (
+            f"- {card['name']}, effect {index}: effect type {effect_type.value}, spell speed {speed.value}, "
+            f"activatable: {is_activatable(effect_type)}, "
+            f"damage-step legal: {can_activate_during_damage_step(effect)}, "
+            f"effect: \"{confirmed['effect']}\""
+        )
+        if confirmed.get("activation_condition") is not None:
+            line += f", activation condition: {confirmed['activation_condition']}"
+        if confirmed.get("damage_step_category") is not None:
+            line += f", damage step category: {confirmed['damage_step_category']}"
+        if confirmed.get("usage_limit_text") is not None:
+            line += f", usage limit: {confirmed['usage_limit_text']}"
+        lines.append(line)
+    return "\n".join(lines)
