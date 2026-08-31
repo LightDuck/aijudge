@@ -1,0 +1,93 @@
+import os
+from datetime import date
+
+import pytest
+
+pytestmark = pytest.mark.skipif("DATABASE_URL" not in os.environ, reason="requires a running Postgres instance")
+
+
+def setup_function():
+    from aijudge.db.connection import get_connection
+    from aijudge.db.migrate import run_migrations
+
+    run_migrations()
+    with get_connection() as conn:
+        conn.execute("TRUNCATE cards CASCADE")
+        conn.commit()
+
+
+_EFFECT_VEILER_TEXT = (
+    "During your opponent's Main Phase (Quick Effect): You can send this "
+    "card from your hand to the GY; until the end of this turn, negate "
+    "the effects of 1 Effect Monster your opponent controls, also its "
+    'ATK becomes 0. You can only use this effect of "Effect Veiler" once '
+    "per turn."
+)
+
+
+def test_find_matched_cards_returns_full_card_dict_for_a_mentioned_card():
+    from aijudge.db.cards_repo import insert_card
+    from aijudge.orchestration.preflight import find_matched_cards
+
+    insert_card(
+        name="Effect Veiler",
+        card_text=_EFFECT_VEILER_TEXT,
+        card_type="Effect Monster",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="95440946",
+    )
+
+    matches = find_matched_cards("Can I activate Effect Veiler in response?")
+
+    assert len(matches) == 1
+    assert matches[0]["name"] == "Effect Veiler"
+
+
+def test_find_matched_cards_returns_empty_list_when_nothing_mentioned():
+    from aijudge.orchestration.preflight import find_matched_cards
+
+    assert find_matched_cards("What happens if I attack with my dragon?") == []
+
+
+def test_build_known_facts_context_includes_effect_type_and_spell_speed():
+    from aijudge.db.cards_repo import get_card_by_name, insert_card
+    from aijudge.db.effects_repo import confirm_effect, insert_pending_effect
+    from aijudge.orchestration.preflight import build_known_facts_context
+
+    card_id = insert_card(
+        name="Effect Veiler",
+        card_text=_EFFECT_VEILER_TEXT,
+        card_type="Effect Monster",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="95440946",
+    )
+    effect_id = insert_pending_effect(
+        card_id=card_id,
+        effect_type="quick",
+        effect="negate the effects of 1 Effect Monster your opponent controls, also its ATK becomes 0.",
+    )
+    confirm_effect(effect_id)
+
+    context = build_known_facts_context(get_card_by_name("Effect Veiler"))
+
+    assert "Effect Veiler" in context
+    assert "spell speed 2" in context
+    assert "activatable: True" in context
+
+
+def test_build_known_facts_context_is_empty_when_no_confirmed_effect():
+    from aijudge.db.cards_repo import get_card_by_name, insert_card
+    from aijudge.orchestration.preflight import build_known_facts_context
+
+    insert_card(
+        name="Effect Veiler",
+        card_text=_EFFECT_VEILER_TEXT,
+        card_type="Effect Monster",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="95440946",
+    )
+
+    assert build_known_facts_context(get_card_by_name("Effect Veiler")) == ""
