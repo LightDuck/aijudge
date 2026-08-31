@@ -33,13 +33,13 @@ def test_lookup_card_returns_card_text_and_not_found_flag():
     result = lookup_card({"name": "Ash Blossom & Joyous Spring"})
     assert result["found"] is True
     assert result["card_text"].startswith("You can only use")
-    assert result["confirmed_effect"] is None
+    assert result["confirmed_effects"] == []
 
     missing = lookup_card({"name": "Nonexistent Card"})
     assert missing == {"found": False}
 
 
-def test_lookup_card_includes_confirmed_effect_when_present():
+def test_lookup_card_includes_confirmed_effects_when_present():
     from aijudge.db.cards_repo import insert_card
     from aijudge.db.effects_repo import confirm_effect, insert_pending_effect
     from aijudge.orchestration.tools import lookup_card
@@ -61,7 +61,8 @@ def test_lookup_card_includes_confirmed_effect_when_present():
     confirm_effect(effect_id)
 
     result = lookup_card({"name": "Effect Veiler"})
-    assert result["confirmed_effect"]["effect_type"] == "quick"
+    assert len(result["confirmed_effects"]) == 1
+    assert result["confirmed_effects"][0]["effect_type"] == "quick"
 
 
 def test_get_rulings_returns_empty_list_when_none_exist():
