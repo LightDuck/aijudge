@@ -75,3 +75,17 @@ def test_unrecognized_step_kind_raises_unsupported_scenario_error():
 
     with pytest.raises(UnsupportedScenarioError):
         resolve_chain(scenario)
+
+
+def test_activate_step_with_continuous_effect_type_is_not_activatable():
+    scenario = {
+        "turn_player": "player_a",
+        "steps": [{"kind": "activate", "effect": _effect("Skill Drain", "player_a", effect_type="continuous")}],
+    }
+
+    result = resolve_chain(scenario)
+
+    assert result.violation is not None
+    assert result.violation.step_index == 0
+    assert result.violation.reason == "not_activatable"
+    assert result.resolution_order == []

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from .chain import Chain
-from .models import Effect, EffectType, SpellSpeed
+from .models import Effect, EffectType, SpellSpeed, is_activatable
 from .priority import can_activate_now
 from .segoc import apply_segoc
 
@@ -59,6 +59,13 @@ def resolve_chain(scenario: dict) -> ResolutionResult:
             apply_segoc(chain, turn_player=turn_player, triggered_effects=effects)
         elif kind == "activate":
             effect = _build_effect(step["effect"])
+            if not is_activatable(effect.effect_type):
+                violation = Violation(
+                    step_index=step_index,
+                    reason="not_activatable",
+                    detail=f"{effect.card_name}'s effect type ({effect.effect_type.value}) cannot be activated",
+                )
+                return ResolutionResult(resolution_order=_order(chain), violation=violation)
             if not can_activate_now(effect.spell_speed, chain):
                 violation = Violation(
                     step_index=step_index,

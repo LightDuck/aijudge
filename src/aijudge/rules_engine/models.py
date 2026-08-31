@@ -22,6 +22,20 @@ class SpellSpeed(int, Enum):
 
 _QUICK_EFFECT_TYPES = {EffectType.QUICK, EffectType.QUICK_LIKE}
 
+_NON_ACTIVATABLE_EFFECT_TYPES = {EffectType.CONTINUOUS, EffectType.CONDITION}
+
+
+def is_activatable(effect_type: EffectType) -> bool:
+    """Whether an effect of this type can ever be "activated" at all.
+
+    Continuous and Condition effects are never activated in the game-rules
+    sense -- they apply automatically or describe a standing restriction.
+    Every other EffectType can be activated. This is independent of
+    timing/priority legality, which `can_activate_now` and
+    `can_activate_during_damage_step` handle separately.
+    """
+    return effect_type not in _NON_ACTIVATABLE_EFFECT_TYPES
+
 
 def spell_speed_for(effect_type: EffectType, *, card_type: str | None = None) -> SpellSpeed:
     if card_type and "Counter" in card_type:

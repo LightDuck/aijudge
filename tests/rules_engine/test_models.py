@@ -1,4 +1,4 @@
-from aijudge.rules_engine.models import Effect, EffectType, SpellSpeed, spell_speed_for
+from aijudge.rules_engine.models import Effect, EffectType, SpellSpeed, is_activatable, spell_speed_for
 
 
 def test_quick_and_quick_like_effects_are_spell_speed_2():
@@ -46,3 +46,17 @@ def test_effect_accepts_explicit_spell_speed_and_prevents_response():
     )
     assert effect.spell_speed == SpellSpeed.COUNTER
     assert effect.prevents_response is True
+
+
+def test_is_activatable_returns_false_for_continuous_and_condition():
+    assert is_activatable(EffectType.CONTINUOUS) is False
+    assert is_activatable(EffectType.CONDITION) is False
+
+
+def test_is_activatable_returns_true_for_other_effect_types():
+    assert is_activatable(EffectType.TRIGGER) is True
+    assert is_activatable(EffectType.TRIGGER_LIKE) is True
+    assert is_activatable(EffectType.IGNITION) is True
+    assert is_activatable(EffectType.QUICK) is True
+    assert is_activatable(EffectType.QUICK_LIKE) is True
+    assert is_activatable(EffectType.EFFECT) is True
