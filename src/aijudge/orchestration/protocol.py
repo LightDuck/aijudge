@@ -7,7 +7,13 @@ TOOL_DESCRIPTIONS = {
     "lookup_card": 'lookup_card {"name": "<card name>"} - fetch a card\'s text and structured effect data',
     "get_rulings": 'get_rulings {"card_id": "<id>"} - fetch official rulings for a card',
     "search_rulebook": 'search_rulebook {"query": "<question>"} - semantic search over the Konami rulebook/PSCT guide',
-    "resolve_chain": 'resolve_chain {"turn_player": "...", "steps": [...]} - deterministically resolve a described chain scenario',
+    "resolve_chain": (
+        'resolve_chain {"turn_player": "...", "steps": [...]} - deterministically resolve a described chain '
+        "scenario. An \"activate\" step may include an optional \"in_damage_step\": true/false (default false) "
+        "to indicate the activation is being attempted during the Damage Step; that step's \"effect\" dict may "
+        'include an optional "damage_step_category", one of "atk_def_alter" or "negates_activation" (omit if '
+        "neither applies), used only when checking Damage Step legality."
+    ),
 }
 
 

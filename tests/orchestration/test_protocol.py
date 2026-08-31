@@ -52,3 +52,9 @@ def test_build_system_prompt_lists_all_four_tools():
     prompt = build_system_prompt()
     for tool_name in ("lookup_card", "get_rulings", "search_rulebook", "resolve_chain"):
         assert tool_name in prompt
+
+
+def test_build_system_prompt_documents_damage_step_fields_for_resolve_chain():
+    prompt = build_system_prompt()
+    assert "in_damage_step" in prompt
+    assert "damage_step_category" in prompt
