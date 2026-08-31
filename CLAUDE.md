@@ -114,12 +114,12 @@ spec:
   `ProgrammingError` on a brand-new DB where the `vector` extension doesn't exist yet (created by
   `migrate.run_migrations()`, which just executes `schema.sql`).
   - `card_effects_structured` rows are `pending` by default; only `effects_repo.confirm_effect()` (called after
-    the review agent passes threshold, or manually) makes a row visible to `get_confirmed_effect()`. **A `pending`
+    the review agent passes threshold, or manually) makes a row visible to `get_confirmed_effects()`. **A `pending`
     effect must never be treated as ground truth** — this distinction exists at the repo level specifically so the
     future orchestration layer can't accidentally skip it. Two nullable columns, `damage_step_category` (CHECK
     constrained to `'atk_def_alter'`/`'negates_activation'`/`'explicit_permission'`/`'card_moved_trigger'`/`NULL`)
-    and `usage_limit_text`, round out the row; `get_confirmed_effect()` and `insert_pending_effect()` both
-    read/write them.
+    and `usage_limit_text`, round out the row; `get_confirmed_effects()` (returns all confirmed effect rows for a
+    card, not just one) and `insert_pending_effect()` both read/write them.
   - Errata is never overwritten: `insert_errata_version()` adds a new `card_errata_versions` row and flips
     `cards.has_errata`; the original `card_text` stays as originally ingested.
   - `cards.ygoprodeck_id` is `NOT NULL` (always available from the source API); `ygoresources_id` is nullable
@@ -199,7 +199,7 @@ spec:
   - `confidence.py` — `compute_confidence()`: starts at `1.0`, returns `0.0` outright if the answer cites an id
     no tool result actually surfaced (`known_ids`), otherwise subtracts `RETRIEVAL_GAP_PENALTY` (0.3) if any
     `get_rulings`/`search_rulebook` call came back empty and `MISSING_STRUCTURED_EFFECT_PENALTY` (0.2) if a
-    looked-up card had no `confirmed_effect`. `update_signals()` accumulates these signals per tool call.
+    looked-up card had no `confirmed_effects`. `update_signals()` accumulates these signals per tool call.
   - `loop.py` — `run_loop()`: repeatedly calls the LLM, dispatches `ToolCall`s and folds results back into the
     conversation, and on a `FinalAnswer` scores it via `compute_confidence()` against `threshold` (default
     `DEFAULT_CONFIDENCE_THRESHOLD = 0.9`) — below threshold escalates instead of answering. A `Refusal` short-
@@ -227,9 +227,10 @@ spec:
     word-window of the question, so a slightly misspelled or differently-cased name (e.g. "effect veiler") still
     matches. `find_matched_cards(question)` runs that against every known card name and returns the full card
     dict for each match. `build_known_facts_context(card)` renders a "KNOWN FACTS (deterministic -- do not
-    contradict)" block from the card's confirmed effect (effect type, spell speed, `is_activatable`, and, when
-    non-`None`, activation condition, damage step category, and usage limit text) -- returns `""` if the card has
-    no confirmed effect, so callers fall back to unaided LLM reasoning.
+    contradict)" block with one line per confirmed effect, each including effect type, spell speed, `is_activatable`,
+    and when non-`None`, activation condition, damage step category, usage limit text, and damage-step legality
+    (computed via `rules_engine.models.is_activatable()` and `rules_engine.priority.can_activate_during_damage_step()`,
+    reused unchanged) — returns `""` if the card has no confirmed effects, so callers fall back to unaided LLM reasoning.
 
 - **`cli.py`** — `run_cli()`: a REPL (`input_fn`/`print_fn`, plus `find_matched_cards_fn`/`build_known_facts_context_fn`
   defaulting to `preflight.find_matched_cards`/`preflight.build_known_facts_context`, are all injectable for
@@ -271,17 +272,19 @@ spec:
 
 - **`ingestion/`** — `ygoprodeck_client.fetch_card()` and `ygoresources_client.fetch_rulings()` pull only the
   fields this project uses (not a full API mirror). `seed.py` ties it together: `seed_card()` fetches card +
-  rulings, runs them through the effect parser and review agent, inserts everything, and auto-confirms if the
-  review score clears threshold. `run_seed()` iterates the hand-picked `HAND_PICKED_CARDS` list (Ash Blossom &
-  Joyous Spring, Called by the Grave, Infinite Impermanence, Effect Veiler, Solemn Strike, Baronne de Fleur) —
-  this is a one-off seed script, not a scheduled ingestion pipeline (out of scope for this slice). Baronne de
-  Fleur is a deliberate stress case: unlike the other five, its card text packs three separate effect clauses
-  (a continuous "cannot be destroyed by battle," a targeted-negation Quick Effect, and a Main Phase ATK-boost
-  Quick Effect) into one blob, which `parse_psct`/`classify_effect_type` -- built around a single dominant
-  effect per card -- aren't designed to decompose. Expect it to seed as a low-confidence `pending` row (or a
-  `confirmed` one that only captures a slice of the card) rather than a fully-correct structured breakdown;
-  multi-effect structured decomposition (`get_confirmed_effects`, plural) is explicitly deferred, per
-  `docs/superpowers/plans/2026-08-31-activation-recognition.md`.
+  rulings, calls `effect_parser.clause_splitter.resolve_effect_clauses()` to split the card text into individual
+  effect clauses (gated by two independent safety checks: a deterministic verbatim-reconstruction check and an
+  LLM-scored split-quality check; a failed split falls back to treating the whole card as one effect), runs each
+  resulting effect through the parser and review agent, inserts one `card_effects_structured` row per effect,
+  and auto-confirms if the review score clears threshold. `run_seed()` iterates the hand-picked `HAND_PICKED_CARDS`
+  list (Ash Blossom & Joyous Spring, Called by the Grave, Infinite Impermanence, Effect Veiler, Solemn Strike,
+  Baronne de Fleur) — this is a one-off seed script, not a scheduled ingestion pipeline (out of scope for this
+  slice). Baronne de Fleur is a deliberate multi-effect stress case: unlike the other five, its card text packs
+  three separate effect clauses (an Ignition effect destroying 1 card, a Quick Effect negating activations, and a
+  Standby Phase effect returning to the Extra Deck to Special Summon) into one blob. The clause splitter now correctly decomposes such cards
+  into multiple confirmed effect rows (one per real effect), unless one of the two safety gates fails, in which case
+  it falls back to single-row behavior. `effect_parser/clause_splitter.py` exports `split_effect_clauses()`,
+  `score_split_confidence()`, and `resolve_effect_clauses()`.
   `rulebook_seed.py` — `seed_rulebook_file(path, embedding_client=..., source=...)` chunks a rulebook text file
   (via `rulebook_loader.load_rulebook_file`) and embeds+inserts each chunk into `rulebook_chunks`. It deletes any
   existing chunks for that `source` first (`rulebook_repo.delete_chunks_by_source()`), so re-running it against
