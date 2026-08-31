@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Callable
 
 from aijudge.db.cards_repo import insert_card
@@ -38,7 +38,7 @@ def seed_card(
         card_text=card_text,
         card_type=card_type,
         source="ygoprodeck",
-        fetched_at=datetime.utcnow().date(),
+        fetched_at=datetime.now(timezone.utc).date(),
         ygoprodeck_id=str(card_data["id"]),
     )
 
