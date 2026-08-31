@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from .chain import Chain
 from .models import Effect, EffectType, SpellSpeed, is_activatable
-from .priority import can_activate_now
+from .priority import can_activate_during_damage_step, can_activate_now
 from .segoc import apply_segoc
 
 
@@ -38,6 +38,7 @@ def _build_effect(data: dict) -> Effect:
         controller=data["controller"],
         spell_speed=SpellSpeed(data.get("spell_speed", SpellSpeed.NORMAL.value)),
         prevents_response=data.get("prevents_response", False),
+        damage_step_category=data.get("damage_step_category"),
     )
 
 
@@ -64,6 +65,16 @@ def resolve_chain(scenario: dict) -> ResolutionResult:
                     step_index=step_index,
                     reason="not_activatable",
                     detail=f"{effect.card_name}'s effect type ({effect.effect_type.value}) cannot be activated",
+                )
+                return ResolutionResult(resolution_order=_order(chain), violation=violation)
+            if step.get("in_damage_step", False) and not can_activate_during_damage_step(effect):
+                violation = Violation(
+                    step_index=step_index,
+                    reason="damage_step_restricted",
+                    detail=(
+                        f"{effect.card_name} cannot be activated during the Damage Step "
+                        "(not Speed 3, and not a Speed 2 ATK/DEF-altering or activation-negating effect)"
+                    ),
                 )
                 return ResolutionResult(resolution_order=_order(chain), violation=violation)
             if not can_activate_now(effect.spell_speed, chain):

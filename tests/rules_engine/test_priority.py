@@ -1,6 +1,6 @@
 from aijudge.rules_engine.chain import Chain
 from aijudge.rules_engine.models import Effect, EffectType, SpellSpeed
-from aijudge.rules_engine.priority import can_activate_now
+from aijudge.rules_engine.priority import can_activate_during_damage_step, can_activate_now
 
 
 def test_any_spell_speed_can_activate_when_chain_is_empty():
@@ -90,3 +90,54 @@ def test_prevents_response_blocks_everything_regardless_of_speed():
         )
     )
     assert can_activate_now(SpellSpeed.COUNTER, chain) is False
+
+
+def test_counter_speed_can_activate_during_damage_step_regardless_of_category():
+    effect = Effect(
+        card_id="1",
+        card_name="Solemn Strike",
+        effect_type=EffectType.TRIGGER_LIKE,
+        controller="player_a",
+        spell_speed=SpellSpeed.COUNTER,
+    )
+    assert can_activate_during_damage_step(effect) is True
+
+
+def test_quick_speed_atk_def_alter_can_activate_during_damage_step():
+    effect = Effect(
+        card_id="1",
+        card_name="Effect Veiler",
+        effect_type=EffectType.QUICK,
+        controller="player_a",
+        spell_speed=SpellSpeed.QUICK,
+        damage_step_category="atk_def_alter",
+    )
+    assert can_activate_during_damage_step(effect) is True
+
+
+def test_quick_speed_negates_activation_can_activate_during_damage_step():
+    effect = Effect(
+        card_id="1",
+        card_name="Some Counter",
+        effect_type=EffectType.QUICK,
+        controller="player_a",
+        spell_speed=SpellSpeed.QUICK,
+        damage_step_category="negates_activation",
+    )
+    assert can_activate_during_damage_step(effect) is True
+
+
+def test_quick_speed_with_no_damage_step_category_cannot_activate_during_damage_step():
+    effect = Effect(
+        card_id="1",
+        card_name="Called by the Grave",
+        effect_type=EffectType.QUICK_LIKE,
+        controller="player_a",
+        spell_speed=SpellSpeed.QUICK,
+    )
+    assert can_activate_during_damage_step(effect) is False
+
+
+def test_normal_speed_cannot_activate_during_damage_step():
+    effect = Effect(card_id="1", card_name="Card A", effect_type=EffectType.IGNITION, controller="player_a")
+    assert can_activate_during_damage_step(effect) is False

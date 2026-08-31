@@ -51,6 +51,7 @@ class Effect:
     controller: str
     spell_speed: SpellSpeed = SpellSpeed.NORMAL
     prevents_response: bool = False
+    damage_step_category: str | None = None
 
 
 @dataclass

@@ -60,3 +60,20 @@ def test_is_activatable_returns_true_for_other_effect_types():
     assert is_activatable(EffectType.QUICK) is True
     assert is_activatable(EffectType.QUICK_LIKE) is True
     assert is_activatable(EffectType.EFFECT) is True
+
+
+def test_effect_accepts_damage_step_category():
+    effect = Effect(
+        card_id="1",
+        card_name="Effect Veiler",
+        effect_type=EffectType.QUICK,
+        controller="player_a",
+        spell_speed=SpellSpeed.QUICK,
+        damage_step_category="atk_def_alter",
+    )
+    assert effect.damage_step_category == "atk_def_alter"
+
+
+def test_effect_damage_step_category_defaults_to_none():
+    effect = Effect(card_id="1", card_name="Card A", effect_type=EffectType.IGNITION, controller="player_a")
+    assert effect.damage_step_category is None
