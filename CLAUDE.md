@@ -23,7 +23,7 @@ historical scaffold and has already drifted in places, e.g. `has_target`, `ygopr
 Voyage/Ollama for embeddings, the `dimensions=384` truncation to match the pgvector schema) are logged in
 `docs/superpowers/specs/2026-08-20-provider-wiring-design.md`.
 
-Still missing for a public v1.0: broader card coverage (currently 5 hand-picked cards) and the frontend itself —
+Still missing for a public v1.0: broader card coverage (currently 6 hand-picked cards) and the frontend itself —
 each is its own separate sub-project. The HTTP/API service layer (`src/aijudge/api/`) now exists, wrapping the
 orchestration loop and clarification flow behind two stateless REST endpoints — see
 `docs/superpowers/specs/2026-08-27-api-layer-design.md` for the design and the `api/` bullet under Architecture
@@ -88,9 +88,14 @@ spec:
     even to another Speed-1 effect). Speed 2/3 can respond if its speed is **at or above** the top chain link's
     speed (empty chain counts as speed 0), unless the top link's effect sets `prevents_response=True`, which
     blocks all response regardless of speed. `can_activate_during_damage_step(effect)` is a separate, additional
-    check for the Damage Step: only Spell Speed 3 (Counter Traps), or a Spell Speed 2 effect whose
-    `damage_step_category` is `"atk_def_alter"` or `"negates_activation"`, may activate then — both this check
-    and `can_activate_now` must pass for a Damage Step activation to be legal.
+    check for the Damage Step: Spell Speed 3 (Counter Traps) always; a Spell Speed 2 effect whose
+    `damage_step_category` is `"atk_def_alter"` or `"negates_activation"`; or, regardless of spell speed, an
+    effect whose `damage_step_category` is `"explicit_permission"` (its own activation condition names "damage
+    step"/"damage calculation" directly) or `"card_moved_trigger"` (a Trigger-type effect whose own card is what
+    moved — e.g. "if this card is destroyed by battle" — since that condition can only ever be met during/after
+    the Damage Step). The latter two are ungated by spell speed because a plain Trigger Effect is normally Speed
+    1 but is Damage-Step-legal anyway in these cases. Both this check and `can_activate_now` must pass for a
+    Damage Step activation to be legal.
   - `resolve.py` — `resolve_chain(scenario)` drives a scenario's `"segoc_batch"`/`"activate"` steps through the
     above checks, returning a `ResolutionResult` with the resolution order and, on a failed step, a `Violation`.
     `Violation.reason` includes `"not_activatable"` (fails `is_activatable`) and `"damage_step_restricted"` (an
@@ -112,8 +117,9 @@ spec:
     the review agent passes threshold, or manually) makes a row visible to `get_confirmed_effect()`. **A `pending`
     effect must never be treated as ground truth** — this distinction exists at the repo level specifically so the
     future orchestration layer can't accidentally skip it. Two nullable columns, `damage_step_category` (CHECK
-    constrained to `'atk_def_alter'`/`'negates_activation'`/`NULL`) and `usage_limit_text`, round out the row;
-    `get_confirmed_effect()` and `insert_pending_effect()` both read/write them.
+    constrained to `'atk_def_alter'`/`'negates_activation'`/`'explicit_permission'`/`'card_moved_trigger'`/`NULL`)
+    and `usage_limit_text`, round out the row; `get_confirmed_effect()` and `insert_pending_effect()` both
+    read/write them.
   - Errata is never overwritten: `insert_errata_version()` adds a new `card_errata_versions` row and flips
     `cards.has_errata`; the original `card_text` stays as originally ingested.
   - `cards.ygoprodeck_id` is `NOT NULL` (always available from the source API); `ygoresources_id` is nullable
@@ -133,11 +139,26 @@ spec:
     only") or CONTINUOUS; starts with "if "/"when " → TRIGGER/TRIGGER_LIKE; otherwise IGNITION for monsters, or
     for spells/traps QUICK_LIKE if `card_type` contains "Quick-Play" or "Trap" (both inherently Spell Speed 2 by
     game rule) else EFFECT.
-    `classify_damage_step_category(effect_text)` returns `"negates_activation"`, `"atk_def_alter"`, or `None` --
-    checked in that order since "negate the activation" is the more specific phrase. The ATK/DEF-alter pattern
-    requires a change-indicating verb (becomes/gains/loses/increases/decreases/halved/doubled) within a short
-    distance of an ATK/DEF token, not just a bare mention/comparison, so text like "if that monster's ATK is
-    higher than 1000" does not falsely classify as an alteration. `extract_usage_limit_text(card_text)` pulls a
+    `classify_damage_step_category(effect_text, *, activation_condition=None, effect_type=None)` returns
+    `"negates_activation"`, `"atk_def_alter"`, `"explicit_permission"`, `"card_moved_trigger"`, or `None`.
+    `negates_activation`/`atk_def_alter` are checked first (in that order, since "negate the activation" is the
+    more specific phrase) against `effect_text` — the resolution clause, where a negation or ATK/DEF change is
+    actually described. The negation pattern requires the word "activation" specifically (`negate\w* (the|its|
+    that|this) activation`), not just "effect(s)" — negating an effect and negating an activation are different
+    game concepts. The ATK/DEF-alter pattern requires a change-indicating verb (becomes/gains/loses/increases/
+    decreases/halved/doubled) within a short distance of an ATK/DEF token, not just a bare mention/comparison, so
+    text like "if that monster's ATK is higher than 1000" does not falsely classify as an alteration.
+    `explicit_permission`/`card_moved_trigger` are checked against `activation_condition` instead (that's where
+    PSCT puts a trigger's condition), and only when `effect_type` is TRIGGER/TRIGGER_LIKE/QUICK/QUICK_LIKE:
+    `explicit_permission` when the condition names "damage step" or "damage calculation" directly (the two are
+    treated as equivalent); `card_moved_trigger` when the condition's subject is the card's own self ("this
+    card") undergoing a zone-change verb (destroyed/banished/sent/returned/summoned/flipped/tributed) — e.g. "if
+    this card is destroyed by battle" or "if this card is Special Summoned". A condition about some *other* card
+    moving (e.g. "if a Salamangreat monster... is sent to the GY") is deliberately never matched — real cards
+    carve such non-self conditions out of the Damage Step explicitly and inconsistently, so guessing would be
+    wrong more often than not. Speaking of which: an explicit carve-out in the condition itself (e.g. "except
+    during the Damage Step") is checked first and overrides every other category, full stop.
+    `extract_usage_limit_text(card_text)` pulls a
     trailing "You can only ... per turn." restriction sentence independent of `parse_psct`'s Condition/Cost/Effect
     split, since that clause sits outside all three. Both return `None` when their pattern isn't found, rather
     than guessing; both feed the `damage_step_category`/`usage_limit_text` columns in `db/`.
@@ -165,9 +186,12 @@ spec:
 - **`orchestration/`** — the agentic tool-use loop that turns a user question into an answer, escalation, or
   "not supported":
   - `protocol.py` — `build_system_prompt()` describes the `TOOL: <name> {json}` / `FINAL: <text>||CITES:
-    id1, id2||` response format the LLM must follow; `parse_response()` parses one into a `ToolCall` or
-    `FinalAnswer`, raising `ProtocolError` on anything else (missing prefix, bad JSON, unknown tool, malformed or
-    missing `||CITES: ...||` trailer).
+    id1, id2||` / `REFUSE: <reason>` response format the LLM must follow, and pins the assistant's identity as a
+    Yu-Gi-Oh! TCG rules adjudicator: it's told to answer only Yu-Gi-Oh! rules/card-interaction questions and to
+    emit `REFUSE:` instead of guessing on anything else. `parse_response()` parses one into a `ToolCall`,
+    `FinalAnswer`, or `Refusal`, raising `ProtocolError` on anything else (missing prefix, bad JSON, unknown tool,
+    malformed or missing `||CITES: ...||` trailer). This system prompt is also passed to the `clarify.py`
+    pre-loop LLM call (see below) so the scope pin holds from the very first LLM turn, not just inside `run_loop`.
   - `tools.py` — `build_tool_dispatch()` wires the DB/embedding-backed tool implementations
     (`lookup_card`, `get_rulings`, `search_rulebook`, `resolve_chain`) into the `{name: callable}` dict the loop
     dispatches against. `resolve_chain` delegates to `rules_engine.resolve.resolve_chain`, which raises
@@ -178,15 +202,22 @@ spec:
     looked-up card had no `confirmed_effect`. `update_signals()` accumulates these signals per tool call.
   - `loop.py` — `run_loop()`: repeatedly calls the LLM, dispatches `ToolCall`s and folds results back into the
     conversation, and on a `FinalAnswer` scores it via `compute_confidence()` against `threshold` (default
-    `DEFAULT_CONFIDENCE_THRESHOLD = 0.9`) — below threshold escalates instead of answering. Malformed
-    LLM responses or tool-arg errors (`KeyError`/`ValueError`/`TypeError`) get fed back as `ERROR:` context, capped
-    at `MAX_MALFORMED_RETRIES = 3`; total tool calls are capped at `MAX_TOOL_CALLS = 10`. Either cap, or an
-    `UnsupportedScenarioError` from `resolve_chain`, ends the loop with `kind="not_supported"` rather than looping
-    forever or guessing.
+    `DEFAULT_CONFIDENCE_THRESHOLD = 0.9`) — below threshold escalates instead of answering. A `Refusal` short-
+    circuits immediately to `LoopResult(kind="off_topic", ...)`, bypassing confidence scoring entirely -- this is
+    the enforcement half of the scope pin: without it, an off-topic question the LLM answers anyway (no tool
+    calls, no citations) would score a perfect `1.0` and sail through as a normal answer, since
+    `compute_confidence` has no signal that would ever penalize it. Malformed LLM responses or tool-arg errors
+    (`KeyError`/`ValueError`/`TypeError`) get fed back as `ERROR:` context, capped at `MAX_MALFORMED_RETRIES = 3`;
+    total tool calls are capped at `MAX_TOOL_CALLS = 10`. Either cap, or an `UnsupportedScenarioError` from
+    `resolve_chain`, ends the loop with `kind="not_supported"` rather than looping forever or guessing.
   - `clarify.py` — a pre-loop pass: `build_clarification_prompt()` asks the LLM whether the question is
     ambiguous or hinges on an unobservable continuous/lingering effect; `parse_clarification_response()` turns
-    `CLARIFY:`/`CONTINUOUS_CHECK:` lines into `ClarificationItem`s (or an empty list on `PROCEED`);
-    `format_clarification_context()` folds the user's answers back into context passed to `run_loop`.
+    `CLARIFY:`/`CONTINUOUS_CHECK:` lines into `ClarificationItem`s (or an empty list on `PROCEED`), deduping
+    lines with identical `(kind, text)` so an LLM that restates the same clarifying question twice doesn't
+    surface it to the user twice; `format_clarification_context()` folds the user's answers back into context
+    passed to `run_loop`. Both `cli.py` and `api/app.py` pass `protocol.build_system_prompt()` as this call's
+    `system` argument (previously it had none), so the model isn't left to infer from a user-turn mention alone
+    that it's a Yu-Gi-Oh! assistant.
     `ClarificationItem.kind` has a third value, `"disambiguate_card"` (alongside `"clarify"`/`"continuous_check"`),
     used when `cli.py` detects the user's question plausibly matches more than one known card and needs to know
     which one before it can render `preflight.py`'s KNOWN FACTS block.
@@ -212,11 +243,22 @@ spec:
   prints the result. Wired to a real entrypoint by both `__main__.py` (Ollama, default) and `entrypoint.py`
   (OpenRouter/OpenAI, alternate).
 
-- **`api/`** — `create_app(llm_client, embedding_client, *, cors_origins=None, tools=None) -> FastAPI` wires the
-  same orchestration functions the CLI uses behind two stateless REST endpoints (no server-side session store):
-  `POST /questions` runs the clarification pass and either returns `{"status": "needs_clarification", ...}` or,
-  if no clarification is needed, runs `run_loop` directly; `POST /questions/answer` takes the client's echoed-back
-  question/items/answers, rebuilds `ClarificationItem`s, and runs `run_loop` with the resulting context. Both
+- **`api/`** — `create_app(llm_client, embedding_client, *, cors_origins=None, tools=None,
+  find_matched_cards_fn=None, build_known_facts_context_fn=None) -> FastAPI` wires the same orchestration
+  functions the CLI uses behind two stateless REST endpoints (no server-side session store): `POST /questions`
+  runs preflight card-matching and the clarification pass, and either returns `{"status":
+  "needs_clarification", ...}` or, if no clarification is needed, runs `run_loop` directly; `POST
+  /questions/answer` takes the client's echoed-back question/items/answers, rebuilds `ClarificationItem`s, and
+  runs `run_loop` with the resulting context. Preflight mirrors `cli.py`'s logic (`find_matched_cards`,
+  `build_known_facts_context`, both from `orchestration/preflight.py`, injectable the same way `tools` is) but
+  is re-run from scratch on *every* call via the module-private `_resolve_preflight_context()` helper, since the
+  API has no in-process session to carry a resolved card across the two endpoints the way the CLI's single
+  request-handling loop does: a single card match folds its `KNOWN FACTS` context in immediately; more than one
+  match adds a `"disambiguate_card"` item to the `needs_clarification` response (alongside any LLM-raised
+  `CLARIFY`/`CONTINUOUS_CHECK` items) and only resolves to `KNOWN FACTS` once `/questions/answer` sees that
+  item's answer echoed back, fuzzy-matched via `find_mentioned_card_names` (same case-insensitive, misspelling-
+  tolerant matching the CLI uses); an unresolvable disambiguation answer just proceeds without `KNOWN FACTS`
+  (no `print_fn` equivalent exists over HTTP to surface a notice). Both
   return a `ResultResponse`/`NeedsClarificationResponse` (Pydantic models in `schemas.py`) — `citations` are
   always `{"label", "text"}` pairs; the internal `card:<id>`/`ruling:<id>`/`chunk:<id>` ids `LoopResult.citations`
   carries (see `orchestration/` below) never reach the response body. Backend connection errors
@@ -231,8 +273,15 @@ spec:
   fields this project uses (not a full API mirror). `seed.py` ties it together: `seed_card()` fetches card +
   rulings, runs them through the effect parser and review agent, inserts everything, and auto-confirms if the
   review score clears threshold. `run_seed()` iterates the hand-picked `HAND_PICKED_CARDS` list (Ash Blossom &
-  Joyous Spring, Called by the Grave, Infinite Impermanence, Effect Veiler, Solemn Strike) — this is a one-off
-  seed script, not a scheduled ingestion pipeline (out of scope for this slice).
+  Joyous Spring, Called by the Grave, Infinite Impermanence, Effect Veiler, Solemn Strike, Baronne de Fleur) —
+  this is a one-off seed script, not a scheduled ingestion pipeline (out of scope for this slice). Baronne de
+  Fleur is a deliberate stress case: unlike the other five, its card text packs three separate effect clauses
+  (a continuous "cannot be destroyed by battle," a targeted-negation Quick Effect, and a Main Phase ATK-boost
+  Quick Effect) into one blob, which `parse_psct`/`classify_effect_type` -- built around a single dominant
+  effect per card -- aren't designed to decompose. Expect it to seed as a low-confidence `pending` row (or a
+  `confirmed` one that only captures a slice of the card) rather than a fully-correct structured breakdown;
+  multi-effect structured decomposition (`get_confirmed_effects`, plural) is explicitly deferred, per
+  `docs/superpowers/plans/2026-08-31-activation-recognition.md`.
   `rulebook_seed.py` — `seed_rulebook_file(path, embedding_client=..., source=...)` chunks a rulebook text file
   (via `rulebook_loader.load_rulebook_file`) and embeds+inserts each chunk into `rulebook_chunks`. It deletes any
   existing chunks for that `source` first (`rulebook_repo.delete_chunks_by_source()`), so re-running it against
