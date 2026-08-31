@@ -400,14 +400,19 @@ git commit -m "feat(effect_parser): propose effect-clause boundaries via LLM, ga
 
 - [ ] **Step 1: Write the failing tests**
 
-Append to `tests/effect_parser/test_clause_splitter.py`:
+First, add `import pytest` and `resolve_effect_clauses, score_split_confidence` to the *top* of
+`tests/effect_parser/test_clause_splitter.py` (don't leave a mid-file import) — its import block should read:
 
 ```python
 import pytest
 
-from aijudge.effect_parser.clause_splitter import resolve_effect_clauses, score_split_confidence
+from aijudge.effect_parser.clause_splitter import resolve_effect_clauses, score_split_confidence, split_effect_clauses
+from aijudge.llm.client import MockLLMClient
+```
 
+Then append the new tests to the bottom of the file:
 
+```python
 def test_score_split_confidence_returns_the_llm_score():
     llm = MockLLMClient()
     llm.queue_response("0.95")
