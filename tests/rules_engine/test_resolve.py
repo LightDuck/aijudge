@@ -89,3 +89,60 @@ def test_activate_step_with_continuous_effect_type_is_not_activatable():
     assert result.violation.step_index == 0
     assert result.violation.reason == "not_activatable"
     assert result.resolution_order == []
+
+
+def test_activate_step_in_damage_step_without_permitted_category_is_restricted():
+    scenario = {
+        "turn_player": "player_a",
+        "steps": [
+            {
+                "kind": "activate",
+                "effect": _effect("Called by the Grave", "player_a", effect_type="quick-like", spell_speed=2),
+                "in_damage_step": True,
+            }
+        ],
+    }
+
+    result = resolve_chain(scenario)
+
+    assert result.violation is not None
+    assert result.violation.reason == "damage_step_restricted"
+    assert result.resolution_order == []
+
+
+def test_activate_step_in_damage_step_with_atk_def_alter_category_succeeds():
+    scenario = {
+        "turn_player": "player_a",
+        "steps": [
+            {
+                "kind": "activate",
+                "effect": {
+                    "card_name": "Effect Veiler",
+                    "controller": "player_a",
+                    "effect_type": "quick",
+                    "spell_speed": 2,
+                    "prevents_response": False,
+                    "damage_step_category": "atk_def_alter",
+                },
+                "in_damage_step": True,
+            }
+        ],
+    }
+
+    result = resolve_chain(scenario)
+
+    assert result.violation is None
+    assert [link.card_name for link in result.resolution_order] == ["Effect Veiler"]
+
+
+def test_activate_step_not_in_damage_step_ignores_the_damage_step_check():
+    scenario = {
+        "turn_player": "player_a",
+        "steps": [
+            {"kind": "activate", "effect": _effect("Called by the Grave", "player_a", effect_type="quick-like", spell_speed=2)}
+        ],
+    }
+
+    result = resolve_chain(scenario)
+
+    assert result.violation is None

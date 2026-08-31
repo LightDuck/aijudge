@@ -1,5 +1,24 @@
 from .chain import Chain
-from .models import SpellSpeed
+from .models import Effect, SpellSpeed
+
+_DAMAGE_STEP_ALLOWED_CATEGORIES = {"atk_def_alter", "negates_activation"}
+
+
+def can_activate_during_damage_step(effect: Effect) -> bool:
+    """Whether `effect` may be activated during the Damage Step.
+
+    Per the current official rulebook, only three categories of
+    activation are allowed by default during the Damage Step: Spell
+    Speed 2 effects that alter ATK/DEF, Spell Speed 2 effects that
+    negate an activation, and Spell Speed 3 (Counter Trap) cards. This
+    is independent of `can_activate_now`'s chain-response priority
+    check -- both must pass for a Damage Step activation to be legal.
+    """
+    if effect.spell_speed == SpellSpeed.COUNTER:
+        return True
+    if effect.spell_speed == SpellSpeed.QUICK:
+        return effect.damage_step_category in _DAMAGE_STEP_ALLOWED_CATEGORIES
+    return False
 
 
 def can_activate_now(spell_speed: SpellSpeed, chain: Chain) -> bool:
