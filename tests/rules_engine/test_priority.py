@@ -141,3 +141,27 @@ def test_quick_speed_with_no_damage_step_category_cannot_activate_during_damage_
 def test_normal_speed_cannot_activate_during_damage_step():
     effect = Effect(card_id="1", card_name="Card A", effect_type=EffectType.IGNITION, controller="player_a")
     assert can_activate_during_damage_step(effect) is False
+
+
+def test_normal_speed_card_moved_trigger_can_activate_during_damage_step():
+    effect = Effect(
+        card_id="1",
+        card_name="Some Trigger Monster",
+        effect_type=EffectType.TRIGGER,
+        controller="player_a",
+        spell_speed=SpellSpeed.NORMAL,
+        damage_step_category="card_moved_trigger",
+    )
+    assert can_activate_during_damage_step(effect) is True
+
+
+def test_normal_speed_explicit_permission_can_activate_during_damage_step():
+    effect = Effect(
+        card_id="1",
+        card_name="Some Trigger Monster",
+        effect_type=EffectType.TRIGGER,
+        controller="player_a",
+        spell_speed=SpellSpeed.NORMAL,
+        damage_step_category="explicit_permission",
+    )
+    assert can_activate_during_damage_step(effect) is True

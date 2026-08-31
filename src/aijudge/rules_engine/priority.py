@@ -1,23 +1,39 @@
 from .chain import Chain
 from .models import Effect, SpellSpeed
 
-_DAMAGE_STEP_ALLOWED_CATEGORIES = {"atk_def_alter", "negates_activation"}
+# Gated to Spell Speed 2: real cards in these categories are inherently
+# Quick Effects/Traps, per the official rulebook.
+_DAMAGE_STEP_SPEED_GATED_CATEGORIES = {"atk_def_alter", "negates_activation"}
+
+# NOT gated by spell speed: a plain Trigger Effect is normally Speed 1, but
+# these two categories are Damage-Step-legal specifically despite that --
+# either the card says so directly (explicit_permission), or its trigger
+# condition is itself a Damage-Step event that couldn't be met any earlier
+# (card_moved_trigger).
+_DAMAGE_STEP_UNGATED_CATEGORIES = {"explicit_permission", "card_moved_trigger"}
 
 
 def can_activate_during_damage_step(effect: Effect) -> bool:
     """Whether `effect` may be activated during the Damage Step.
 
-    Per the current official rulebook, only three categories of
-    activation are allowed by default during the Damage Step: Spell
-    Speed 2 effects that alter ATK/DEF, Spell Speed 2 effects that
-    negate an activation, and Spell Speed 3 (Counter Trap) cards. This
-    is independent of `can_activate_now`'s chain-response priority
-    check -- both must pass for a Damage Step activation to be legal.
+    Per the current official rulebook, the baseline is: Spell Speed 3
+    (Counter Trap) cards, or Spell Speed 2 effects that alter ATK/DEF
+    or negate an activation. On top of that, two more categories are
+    legal regardless of spell speed: an effect whose own activation
+    condition names "damage step"/"damage calculation" directly
+    (`"explicit_permission"`), and a Trigger-type effect whose own card
+    is what moved -- e.g. "if this card is destroyed by battle"
+    (`"card_moved_trigger"`) -- since such a condition can only ever be
+    met during (or immediately after) the Damage Step itself. This is
+    independent of `can_activate_now`'s chain-response priority check
+    -- both must pass for a Damage Step activation to be legal.
     """
     if effect.spell_speed == SpellSpeed.COUNTER:
         return True
+    if effect.damage_step_category in _DAMAGE_STEP_UNGATED_CATEGORIES:
+        return True
     if effect.spell_speed == SpellSpeed.QUICK:
-        return effect.damage_step_category in _DAMAGE_STEP_ALLOWED_CATEGORIES
+        return effect.damage_step_category in _DAMAGE_STEP_SPEED_GATED_CATEGORIES
     return False
 
 

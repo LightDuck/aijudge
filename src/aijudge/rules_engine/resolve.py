@@ -73,7 +73,9 @@ def resolve_chain(scenario: dict) -> ResolutionResult:
                     reason="damage_step_restricted",
                     detail=(
                         f"{effect.card_name} cannot be activated during the Damage Step "
-                        "(not Speed 3, and not a Speed 2 ATK/DEF-altering or activation-negating effect)"
+                        "(not Speed 3, not a Speed 2 ATK/DEF-altering or activation-negating effect, "
+                        "and its own text neither grants explicit Damage-Step permission nor triggers "
+                        "off its own card moving)"
                     ),
                 )
                 return ResolutionResult(resolution_order=_order(chain), violation=violation)

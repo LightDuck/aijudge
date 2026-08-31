@@ -13,7 +13,7 @@ _CONNECTOR_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
-_NEGATES_ACTIVATION_PATTERN = re.compile(r"negate the activation", re.IGNORECASE)
+_NEGATES_ACTIVATION_PATTERN = re.compile(r"negate\w*\s+(?:the|its|that|this)\s+activation", re.IGNORECASE)
 # Matches only an ATK/DEF *alteration* (a change-indicating verb within a
 # short distance of the ATK/DEF token), not a bare mention/comparison like
 # "if that monster's ATK is higher than 1000". ATK/DEF stays case-sensitive
@@ -26,6 +26,41 @@ _ATK_DEF_PATTERN = re.compile(
 )
 
 _USAGE_LIMIT_PATTERN = re.compile(r"You can only [^.]*\bper turn\.", re.IGNORECASE)
+
+# Effects that self-declare Damage-Step legality in their own activation
+# condition -- "damage calculation" is treated as equivalent to "damage step"
+# for this project.
+_EXPLICIT_DAMAGE_STEP_PERMISSION_PATTERN = re.compile(r"damage (?:step|calculation)", re.IGNORECASE)
+
+# A card explicitly carving itself OUT of Damage-Step activation (e.g.
+# "except during the Damage Step") overrides every other category -- checked
+# first in classify_damage_step_category.
+_DAMAGE_STEP_EXCEPTION_PATTERN = re.compile(
+    r"(?:except|not).{0,20}during the damage (?:step|calculation)"
+    r"|cannot be activated during the damage (?:step|calculation)",
+    re.IGNORECASE,
+)
+
+# A Trigger/Trigger-like/Quick/Quick-like effect whose *own card* undergoes a
+# zone-change verb as its activation condition -- e.g. "if this card is
+# destroyed by battle" or "if this card is Special Summoned". Deliberately
+# requires "this card" (self-reference); a condition about some *other* card
+# moving (e.g. "if a Salamangreat monster... is sent to the GY") is not
+# reliably Damage-Step-legal (real cards carve such conditions out
+# explicitly), so it is intentionally left unmatched rather than guessed.
+_SELF_MOVEMENT_VERBS = r"(?:destroy|banish|send|return|summon|flip|tribute)\w*"
+_CARD_MOVED_TRIGGER_PATTERN = re.compile(
+    rf"\bthis card\b.{{0,40}}?\b{_SELF_MOVEMENT_VERBS}\b"
+    rf"|\b{_SELF_MOVEMENT_VERBS}\b.{{0,40}}?\bthis card\b",
+    re.IGNORECASE,
+)
+
+_DAMAGE_STEP_ELIGIBLE_EFFECT_TYPES = {
+    EffectType.TRIGGER,
+    EffectType.TRIGGER_LIKE,
+    EffectType.QUICK,
+    EffectType.QUICK_LIKE,
+}
 
 
 @dataclass
@@ -144,20 +179,49 @@ def classify_effect_type(card_text: str, *, card_type: str) -> EffectType:
     return EffectType.EFFECT
 
 
-def classify_damage_step_category(effect_text: str) -> str | None:
-    """Classify which (if any) of the two Spell-Speed-2 Damage-Step-legal
-    categories this effect text falls into, per the current official
-    rulebook: effects that negate an activation, or effects that alter a
-    monster's ATK/DEF. Checked in this order since "negate the activation"
-    is the more specific phrase -- an effect can mention ATK/DEF changes
-    incidentally while its Damage-Step-relevant behavior is really the
-    negation. Returns None when neither pattern is found, rather than
-    guessing.
+def classify_damage_step_category(
+    effect_text: str,
+    *,
+    activation_condition: str | None = None,
+    effect_type: EffectType | None = None,
+) -> str | None:
+    """Classify which (if any) Damage-Step-legal category this effect falls
+    into: `"negates_activation"` and `"atk_def_alter"` (sourced from the
+    official rulebook, checked against `effect_text` -- the resolution
+    clause -- since that's where a negation or an ATK/DEF change is actually
+    described); `"explicit_permission"` (the card's own `activation_condition`
+    names "damage step" or "damage calculation" directly); or
+    `"card_moved_trigger"` (a Trigger/Trigger-like/Quick/Quick-like effect
+    whose own card is the subject of a zone-change verb in its condition,
+    e.g. "if this card is destroyed by battle"). The latter two are checked
+    against `activation_condition`, not `effect_text` -- that's where PSCT
+    puts a trigger's condition -- and only for effect types that can carry a
+    triggering condition at all.
+
+    An explicit exception in the condition (e.g. "except during the Damage
+    Step") is checked first and overrides every other category, since the
+    card is telling us directly it does not get the exception -- see
+    Salamangreat Gazelle's non-self GY-cost effect for a real example of a
+    condition that would otherwise look Damage-Step-eligible.
+
+    `negates_activation` is checked before `atk_def_alter` since "negate the
+    activation" is the more specific phrase -- an effect can mention ATK/DEF
+    changes incidentally while its Damage-Step-relevant behavior is really
+    the negation. Returns None when nothing matches, rather than guessing --
+    in particular, a condition about some *other* card moving (not "this
+    card") is deliberately never classified as `card_moved_trigger`.
     """
+    if activation_condition and _DAMAGE_STEP_EXCEPTION_PATTERN.search(activation_condition):
+        return None
     if _NEGATES_ACTIVATION_PATTERN.search(effect_text):
         return "negates_activation"
     if _ATK_DEF_PATTERN.search(effect_text):
         return "atk_def_alter"
+    if activation_condition and effect_type in _DAMAGE_STEP_ELIGIBLE_EFFECT_TYPES:
+        if _EXPLICIT_DAMAGE_STEP_PERMISSION_PATTERN.search(activation_condition):
+            return "explicit_permission"
+        if _CARD_MOVED_TRIGGER_PATTERN.search(activation_condition):
+            return "card_moved_trigger"
     return None
 
 

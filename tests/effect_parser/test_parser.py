@@ -206,6 +206,100 @@ def test_classify_damage_step_category_returns_none_for_a_bare_atk_mention_with_
     assert classify_damage_step_category(text) is None
 
 
+def test_classify_damage_step_category_detects_negates_activation_with_a_possessive_variant():
+    text = "you can negate its activation, and if you do, destroy it."
+    assert classify_damage_step_category(text) == "negates_activation"
+
+
+def test_classify_damage_step_category_does_not_confuse_negate_effects_with_negate_activation():
+    text = "negate the effects of 1 Effect Monster your opponent controls."
+    assert classify_damage_step_category(text) is None
+
+
+def test_classify_damage_step_category_detects_explicit_permission_mentioning_damage_step():
+    text = "you can Special Summon 1 monster from your GY."
+    assert (
+        classify_damage_step_category(
+            text,
+            activation_condition="If this card would be destroyed by battle, during damage calculation",
+            effect_type=EffectType.TRIGGER,
+        )
+        == "explicit_permission"
+    )
+
+
+def test_classify_damage_step_category_detects_explicit_permission_mentioning_damage_calculation_as_damage_step():
+    text = "you can activate 1 of these effects."
+    assert (
+        classify_damage_step_category(
+            text,
+            activation_condition="This effect can be activated during damage calculation",
+            effect_type=EffectType.QUICK,
+        )
+        == "explicit_permission"
+    )
+
+
+def test_classify_damage_step_category_detects_card_moved_trigger_for_self_destruction():
+    text = "you can add 1 card from your Deck to your hand."
+    assert (
+        classify_damage_step_category(
+            text,
+            activation_condition="If this card is destroyed by battle",
+            effect_type=EffectType.TRIGGER,
+        )
+        == "card_moved_trigger"
+    )
+
+
+def test_classify_damage_step_category_detects_card_moved_trigger_for_self_special_summon():
+    text = "you can add 1 'Salamangreat' card from your Deck to your hand, except this card."
+    assert (
+        classify_damage_step_category(
+            text,
+            activation_condition="If this card is Special Summoned",
+            effect_type=EffectType.TRIGGER,
+        )
+        == "card_moved_trigger"
+    )
+
+
+def test_classify_damage_step_category_does_not_match_card_moved_trigger_for_a_non_self_card():
+    text = "you can banish it instead."
+    assert (
+        classify_damage_step_category(
+            text,
+            activation_condition="If a 'Salamangreat' monster you control would be sent from the field or your hand to the GY",
+            effect_type=EffectType.TRIGGER,
+        )
+        is None
+    )
+
+
+def test_classify_damage_step_category_respects_an_explicit_damage_step_exception():
+    text = "you can Special Summon 1 monster from your GY."
+    assert (
+        classify_damage_step_category(
+            text,
+            activation_condition="If this card is destroyed by battle (except during the Damage Step)",
+            effect_type=EffectType.TRIGGER,
+        )
+        is None
+    )
+
+
+def test_classify_damage_step_category_gates_card_moved_trigger_by_effect_type():
+    text = "you can add 1 card from your Deck to your hand."
+    assert (
+        classify_damage_step_category(
+            text,
+            activation_condition="If this card is destroyed by battle",
+            effect_type=EffectType.IGNITION,
+        )
+        is None
+    )
+
+
 def test_extract_usage_limit_text_finds_a_trailing_once_per_turn_sentence():
     text = (
         "During your opponent's Main Phase (Quick Effect): You can send this "
