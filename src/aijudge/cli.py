@@ -42,7 +42,15 @@ def run_cli(
 
         matches = find_matched_cards_fn(stripped)
         disambiguation_items: list[ClarificationItem] = []
-        if len(matches) > 1:
+        preflight_context = ""
+        if len(matches) == 1:
+            # Ground the clarification-decision call itself, not just the
+            # eventual run_loop call -- otherwise the LLM can ask the user
+            # for clarification the deterministic KNOWN FACTS already
+            # resolve (e.g. "which effect do you mean?" for a card whose
+            # effects are all already enumerated below).
+            preflight_context = build_known_facts_context_fn(matches[0])
+        elif len(matches) > 1:
             names = ", ".join(match["name"] for match in matches)
             disambiguation_items.append(
                 ClarificationItem(
@@ -51,14 +59,14 @@ def run_cli(
                 )
             )
 
-        clarify_response = llm_client.complete(build_clarification_prompt(stripped), system=build_system_prompt())
+        clarify_response = llm_client.complete(
+            build_clarification_prompt(stripped, known_facts_context=preflight_context),
+            system=build_system_prompt(),
+        )
         items = disambiguation_items + parse_clarification_response(clarify_response)
         answers = [input_fn(f"{clarification_prompt_text(item)} ") for item in items]
 
-        preflight_context = ""
-        if len(matches) == 1:
-            preflight_context = build_known_facts_context_fn(matches[0])
-        elif len(matches) > 1 and answers:
+        if len(matches) > 1 and answers:
             candidate_names = [match["name"] for match in matches]
             matched_names = find_mentioned_card_names(answers[0], candidate_names)
             chosen = next((match for match in matches if match["name"] == matched_names[0]), None) if matched_names else None

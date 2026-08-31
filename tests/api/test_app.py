@@ -199,6 +199,30 @@ def test_post_questions_folds_known_facts_for_a_single_matched_card_into_the_llm
     assert any("KNOWN FACTS: Baronne de Fleur" in p for p in llm.prompts)
 
 
+def test_post_questions_passes_known_facts_to_the_clarification_call_for_a_single_match():
+    llm = _CapturingLLMClient(["PROCEED", "FINAL: Yes. ||CITES: ||"])
+
+    app = create_app(
+        llm,
+        MockEmbeddingClient(),
+        find_matched_cards_fn=lambda question: [
+            {"id": "1", "name": "Baronne de Fleur", "card_type": "Synchro Monster"}
+        ],
+        build_known_facts_context_fn=lambda card: f"KNOWN FACTS: {card['name']}",
+    )
+
+    response = TestClient(app).post(
+        "/questions", json={"question": "Is Baronne de Fleur's effect usable in the Damage Step?"}
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "answer"
+    # The clarification-decision call (prompts[0]) must see the grounding
+    # data too, not just the run_loop call -- otherwise the LLM can ask for
+    # clarification the deterministic layer already resolved.
+    assert "KNOWN FACTS: Baronne de Fleur" in llm.prompts[0]
+
+
 def test_post_questions_returns_disambiguate_card_item_when_multiple_cards_match():
     llm = _CapturingLLMClient(["PROCEED"])
 

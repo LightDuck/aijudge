@@ -46,6 +46,20 @@ def test_build_clarification_prompt_includes_the_question():
     assert "Can I activate Solemn Strike here?" in prompt
 
 
+def test_build_clarification_prompt_has_no_known_facts_section_by_default():
+    prompt = build_clarification_prompt("Can I activate Solemn Strike here?")
+    assert "KNOWN FACTS" not in prompt
+
+
+def test_build_clarification_prompt_includes_known_facts_context_when_provided():
+    prompt = build_clarification_prompt(
+        "Is Baronne de Fleur's effect usable in the Damage Step?",
+        known_facts_context="KNOWN FACTS (deterministic -- do not contradict):\n- Quick Effect, Spell Speed 2...",
+    )
+    assert "KNOWN FACTS (deterministic -- do not contradict):" in prompt
+    assert "- Quick Effect, Spell Speed 2..." in prompt
+
+
 def test_clarification_prompt_text_for_clarify_item_is_the_question_itself():
     item = ClarificationItem(kind="clarify", text="Which monster do you control?")
     assert clarification_prompt_text(item) == "Which monster do you control?"

@@ -109,7 +109,13 @@ def create_app(
 
         matches = find_matched_cards_fn(question)
         disambiguation_items: list[ClarificationItem] = []
-        if len(matches) > 1:
+        preflight_context = ""
+        if len(matches) == 1:
+            # Ground the clarification-decision call itself, not just the
+            # eventual run_loop call -- otherwise the LLM can ask for
+            # clarification the deterministic KNOWN FACTS already resolve.
+            preflight_context = build_known_facts_context_fn(matches[0])
+        elif len(matches) > 1:
             names = ", ".join(match["name"] for match in matches)
             disambiguation_items.append(
                 ClarificationItem(
@@ -118,7 +124,10 @@ def create_app(
                 )
             )
 
-        clarify_response = llm_client.complete(build_clarification_prompt(question), system=build_system_prompt())
+        clarify_response = llm_client.complete(
+            build_clarification_prompt(question, known_facts_context=preflight_context),
+            system=build_system_prompt(),
+        )
         items = disambiguation_items + parse_clarification_response(clarify_response)
         if items:
             return {
@@ -127,7 +136,6 @@ def create_app(
                 "items": [{"kind": item.kind, "text": item.text} for item in items],
             }
 
-        preflight_context = _resolve_preflight_context(matches, items, [], build_known_facts_context_fn)
         result = run_loop(question, llm_client=llm_client, tools=tools, clarification_context=preflight_context)
         return _result_response(result)
 

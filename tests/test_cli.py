@@ -154,6 +154,30 @@ def test_run_cli_disambiguates_with_case_insensitive_fuzzy_match():
     assert any("KNOWN FACTS: Effect Veiler" in p for p in llm.prompts)
 
 
+def test_run_cli_passes_known_facts_to_the_clarification_call_for_a_single_match():
+    printed = []
+    inputs = iter(["Is Baronne de Fleur's effect usable in the Damage Step?", "quit"])
+
+    llm = _CapturingLLMClient(["PROCEED", "FINAL: Yes. ||CITES: ||"])
+
+    card = {"id": "1", "name": "Baronne de Fleur", "card_type": "Synchro Monster"}
+
+    run_cli(
+        llm,
+        MockEmbeddingClient(),
+        input_fn=lambda _: next(inputs),
+        print_fn=printed.append,
+        find_matched_cards_fn=lambda question: [card],
+        build_known_facts_context_fn=lambda c: f"KNOWN FACTS: {c['name']}",
+    )
+
+    assert "Yes." in printed
+    # The clarification-decision call (prompts[0]) must see the grounding
+    # data too, not just the run_loop call -- otherwise the LLM can ask for
+    # clarification the deterministic layer already resolved.
+    assert "KNOWN FACTS: Baronne de Fleur" in llm.prompts[0]
+
+
 def test_run_cli_prints_a_notice_when_disambiguation_answer_matches_nothing():
     printed = []
     inputs = iter(["Can I chain Effect Veiler or Effector here?", "I have no idea what you mean", "quit"])

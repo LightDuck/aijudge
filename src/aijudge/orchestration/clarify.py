@@ -7,7 +7,13 @@ class ClarificationItem:
     text: str
 
 
-def build_clarification_prompt(question: str) -> str:
+def build_clarification_prompt(question: str, *, known_facts_context: str = "") -> str:
+    known_facts_section = (
+        f"\n\n{known_facts_context}\n\nDo not ask the user for clarification about anything already "
+        "covered above -- only raise CLARIFY/CONTINUOUS_CHECK for what the facts above don't resolve."
+        if known_facts_context
+        else ""
+    )
     return (
         "A user asked a Yu-Gi-Oh! rules question. Before answering, decide "
         "whether you need more information:\n"
@@ -16,7 +22,8 @@ def build_clarification_prompt(question: str) -> str:
         "- If the question depends on a continuous or lingering effect card "
         "whose current on-board status you can't observe, respond with one "
         "or more lines: 'CONTINUOUS_CHECK: <card name>'\n"
-        "- If neither applies, respond with exactly: 'PROCEED'\n\n"
+        "- If neither applies, respond with exactly: 'PROCEED'"
+        f"{known_facts_section}\n\n"
         f"Question: {question}"
     )
 
