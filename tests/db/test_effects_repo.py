@@ -105,3 +105,36 @@ def test_confirm_effect_raises_when_id_does_not_exist():
 
     with pytest.raises(ValueError):
         confirm_effect("00000000-0000-0000-0000-000000000000")
+
+
+def test_confirmed_effect_includes_damage_step_category_and_usage_limit_text():
+    from aijudge.db.effects_repo import confirm_effect, get_confirmed_effect, insert_pending_effect
+
+    card_id = _make_card_id()
+    effect_id = insert_pending_effect(
+        card_id=card_id,
+        effect_type="quick",
+        effect="its ATK becomes 0.",
+        damage_step_category="atk_def_alter",
+        usage_limit_text='You can only use this effect of "Effect Veiler" once per turn.',
+    )
+
+    confirm_effect(effect_id)
+    confirmed = get_confirmed_effect(card_id)
+
+    assert confirmed is not None
+    assert confirmed["damage_step_category"] == "atk_def_alter"
+    assert confirmed["usage_limit_text"] == 'You can only use this effect of "Effect Veiler" once per turn.'
+
+
+def test_confirmed_effect_damage_step_category_and_usage_limit_text_default_to_none():
+    from aijudge.db.effects_repo import confirm_effect, get_confirmed_effect, insert_pending_effect
+
+    card_id = _make_card_id()
+    effect_id = insert_pending_effect(card_id=card_id, effect_type="ignition", effect="destroy it.")
+
+    confirm_effect(effect_id)
+    confirmed = get_confirmed_effect(card_id)
+
+    assert confirmed["damage_step_category"] is None
+    assert confirmed["usage_limit_text"] is None

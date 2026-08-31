@@ -1,6 +1,9 @@
 from .connection import get_connection
 
-_EFFECT_COLUMNS = ["id", "effect_type", "activation_condition", "cost", "targeting", "has_target", "effect"]
+_EFFECT_COLUMNS = [
+    "id", "effect_type", "activation_condition", "cost", "targeting", "has_target", "effect",
+    "damage_step_category", "usage_limit_text",
+]
 
 
 def insert_pending_effect(
@@ -13,17 +16,23 @@ def insert_pending_effect(
     targeting: str | None = None,
     has_target: bool = False,
     confidence_score: float | None = None,
+    damage_step_category: str | None = None,
+    usage_limit_text: str | None = None,
 ) -> str:
     with get_connection() as conn:
         row = conn.execute(
             """
             INSERT INTO card_effects_structured (
                 card_id, effect_type, activation_condition, cost, targeting,
-                has_target, effect, status, confidence_score
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, 'pending', %s)
+                has_target, effect, status, confidence_score,
+                damage_step_category, usage_limit_text
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, 'pending', %s, %s, %s)
             RETURNING id
             """,
-            (card_id, effect_type, activation_condition, cost, targeting, has_target, effect, confidence_score),
+            (
+                card_id, effect_type, activation_condition, cost, targeting, has_target, effect,
+                confidence_score, damage_step_category, usage_limit_text,
+            ),
         ).fetchone()
         conn.commit()
         return str(row[0])
@@ -44,7 +53,8 @@ def get_confirmed_effect(card_id: str) -> dict | None:
     with get_connection() as conn:
         row = conn.execute(
             """
-            SELECT id, effect_type, activation_condition, cost, targeting, has_target, effect
+            SELECT id, effect_type, activation_condition, cost, targeting, has_target, effect,
+                   damage_step_category, usage_limit_text
             FROM card_effects_structured
             WHERE card_id = %s AND status = 'confirmed'
             """,
