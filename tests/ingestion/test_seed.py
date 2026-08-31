@@ -138,3 +138,41 @@ def test_seed_card_classifies_a_tuner_monster_subtype_as_a_monster_effect():
             (card_id,),
         ).fetchone()
     assert row[0] == "trigger"
+
+
+def test_seed_card_stores_damage_step_category_and_usage_limit_text():
+    from aijudge.db.effects_repo import get_confirmed_effect
+    from aijudge.ingestion.seed import seed_card
+    from aijudge.llm.client import MockLLMClient
+
+    def fake_fetch_card(name, http_get=None):
+        return {
+            "id": 95440946,
+            "name": name,
+            "type": "Effect Monster",
+            "desc": (
+                "During your opponent's Main Phase (Quick Effect): You can send this "
+                "card from your hand to the GY; until the end of this turn, negate "
+                "the effects of 1 Effect Monster your opponent controls, also its "
+                'ATK becomes 0. You can only use this effect of "Effect Veiler" once '
+                "per turn."
+            ),
+        }
+
+    def fake_fetch_rulings(name, http_get=None):
+        return []
+
+    llm_client = MockLLMClient()
+    llm_client.queue_response("0.97")
+
+    card_id = seed_card(
+        "Effect Veiler",
+        llm_client=llm_client,
+        fetch_card_fn=fake_fetch_card,
+        fetch_rulings_fn=fake_fetch_rulings,
+    )
+
+    confirmed_effect = get_confirmed_effect(card_id)
+    assert confirmed_effect is not None
+    assert confirmed_effect["damage_step_category"] == "atk_def_alter"
+    assert confirmed_effect["usage_limit_text"] == 'You can only use this effect of "Effect Veiler" once per turn.'

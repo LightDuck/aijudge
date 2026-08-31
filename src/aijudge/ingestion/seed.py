@@ -4,7 +4,7 @@ from typing import Callable
 from aijudge.db.cards_repo import insert_card
 from aijudge.db.effects_repo import confirm_effect, insert_pending_effect
 from aijudge.db.rulings_repo import insert_ruling
-from aijudge.effect_parser.parser import classify_effect_type, parse_psct
+from aijudge.effect_parser.parser import classify_damage_step_category, classify_effect_type, extract_usage_limit_text, parse_psct
 from aijudge.effect_parser.review_agent import review_parsed_effect
 from aijudge.ingestion.ygoprodeck_client import fetch_card
 from aijudge.ingestion.ygoresources_client import fetch_rulings
@@ -50,6 +50,8 @@ def seed_card(
 
     effect_type = classify_effect_type(card_text, card_type=card_type)
     parsed = parse_psct(card_text)
+    damage_step_category = classify_damage_step_category(parsed.effect)
+    usage_limit_text = extract_usage_limit_text(card_text)
 
     review = review_parsed_effect(
         llm_client,
@@ -58,6 +60,7 @@ def seed_card(
         cost=parsed.cost,
         targeting=parsed.targeting,
         effect=parsed.effect,
+        damage_step_category=damage_step_category,
     )
 
     effect_id = insert_pending_effect(
@@ -69,6 +72,8 @@ def seed_card(
         targeting=parsed.targeting,
         has_target=(parsed.targeting is not None),
         confidence_score=review.confidence,
+        damage_step_category=damage_step_category,
+        usage_limit_text=usage_limit_text,
     )
 
     if review.auto_confirmed:
