@@ -11,7 +11,7 @@ from .orchestration.clarify import (
     parse_clarification_response,
 )
 from .orchestration.loop import run_loop
-from .orchestration.preflight import build_known_facts_context, find_matched_cards
+from .orchestration.preflight import build_known_facts_context, find_matched_cards, find_mentioned_card_names
 from .orchestration.tools import build_tool_dispatch
 
 
@@ -58,9 +58,13 @@ def run_cli(
         if len(matches) == 1:
             preflight_context = build_known_facts_context_fn(matches[0])
         elif len(matches) > 1 and answers:
-            chosen = next((match for match in matches if match["name"] == answers[0].strip()), None)
+            candidate_names = [match["name"] for match in matches]
+            matched_names = find_mentioned_card_names(answers[0], candidate_names)
+            chosen = next((match for match in matches if match["name"] == matched_names[0]), None) if matched_names else None
             if chosen is not None:
                 preflight_context = build_known_facts_context_fn(chosen)
+            else:
+                print_fn("Couldn't match your answer to a specific card -- proceeding without that card's confirmed details.")
 
         context = format_clarification_context(items, answers)
         if preflight_context:

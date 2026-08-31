@@ -110,6 +110,55 @@ def test_run_cli_disambiguates_when_multiple_cards_match():
     assert any("KNOWN FACTS: Effect Veiler" in p for p in llm.prompts)
 
 
+def test_run_cli_disambiguates_with_case_insensitive_fuzzy_match():
+    printed = []
+    inputs = iter(["Can I chain Effect Veiler or Effector here?", "effect veiler", "quit"])
+
+    llm = _CapturingLLMClient(["PROCEED", "FINAL: Yes. ||CITES: ||"])
+
+    matches = [
+        {"id": "1", "name": "Effect Veiler", "card_type": "Effect Monster"},
+        {"id": "2", "name": "Effector", "card_type": "Effect Monster"},
+    ]
+
+    run_cli(
+        llm,
+        MockEmbeddingClient(),
+        input_fn=lambda _: next(inputs),
+        print_fn=printed.append,
+        find_matched_cards_fn=lambda question: matches,
+        build_known_facts_context_fn=lambda card: f"KNOWN FACTS: {card['name']}",
+    )
+
+    assert "Yes." in printed
+    assert any("KNOWN FACTS: Effect Veiler" in p for p in llm.prompts)
+
+
+def test_run_cli_prints_a_notice_when_disambiguation_answer_matches_nothing():
+    printed = []
+    inputs = iter(["Can I chain Effect Veiler or Effector here?", "I have no idea what you mean", "quit"])
+
+    llm = _CapturingLLMClient(["PROCEED", "FINAL: Yes. ||CITES: ||"])
+
+    matches = [
+        {"id": "1", "name": "Effect Veiler", "card_type": "Effect Monster"},
+        {"id": "2", "name": "Effector", "card_type": "Effect Monster"},
+    ]
+
+    run_cli(
+        llm,
+        MockEmbeddingClient(),
+        input_fn=lambda _: next(inputs),
+        print_fn=printed.append,
+        find_matched_cards_fn=lambda question: matches,
+        build_known_facts_context_fn=lambda card: f"KNOWN FACTS: {card['name']}",
+    )
+
+    assert "Yes." in printed
+    assert any("Couldn't match your answer" in p for p in printed)
+    assert not any("KNOWN FACTS" in p for p in llm.prompts)
+
+
 def test_run_cli_folds_preflight_facts_in_for_a_single_match():
     printed = []
     inputs = iter(["Can I activate Effect Veiler here?", "quit"])
