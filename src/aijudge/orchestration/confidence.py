@@ -22,7 +22,7 @@ def update_signals(state: SignalState, tool_name: str, result: dict) -> None:
                 "label": result.get("name", ""),
                 "text": result.get("card_text", ""),
             }
-            if result.get("confirmed_effect") is None:
+            if not result.get("confirmed_effects"):
                 state.missing_structured_effect = True
     elif tool_name == "get_rulings":
         rulings = result.get("rulings", [])

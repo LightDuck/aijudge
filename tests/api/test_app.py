@@ -96,7 +96,7 @@ def test_post_questions_serializes_citation_content_without_leaking_raw_ids():
             "id": "abc123",
             "name": "Ash Blossom & Joyous Spring",
             "card_text": "You can discard this card...",
-            "confirmed_effect": {"effect": "..."},
+            "confirmed_effects": [{"effect": "..."}],
         }
     }
 

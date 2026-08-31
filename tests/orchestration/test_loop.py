@@ -19,7 +19,7 @@ def test_tool_call_then_final_answer_cites_the_returned_id():
     llm.queue_response('TOOL: lookup_card {"name": "Ash Blossom & Joyous Spring"}')
     llm.queue_response("FINAL: It negates the effect. ||CITES: card:abc123||")
 
-    tools = {"lookup_card": lambda args: {"found": True, "id": "abc123", "confirmed_effect": {"effect": "..."}}}
+    tools = {"lookup_card": lambda args: {"found": True, "id": "abc123", "confirmed_effects": [{"effect": "..."}]}}
 
     result = run_loop("What does Ash Blossom do?", llm_client=llm, tools=tools)
 
@@ -87,7 +87,7 @@ def test_tool_call_loop_gives_up_after_max_tool_calls():
     for _ in range(20):
         llm.queue_response('TOOL: lookup_card {"name": "Ash Blossom & Joyous Spring"}')
 
-    tools = {"lookup_card": lambda args: {"found": True, "id": "abc123", "confirmed_effect": None}}
+    tools = {"lookup_card": lambda args: {"found": True, "id": "abc123", "confirmed_effects": []}}
 
     result = run_loop("What does this do?", llm_client=llm, tools=tools)
 
@@ -101,7 +101,7 @@ def test_malformed_tool_arguments_are_recoverable():
     llm.queue_response("FINAL: It negates the effect. ||CITES: card:abc123||")
 
     def _lookup(args):
-        return {"found": True, "id": "abc123", "confirmed_effect": {"effect": "..."}, "name": args["name"]}
+        return {"found": True, "id": "abc123", "confirmed_effects": [{"effect": "..."}], "name": args["name"]}
 
     result = run_loop("What does Ash Blossom do?", llm_client=llm, tools={"lookup_card": _lookup})
 
@@ -114,7 +114,7 @@ def test_malformed_tool_arguments_exhausted_surfaces_not_supported():
         llm.queue_response("TOOL: lookup_card {}")
 
     def _lookup(args):
-        return {"found": True, "id": "abc123", "confirmed_effect": None, "name": args["name"]}
+        return {"found": True, "id": "abc123", "confirmed_effects": [], "name": args["name"]}
 
     result = run_loop("What does Ash Blossom do?", llm_client=llm, tools={"lookup_card": _lookup})
 
@@ -132,7 +132,7 @@ def test_tool_call_then_final_answer_includes_citation_text():
             "id": "abc123",
             "name": "Ash Blossom & Joyous Spring",
             "card_text": "You can discard this card...",
-            "confirmed_effect": {"effect": "..."},
+            "confirmed_effects": [{"effect": "..."}],
         }
     }
 
@@ -177,7 +177,7 @@ def test_multiple_citations_are_sorted_by_id():
                 "id": "z9",
                 "name": "Card Z",
                 "card_text": "Card Z text",
-                "confirmed_effect": {"effect": "..."},
+                "confirmed_effects": [{"effect": "..."}],
             }
         else:
             return {
@@ -185,7 +185,7 @@ def test_multiple_citations_are_sorted_by_id():
                 "id": "a1",
                 "name": "Card A",
                 "card_text": "Card A text",
-                "confirmed_effect": {"effect": "..."},
+                "confirmed_effects": [{"effect": "..."}],
             }
 
     result = run_loop("Compare Card Z and Card A", llm_client=llm, tools={"lookup_card": lookup_tool})
@@ -203,7 +203,7 @@ def test_run_loop_passes_the_system_prompt_on_every_llm_call():
     llm.queue_response('TOOL: lookup_card {"name": "Ash Blossom & Joyous Spring"}')
     llm.queue_response("FINAL: It negates the effect. ||CITES: card:abc123||")
 
-    tools = {"lookup_card": lambda args: {"found": True, "id": "abc123", "confirmed_effect": {"effect": "..."}}}
+    tools = {"lookup_card": lambda args: {"found": True, "id": "abc123", "confirmed_effects": [{"effect": "..."}]}}
 
     run_loop("What does Ash Blossom do?", llm_client=llm, tools=tools)
 
