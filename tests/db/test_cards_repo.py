@@ -41,6 +41,39 @@ def test_insert_and_get_card_by_name():
     assert card["ygoresources_id"] is None
 
 
+def test_insert_and_get_card_stores_race():
+    from aijudge.db.cards_repo import get_card_by_name, insert_card
+
+    insert_card(
+        name="Called by the Grave",
+        card_text="text",
+        card_type="Spell Card",
+        race="Quick-Play",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="47355498",
+    )
+
+    card = get_card_by_name("Called by the Grave")
+    assert card["race"] == "Quick-Play"
+
+
+def test_insert_card_race_defaults_to_none():
+    from aijudge.db.cards_repo import get_card_by_name, insert_card
+
+    insert_card(
+        name="Ash Blossom & Joyous Spring",
+        card_text="text",
+        card_type="Tuner Monster",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="14558127",
+    )
+
+    card = get_card_by_name("Ash Blossom & Joyous Spring")
+    assert card["race"] is None
+
+
 def test_get_card_by_name_returns_none_when_missing():
     from aijudge.db.cards_repo import get_card_by_name
 

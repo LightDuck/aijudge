@@ -32,12 +32,14 @@ def seed_card(
 ) -> str:
     card_data = fetch_card_fn(name, field=field) if field is not None else fetch_card_fn(name)
     card_type = card_data["type"]
+    race = card_data.get("race")
     card_text = card_data["desc"]
 
     card_id = insert_card(
         name=card_data["name"],
         card_text=card_text,
         card_type=card_type,
+        race=race,
         source="ygoprodeck",
         fetched_at=datetime.now(timezone.utc).date(),
         ygoprodeck_id=str(card_data["id"]),
@@ -63,7 +65,7 @@ def seed_card(
     effect_texts = resolve_effect_clauses(llm_client, card_text)
 
     for effect_text in effect_texts:
-        effect_type = classify_effect_type(effect_text, card_type=card_type)
+        effect_type = classify_effect_type(effect_text, card_type=card_type, race=race)
         parsed = parse_psct(effect_text)
         damage_step_category = classify_damage_step_category(
             parsed.effect,

@@ -75,7 +75,10 @@ spec:
 
 - **`rules_engine/`** — pure Python, zero DB/LLM dependency. This is the deterministic core the spec is protecting:
   - `models.py` — `EffectType`, `SpellSpeed` (NORMAL=1, QUICK=2, COUNTER=3), `Effect`, `ChainLink`.
-    `spell_speed_for()` special-cases Counter Traps (Spell Speed 3) via a `card_type` check, not effect type alone.
+    `spell_speed_for()` special-cases Counter Traps (Spell Speed 3) via a `race` check (`race == "Counter"`), not
+    effect type alone. It takes `race`, not `card_type` — YGOPRODeck's real API returns the generic `"Trap Card"`
+    in `type` and the actual subtype (`"Counter"`, `"Quick-Play"`, ...) in a separate `race` field that's never
+    folded into `type`, so a `card_type` substring check can never actually see "Counter" (see `cards.race` below).
     `is_activatable(effect_type)` says whether an effect of that type can be activated at all (as opposed to a
     passive `CONTINUOUS`/`CONDITION` effect) — checked by `resolve.resolve_chain` before anything else on an
     `"activate"` step.
@@ -125,6 +128,16 @@ spec:
   - `cards.ygoprodeck_id` is `NOT NULL` (always available from the source API); `ygoresources_id` is nullable
     since that API's shape is still unverified. `get_card_by_ygoprodeck_id` / `get_card_by_ygoresources_id` exist
     to reconcile the two id spaces once `ygoresources_id` starts being populated.
+  - `cards.race` is nullable TEXT, CHECK-constrained to the closed 33-value enum YGOPRODeck's API itself accepts
+    (7 Spell/Trap subtypes — `Normal`/`Field`/`Equip`/`Continuous`/`Quick-Play`/`Ritual`/`Counter` — plus the 26
+    monster Types — `Dragon`/`Zombie`/`Spellcaster`/etc.). It mirrors YGOPRODeck's `race` field verbatim, which is
+    a *different* piece of information from `card_type` (YGOPRODeck's `type` field): for Spell/Trap cards, `type`
+    is always the generic `"Spell Card"`/`"Trap Card"` and the real subtype lives only in `race` — `seed.py` used
+    to read `type` alone and silently lose it entirely (e.g. a Quick-Play Spell or Counter Trap would classify as
+    Spell Speed 1, the wrong answer). For monsters, `race` is the elemental Type (Dragon, Zombie, ...); monster
+    *subtype* (Tuner, Spirit, Pendulum, ...) is unaffected by this — YGOPRODeck already folds that into `type`
+    itself as one of a closed set of ~29 precomposed strings (e.g. `"Pendulum Tuner Effect Monster"`), so nothing
+    was lost there and `race` is simply unused by `classify_effect_type`/`spell_speed_for` for monsters.
 
 - **`effect_parser/`** — code-based PSCT grammar parser plus an LLM-scored confidence review step:
   - `parser.py` — `parse_psct()` splits `Condition : Cost/Target ; Effect` on the first `:` and first `;`.
@@ -134,11 +147,18 @@ spec:
     (banish/discard/pay/send/tribute/remove/reveal/shuffle) before it. A bare "and" is genuinely ambiguous in PSCT
     (it can separate cost from target, or join two things in one targeting clause) — the parser doesn't try to
     fully resolve this; that's what the review agent exists to catch.
-    `classify_effect_type()` takes the real `card_type` string (not just an `is_monster` bool) and checks, in
-    order: `(Quick Effect)` substring → QUICK/QUICK_LIKE; no `:` and no `;` anywhere → CONDITION (if "you can
-    only") or CONTINUOUS; starts with "if "/"when " → TRIGGER/TRIGGER_LIKE; otherwise IGNITION for monsters, or
-    for spells/traps QUICK_LIKE if `card_type` contains "Quick-Play" or "Trap" (both inherently Spell Speed 2 by
-    game rule) else EFFECT.
+    `classify_effect_type(card_text, *, card_type, race=None)` takes the real `card_type` string (not just an
+    `is_monster` bool) and checks, in order: `(Quick Effect)` substring → QUICK/QUICK_LIKE; no `:` and no `;`
+    anywhere → CONDITION (if "you can only") or CONTINUOUS; starts with "if "/"when " → TRIGGER/TRIGGER_LIKE; the
+    pre-colon condition segment names "damage step"/"damage calculation" *and* contains a ", if "/", when " clause
+    (a Trigger condition that leads with a timing phrase instead of starting with "if"/"when" directly — e.g.
+    Borreload Dragon: "At the start of the Damage Step, if this card attacks...") → TRIGGER/TRIGGER_LIKE
+    (deliberately narrow: a bare "comma + if" anywhere would wrongly reclassify e.g. Called by the Grave's "During
+    either player's turn, if..." condition, which must stay QUICK_LIKE); otherwise IGNITION for monsters, or for
+    spells/traps QUICK_LIKE if `race == "Quick-Play"` or `card_type` contains "Trap" (all Traps are inherently
+    Spell Speed 2 by game rule regardless of subtype, so a plain substring match is enough there and doesn't need
+    `race`) else EFFECT. `race` is the same YGOPRODeck field described under `spell_speed_for()` above and
+    `cards.race` below — unused for monsters, whose `card_type` string already encodes every subtype.
     `classify_damage_step_category(effect_text, *, activation_condition=None, effect_type=None)` returns
     `"negates_activation"`, `"atk_def_alter"`, `"explicit_permission"`, `"card_moved_trigger"`, or `None`.
     `negates_activation`/`atk_def_alter` are checked first (in that order, since "negate the activation" is the

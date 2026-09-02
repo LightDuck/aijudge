@@ -136,8 +136,13 @@ def _split_on_target_keyword(segment: str) -> tuple[str | None, str | None]:
     return (cost or None), targeting
 
 
-def classify_effect_type(card_text: str, *, card_type: str) -> EffectType:
-    """Classify a card's effect type from its raw PSCT text and card type.
+def classify_effect_type(card_text: str, *, card_type: str, race: str | None = None) -> EffectType:
+    """Classify a card's effect type from its raw PSCT text, card type, and
+    (for Spell/Trap cards) race -- YGOPRODeck's real API returns the generic
+    "Spell Card"/"Trap Card" in `type` and the actual subtype ("Quick-Play",
+    "Counter", "Normal", ...) in a separate `race` field, never folded into
+    `type`. `race` is unused for monsters, whose `type` string already
+    encodes every subtype combination (e.g. "Pendulum Tuner Effect Monster").
 
     Checked in this order:
     1. "(Quick Effect)" anywhere in the text -> QUICK (monster) /
@@ -149,13 +154,25 @@ def classify_effect_type(card_text: str, *, card_type: str) -> EffectType:
     3. Text starts with "if " or "when " (a game-action-fulfilled or
        effect-just-resolved condition) -> TRIGGER (monster) /
        TRIGGER_LIKE (spell-trap).
-    4. Otherwise (has PSCT grammar, didn't match above): for a
+    4. The pre-colon condition segment names "damage step"/"damage
+       calculation" AND contains a ", if "/", when " clause (a Trigger
+       condition that leads with a timing phrase instead of starting
+       with "if"/"when" directly, e.g. Borreload Dragon: "At the start
+       of the Damage Step, if this card attacks...") -> TRIGGER /
+       TRIGGER_LIKE. Deliberately narrow: a generic "comma + if"
+       anywhere would misclassify cards like Called by the Grave
+       ("During either player's turn, if...", correctly QUICK_LIKE via
+       its Quick-Play race, not TRIGGER_LIKE) whose spell speed would
+       come out wrong if reclassified.
+    5. Otherwise (has PSCT grammar, didn't match above): for a
        monster, IGNITION (an activation condition that lacks
        conditional/triggering terms). For a spell/trap: QUICK_LIKE if
-       card_type contains "Quick-Play" or "Trap" (both are inherently
-       Spell Speed 2 by game rule, regardless of text pattern) --
-       otherwise EFFECT (e.g. a Normal Spell, Continuous Spell not
-       caught by the no-colon-no-semicolon check, Field Spell, etc.).
+       race == "Quick-Play" or card_type contains "Trap" (all Traps
+       are inherently Spell Speed 2 by game rule regardless of
+       subtype, so a plain "Trap Card" substring match is sufficient
+       and doesn't need race) -- otherwise EFFECT (e.g. a Normal
+       Spell, Continuous Spell not caught by the no-colon-no-semicolon
+       check, Field Spell, etc.).
 
     is_monster is derived internally from card_type (whether it
     contains the substring "Monster") rather than taken as a separate
@@ -176,9 +193,15 @@ def classify_effect_type(card_text: str, *, card_type: str) -> EffectType:
     if lowered.startswith("if ") or lowered.startswith("when "):
         return EffectType.TRIGGER if is_monster else EffectType.TRIGGER_LIKE
 
+    condition_segment = text.split(":", 1)[0] if ":" in text else text
+    if _EXPLICIT_DAMAGE_STEP_PERMISSION_PATTERN.search(condition_segment) and re.search(
+        r",\s*(?:if|when)\b", condition_segment, re.IGNORECASE
+    ):
+        return EffectType.TRIGGER if is_monster else EffectType.TRIGGER_LIKE
+
     if is_monster:
         return EffectType.IGNITION
-    if "Quick-Play" in card_type or "Trap" in card_type:
+    if race == "Quick-Play" or "Trap" in card_type:
         return EffectType.QUICK_LIKE
     return EffectType.EFFECT
 

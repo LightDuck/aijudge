@@ -3,7 +3,7 @@ from datetime import date
 from .connection import get_connection
 
 _CARD_COLUMNS = [
-    "id", "name", "card_text", "card_type", "attribute", "monster_type",
+    "id", "name", "card_text", "card_type", "race", "attribute", "monster_type",
     "level", "rank", "link_rating", "archetype", "atk", "def", "has_errata",
     "ygoprodeck_id", "ygoresources_id",
 ]
@@ -17,6 +17,7 @@ def insert_card(
     source: str,
     fetched_at: date,
     ygoprodeck_id: str,
+    race: str | None = None,
     attribute: str | None = None,
     monster_type: str | None = None,
     level: int | None = None,
@@ -32,14 +33,14 @@ def insert_card(
         row = conn.execute(
             """
             INSERT INTO cards (
-                name, card_text, card_type, attribute, monster_type,
+                name, card_text, card_type, race, attribute, monster_type,
                 level, rank, link_rating, archetype, atk, def,
                 ygoprodeck_id, ygoresources_id, source, fetched_at, card_materials
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
             """,
             (
-                name, card_text, card_type, attribute, monster_type,
+                name, card_text, card_type, race, attribute, monster_type,
                 level, rank, link_rating, archetype, atk, def_,
                 ygoprodeck_id, ygoresources_id, source, fetched_at, card_materials,
             ),
@@ -51,7 +52,7 @@ def insert_card(
 def get_card_by_name(name: str) -> dict | None:
     with get_connection() as conn:
         row = conn.execute(
-            "SELECT id, name, card_text, card_type, attribute, monster_type, "
+            "SELECT id, name, card_text, card_type, race, attribute, monster_type, "
             "level, rank, link_rating, archetype, atk, def, has_errata, "
             "ygoprodeck_id, ygoresources_id "
             "FROM cards WHERE name = %s",
@@ -67,7 +68,7 @@ def get_card_by_name(name: str) -> dict | None:
 def get_card_by_id(card_id: str) -> dict | None:
     with get_connection() as conn:
         row = conn.execute(
-            "SELECT id, name, card_text, card_type, attribute, monster_type, "
+            "SELECT id, name, card_text, card_type, race, attribute, monster_type, "
             "level, rank, link_rating, archetype, atk, def, has_errata, "
             "ygoprodeck_id, ygoresources_id "
             "FROM cards WHERE id = %s",
@@ -83,7 +84,7 @@ def get_card_by_id(card_id: str) -> dict | None:
 def get_cards_by_fname(fname: str) -> list[dict]:
     with get_connection() as conn:
         rows = conn.execute(
-            "SELECT id, name, card_text, card_type, attribute, monster_type, "
+            "SELECT id, name, card_text, card_type, race, attribute, monster_type, "
             "level, rank, link_rating, archetype, atk, def, has_errata, "
             "ygoprodeck_id, ygoresources_id "
             "FROM cards WHERE name ILIKE %s",
@@ -95,7 +96,7 @@ def get_cards_by_fname(fname: str) -> list[dict]:
 def get_cards_by_archetype(archetype: str) -> list[dict]:
     with get_connection() as conn:
         rows = conn.execute(
-            "SELECT id, name, card_text, card_type, attribute, monster_type, "
+            "SELECT id, name, card_text, card_type, race, attribute, monster_type, "
             "level, rank, link_rating, archetype, atk, def, has_errata, "
             "ygoprodeck_id, ygoresources_id "
             "FROM cards WHERE archetype = %s",
@@ -107,7 +108,7 @@ def get_cards_by_archetype(archetype: str) -> list[dict]:
 def get_card_by_ygoprodeck_id(ygoprodeck_id: str) -> dict | None:
     with get_connection() as conn:
         row = conn.execute(
-            "SELECT id, name, card_text, card_type, attribute, monster_type, "
+            "SELECT id, name, card_text, card_type, race, attribute, monster_type, "
             "level, rank, link_rating, archetype, atk, def, has_errata, "
             "ygoprodeck_id, ygoresources_id "
             "FROM cards WHERE ygoprodeck_id = %s",
@@ -149,7 +150,7 @@ def find_card_by_priority(query: str, *, field: str | None = None) -> tuple[str,
 def get_card_by_ygoresources_id(ygoresources_id: str) -> dict | None:
     with get_connection() as conn:
         row = conn.execute(
-            "SELECT id, name, card_text, card_type, attribute, monster_type, "
+            "SELECT id, name, card_text, card_type, race, attribute, monster_type, "
             "level, rank, link_rating, archetype, atk, def, has_errata, "
             "ygoprodeck_id, ygoresources_id "
             "FROM cards WHERE ygoresources_id = %s",

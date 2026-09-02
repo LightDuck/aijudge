@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS cards (
     name TEXT NOT NULL UNIQUE,
     card_text TEXT NOT NULL,
     card_type TEXT NOT NULL,
+    race TEXT,
     attribute TEXT,
     monster_type TEXT,
     level INTEGER,
@@ -18,8 +19,30 @@ CREATE TABLE IF NOT EXISTS cards (
     source TEXT NOT NULL,
     fetched_at DATE NOT NULL,
     has_errata BOOLEAN NOT NULL DEFAULT FALSE,
-    card_materials TEXT
+    card_materials TEXT,
+    CHECK (race IN (
+        'Normal', 'Field', 'Equip', 'Continuous', 'Quick-Play', 'Ritual', 'Counter',
+        'Aqua', 'Beast', 'Beast-Warrior', 'Creator God', 'Cyberse', 'Dinosaur',
+        'Divine-Beast', 'Dragon', 'Fairy', 'Fiend', 'Fish', 'Illusion', 'Insect',
+        'Machine', 'Plant', 'Psychic', 'Pyro', 'Reptile', 'Rock', 'Sea Serpent',
+        'Spellcaster', 'Thunder', 'Warrior', 'Winged Beast', 'Wyrm', 'Zombie'
+    ) OR race IS NULL)
 );
+
+-- CREATE TABLE IF NOT EXISTS is a no-op on a database where `cards` already
+-- exists, so this column addition is applied separately for pre-existing
+-- databases; it's already present via the CREATE TABLE above on a fresh one.
+ALTER TABLE cards ADD COLUMN IF NOT EXISTS race TEXT;
+DO $$ BEGIN
+    ALTER TABLE cards ADD CONSTRAINT cards_race_check CHECK (race IN (
+        'Normal', 'Field', 'Equip', 'Continuous', 'Quick-Play', 'Ritual', 'Counter',
+        'Aqua', 'Beast', 'Beast-Warrior', 'Creator God', 'Cyberse', 'Dinosaur',
+        'Divine-Beast', 'Dragon', 'Fairy', 'Fiend', 'Fish', 'Illusion', 'Insect',
+        'Machine', 'Plant', 'Psychic', 'Pyro', 'Reptile', 'Rock', 'Sea Serpent',
+        'Spellcaster', 'Thunder', 'Warrior', 'Winged Beast', 'Wyrm', 'Zombie'
+    ) OR race IS NULL);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 CREATE TABLE IF NOT EXISTS card_errata_versions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

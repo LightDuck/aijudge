@@ -148,6 +148,36 @@ def test_build_known_facts_context_is_empty_when_no_confirmed_effect():
     assert build_known_facts_context(get_card_by_name("Effect Veiler")) == ""
 
 
+def test_build_known_facts_context_reads_counter_trap_speed_from_race_not_card_type():
+    """Real YGOPRODeck API shape: card_type is the generic 'Trap Card', the
+    Counter subtype lives in `race`. spell_speed_for must read that race
+    field back off the stored card row -- a card_type substring check can
+    never see "Counter" since the real API never puts it there."""
+    from aijudge.db.cards_repo import get_card_by_name, insert_card
+    from aijudge.db.effects_repo import confirm_effect, insert_pending_effect
+    from aijudge.orchestration.preflight import build_known_facts_context
+
+    card_id = insert_card(
+        name="Solemn Strike",
+        card_text="Negate the Summon of a monster, or an attack, and if you do, destroy it.",
+        card_type="Trap Card",
+        race="Counter",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="40605147",
+    )
+    effect_id = insert_pending_effect(
+        card_id=card_id,
+        effect_type="trigger-like",
+        effect="negate the Summon or activation, and if you do, destroy that card.",
+    )
+    confirm_effect(effect_id)
+
+    context = build_known_facts_context(get_card_by_name("Solemn Strike"))
+
+    assert "spell speed 3" in context
+
+
 def test_build_known_facts_context_covers_every_confirmed_effect_with_damage_step_legality():
     from aijudge.db.cards_repo import get_card_by_name, insert_card
     from aijudge.db.effects_repo import confirm_effect, insert_pending_effect
