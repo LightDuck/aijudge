@@ -120,13 +120,23 @@ def test_classify_effect_type_for_ash_blossom_is_quick_even_though_it_starts_wit
     assert classify_effect_type(text, card_type="Effect Monster") == EffectType.QUICK
 
 
-def test_classify_effect_type_for_called_by_the_grave_is_quick_like_via_quick_play_card_type():
+def test_classify_effect_type_for_called_by_the_grave_is_quick_like_via_quick_play_race():
+    """Real YGOPRODeck API shape: card_type is the generic 'Spell Card' /
+    'Trap Card' string; the Quick-Play/Normal/Continuous/Counter subtype
+    lives in a separate 'race' field, never folded into card_type. This must
+    be read from race, not guessed via a card_type substring that the real
+    API never populates."""
     text = (
         "During either player's turn, if a monster(s) is banished, or a card "
         "or effect in the Graveyard is activated: You can target 1 banished "
         "monster; banish it."
     )
-    assert classify_effect_type(text, card_type="Quick-Play Spell") == EffectType.QUICK_LIKE
+    assert classify_effect_type(text, card_type="Spell Card", race="Quick-Play") == EffectType.QUICK_LIKE
+
+
+def test_classify_effect_type_for_a_normal_spell_with_no_race_match_is_effect():
+    text = "Target 1 monster on the field; destroy it."
+    assert classify_effect_type(text, card_type="Spell Card", race="Normal") == EffectType.EFFECT
 
 
 def test_classify_effect_type_for_infinite_impermanence_is_quick_like_via_trap_card_type():
@@ -152,13 +162,18 @@ def test_classify_effect_type_for_effect_veiler_is_quick():
 
 
 def test_classify_effect_type_for_solemn_strike_is_trigger_like():
+    """Real API shape: card_type is the generic 'Trap Card', race is
+    'Counter' -- classify_effect_type reaches TRIGGER_LIKE via the leading
+    "When " check before ever consulting card_type/race, so the Counter
+    subtype (which only matters for spell_speed_for, not effect_type) need
+    not be present here for this to pass."""
     text = (
         "When your opponent Normal or Special Summons a monster(s), or "
         "activates a monster effect that Special Summons a monster(s): Pay "
         "1500 LP; negate the Summon or activation, and if you activated this "
         "card by targeting a Special Summoned monster(s), banish it/them."
     )
-    assert classify_effect_type(text, card_type="Counter Trap Card") == EffectType.TRIGGER_LIKE
+    assert classify_effect_type(text, card_type="Trap Card", race="Counter") == EffectType.TRIGGER_LIKE
 
 
 def test_classify_effect_type_no_colon_no_semicolon_with_restriction_is_condition():
@@ -178,7 +193,35 @@ def test_classify_effect_type_monster_with_colon_and_no_trigger_language_is_igni
 
 def test_classify_effect_type_spell_with_colon_and_non_quick_type_is_effect():
     text = "Target 1 monster on the field; destroy it."
-    assert classify_effect_type(text, card_type="Normal Spell") == EffectType.EFFECT
+    assert classify_effect_type(text, card_type="Spell Card") == EffectType.EFFECT
+
+
+def test_classify_effect_type_for_a_trigger_with_a_leading_damage_step_timing_phrase():
+    """Borreload Dragon's third effect: the condition names the Damage Step
+    directly but doesn't literally start with "if"/"when" ("At the start of
+    the Damage Step, if..."), so the plain startswith check misses it. Must
+    still classify as TRIGGER so classify_damage_step_category can reach
+    explicit_permission instead of falling through to IGNITION and losing
+    it. Scoped narrowly to condition text naming "damage step"/"damage
+    calculation" specifically -- NOT a general "comma + if" heuristic, since
+    that would wrongly reclassify e.g. Called by the Grave's "During either
+    player's turn, if..." condition (see the quick-play race test above),
+    which must stay QUICK_LIKE for its spell speed to come out correct."""
+    text = (
+        "At the start of the Damage Step, if this card attacks an opponent's "
+        "monster: You can place that opponent's monster in a zone this card "
+        "points to and take control of it, but send it to the GY during the "
+        "End Phase of the next turn."
+    )
+    assert classify_effect_type(text, card_type="Link Monster") == EffectType.TRIGGER
+
+
+def test_classify_effect_type_leading_timing_phrase_without_damage_step_stays_ignition():
+    """A leading timing phrase that does NOT name the Damage Step must not
+    trigger the new branch -- e.g. Called by the Grave's condition, or any
+    other "During X, if Y" phrasing that isn't Damage-Step-specific."""
+    text = "During either player's turn, if you control no cards: You can Special Summon this card from your hand."
+    assert classify_effect_type(text, card_type="Effect Monster") == EffectType.IGNITION
 
 
 def test_classify_damage_step_category_detects_negates_activation():

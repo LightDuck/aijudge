@@ -37,8 +37,12 @@ def is_activatable(effect_type: EffectType) -> bool:
     return effect_type not in _NON_ACTIVATABLE_EFFECT_TYPES
 
 
-def spell_speed_for(effect_type: EffectType, *, card_type: str | None = None) -> SpellSpeed:
-    if card_type and "Counter" in card_type:
+def spell_speed_for(effect_type: EffectType, *, race: str | None = None) -> SpellSpeed:
+    """race is the card's YGOPRODeck `race` field ("Counter" for Counter
+    Traps), not `card_type` -- the real API never folds the Trap subtype
+    into `card_type` (which stays the generic "Trap Card"), so a
+    `card_type` substring check can never actually see "Counter"."""
+    if race == "Counter":
         return SpellSpeed.COUNTER
     return SpellSpeed.QUICK if effect_type in _QUICK_EFFECT_TYPES else SpellSpeed.NORMAL
 

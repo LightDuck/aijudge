@@ -64,7 +64,7 @@ def build_known_facts_context(card: dict) -> str:
     lines = ["KNOWN FACTS (deterministic -- do not contradict):"]
     for index, confirmed in enumerate(confirmed_effects, start=1):
         effect_type = EffectType(confirmed["effect_type"])
-        speed = spell_speed_for(effect_type, card_type=card["card_type"])
+        speed = spell_speed_for(effect_type, race=card["race"])
         effect = Effect(
             card_id=card["id"],
             card_name=card["name"],

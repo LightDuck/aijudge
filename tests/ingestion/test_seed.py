@@ -236,6 +236,74 @@ def test_seed_card_stores_damage_step_category_and_usage_limit_text():
     assert effects[0]["usage_limit_text"] == 'You can only use this effect of "Effect Veiler" once per turn.'
 
 
+def test_seed_card_uses_race_field_for_a_quick_play_spell():
+    """Real YGOPRODeck API shape: `type` is the generic 'Spell Card', the
+    Quick-Play subtype comes back in a separate `race` field. Both must be
+    stored, and race (not a card_type substring that the real API never
+    populates) must drive the resulting effect's spell speed."""
+    from aijudge.db.cards_repo import get_card_by_name
+    from aijudge.db.effects_repo import get_confirmed_effects
+    from aijudge.ingestion.seed import seed_card
+    from aijudge.llm.client import MockLLMClient
+
+    desc = "Target 1 monster in your opponent's GY; banish it."
+
+    def fake_fetch_card(name, http_get=None):
+        return {"id": 47355498, "name": name, "type": "Spell Card", "race": "Quick-Play", "desc": desc}
+
+    def fake_fetch_rulings(name, http_get=None):
+        return []
+
+    llm_client = MockLLMClient()
+    llm_client.queue_response(desc)  # split proposal: one effect, unchanged
+    llm_client.queue_response("0.97")  # review agent confidence
+
+    card_id = seed_card(
+        "Called by the Grave",
+        llm_client=llm_client,
+        fetch_card_fn=fake_fetch_card,
+        fetch_rulings_fn=fake_fetch_rulings,
+    )
+
+    card = get_card_by_name("Called by the Grave")
+    assert card["card_type"] == "Spell Card"
+    assert card["race"] == "Quick-Play"
+
+    effects = get_confirmed_effects(card_id)
+    assert effects[0]["effect_type"] == "quick-like"
+
+
+def test_seed_card_uses_race_field_for_a_counter_trap():
+    """Same real-API-shape gap as the Quick-Play case above, but for
+    Solemn Strike: type='Trap Card' (generic), race='Counter'."""
+    from aijudge.db.cards_repo import get_card_by_name
+    from aijudge.ingestion.seed import seed_card
+    from aijudge.llm.client import MockLLMClient
+
+    desc = "Pay 1500 LP; negate the Summon or activation, and if you do, destroy that card."
+
+    def fake_fetch_card(name, http_get=None):
+        return {"id": 40605147, "name": name, "type": "Trap Card", "race": "Counter", "desc": desc}
+
+    def fake_fetch_rulings(name, http_get=None):
+        return []
+
+    llm_client = MockLLMClient()
+    llm_client.queue_response(desc)  # split proposal: one effect, unchanged
+    llm_client.queue_response("0.97")  # review agent confidence
+
+    seed_card(
+        "Solemn Strike",
+        llm_client=llm_client,
+        fetch_card_fn=fake_fetch_card,
+        fetch_rulings_fn=fake_fetch_rulings,
+    )
+
+    card = get_card_by_name("Solemn Strike")
+    assert card["card_type"] == "Trap Card"
+    assert card["race"] == "Counter"
+
+
 def test_seed_card_creates_one_row_per_effect_for_a_multi_effect_card():
     from aijudge.db.connection import get_connection
     from aijudge.ingestion.seed import seed_card

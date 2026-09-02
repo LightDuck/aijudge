@@ -23,15 +23,19 @@ def test_effect_is_constructible():
     assert effect.controller == "player_a"
 
 
-def test_counter_trap_card_type_is_spell_speed_3():
-    assert spell_speed_for(EffectType.CONDITION, card_type="Counter Trap Card") == SpellSpeed.COUNTER
+def test_counter_race_is_spell_speed_3():
+    """race, not card_type, is the source of truth for Counter Traps --
+    YGOPRODeck's real API never folds "Counter" into card_type (that stays
+    the generic "Trap Card"); the subtype comes back in a separate `race`
+    field."""
+    assert spell_speed_for(EffectType.CONDITION, race="Counter") == SpellSpeed.COUNTER
 
 
-def test_quick_effect_type_is_still_spell_speed_2_when_card_type_omitted():
+def test_quick_effect_type_is_still_spell_speed_2_when_race_omitted():
     assert spell_speed_for(EffectType.QUICK) == SpellSpeed.QUICK
 
 
-def test_ignition_effect_type_is_still_spell_speed_1_when_card_type_omitted():
+def test_ignition_effect_type_is_still_spell_speed_1_when_race_omitted():
     assert spell_speed_for(EffectType.IGNITION) == SpellSpeed.NORMAL
 
 
