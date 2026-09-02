@@ -222,3 +222,47 @@ def test_run_cli_folds_preflight_facts_in_for_a_single_match():
 
     assert "Yes." in printed
     assert any("KNOWN FACTS: Effect Veiler" in p for p in llm.prompts)
+
+
+def test_run_cli_wires_on_ingest_start_callback_to_print_fn(monkeypatch):
+    import aijudge.cli as cli_module
+
+    captured = {}
+
+    def fake_build_tool_dispatch(llm_client, embedding_client, *, online_ingest_enabled=True, on_ingest_start=None):
+        captured["on_ingest_start"] = on_ingest_start
+        captured["online_ingest_enabled"] = online_ingest_enabled
+        return {}
+
+    monkeypatch.setattr(cli_module, "build_tool_dispatch", fake_build_tool_dispatch)
+
+    printed = []
+    inputs = iter(["quit"])
+    run_cli(MockLLMClient(), MockEmbeddingClient(), input_fn=lambda _: next(inputs), print_fn=printed.append)
+
+    assert captured["online_ingest_enabled"] is True
+    captured["on_ingest_start"]("Some New Card")
+    assert any("Some New Card" in line for line in printed)
+
+
+def test_run_cli_passes_online_ingest_enabled_through_to_tool_dispatch(monkeypatch):
+    import aijudge.cli as cli_module
+
+    captured = {}
+
+    def fake_build_tool_dispatch(llm_client, embedding_client, *, online_ingest_enabled=True, on_ingest_start=None):
+        captured["online_ingest_enabled"] = online_ingest_enabled
+        return {}
+
+    monkeypatch.setattr(cli_module, "build_tool_dispatch", fake_build_tool_dispatch)
+
+    inputs = iter(["quit"])
+    run_cli(
+        MockLLMClient(),
+        MockEmbeddingClient(),
+        input_fn=lambda _: next(inputs),
+        print_fn=lambda _: None,
+        online_ingest_enabled=False,
+    )
+
+    assert captured["online_ingest_enabled"] is False
