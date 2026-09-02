@@ -64,6 +64,46 @@ def get_card_by_name(name: str) -> dict | None:
     return dict(zip(_CARD_COLUMNS, row_list))
 
 
+def get_card_by_id(card_id: str) -> dict | None:
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT id, name, card_text, card_type, attribute, monster_type, "
+            "level, rank, link_rating, archetype, atk, def, has_errata, "
+            "ygoprodeck_id, ygoresources_id "
+            "FROM cards WHERE id = %s",
+            (card_id,),
+        ).fetchone()
+    if row is None:
+        return None
+    row_list = list(row)
+    row_list[0] = str(row_list[0])
+    return dict(zip(_CARD_COLUMNS, row_list))
+
+
+def get_cards_by_fname(fname: str) -> list[dict]:
+    with get_connection() as conn:
+        rows = conn.execute(
+            "SELECT id, name, card_text, card_type, attribute, monster_type, "
+            "level, rank, link_rating, archetype, atk, def, has_errata, "
+            "ygoprodeck_id, ygoresources_id "
+            "FROM cards WHERE name ILIKE %s",
+            (f"%{fname}%",),
+        ).fetchall()
+    return [dict(zip(_CARD_COLUMNS, [str(row[0])] + list(row[1:]))) for row in rows]
+
+
+def get_cards_by_archetype(archetype: str) -> list[dict]:
+    with get_connection() as conn:
+        rows = conn.execute(
+            "SELECT id, name, card_text, card_type, attribute, monster_type, "
+            "level, rank, link_rating, archetype, atk, def, has_errata, "
+            "ygoprodeck_id, ygoresources_id "
+            "FROM cards WHERE archetype = %s",
+            (archetype,),
+        ).fetchall()
+    return [dict(zip(_CARD_COLUMNS, [str(row[0])] + list(row[1:]))) for row in rows]
+
+
 def get_card_by_ygoprodeck_id(ygoprodeck_id: str) -> dict | None:
     with get_connection() as conn:
         row = conn.execute(
@@ -78,6 +118,32 @@ def get_card_by_ygoprodeck_id(ygoprodeck_id: str) -> dict | None:
     row_list = list(row)
     row_list[0] = str(row_list[0])
     return dict(zip(_CARD_COLUMNS, row_list))
+
+
+def find_card_by_priority(query: str, *, field: str | None = None) -> tuple[str, list[dict]]:
+    def by_name() -> list[dict]:
+        card = get_card_by_name(query)
+        return [card] if card is not None else []
+
+    def by_id() -> list[dict]:
+        card = get_card_by_ygoprodeck_id(query)
+        return [card] if card is not None else []
+
+    steps = {
+        "name": by_name,
+        "fname": lambda: get_cards_by_fname(query),
+        "archetype": lambda: get_cards_by_archetype(query),
+        "id": by_id,
+    }
+    fields = [field] if field is not None else ["name", "fname", "archetype", "id"]
+
+    for candidate_field in fields:
+        matches = steps[candidate_field]()
+        if len(matches) == 1:
+            return "single", matches
+        if len(matches) > 1:
+            return "ambiguous", []
+    return "none", []
 
 
 def get_card_by_ygoresources_id(ygoresources_id: str) -> dict | None:

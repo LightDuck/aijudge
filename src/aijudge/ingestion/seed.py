@@ -28,8 +28,9 @@ def seed_card(
     llm_client: LLMClient,
     fetch_card_fn: Callable[..., dict] = fetch_card,
     fetch_rulings_fn: Callable[..., list[dict]] = fetch_rulings,
+    field: str | None = None,
 ) -> str:
-    card_data = fetch_card_fn(name)
+    card_data = fetch_card_fn(name, field=field) if field is not None else fetch_card_fn(name)
     card_type = card_data["type"]
     card_text = card_data["desc"]
 
@@ -42,7 +43,15 @@ def seed_card(
         ygoprodeck_id=str(card_data["id"]),
     )
 
-    for ruling in fetch_rulings_fn(name):
+    misc_info = card_data.get("misc_info") or [{}]
+    konami_id = misc_info[0].get("konami_id")
+
+    try:
+        rulings = fetch_rulings_fn(konami_id)
+    except Exception:
+        rulings = []
+
+    for ruling in rulings:
         raw_date = ruling.get("date")
         insert_ruling(
             card_id=card_id,

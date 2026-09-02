@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from aijudge.llm.client import LLMClient
 
-DEFAULT_CONFIDENCE_THRESHOLD = 0.9
+DEFAULT_CONFIDENCE_THRESHOLD = 0.75
 
 
 @dataclass

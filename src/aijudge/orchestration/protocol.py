@@ -4,7 +4,15 @@ from dataclasses import dataclass
 TOOL_NAMES = {"lookup_card", "get_rulings", "search_rulebook", "resolve_chain"}
 
 TOOL_DESCRIPTIONS = {
-    "lookup_card": 'lookup_card {"name": "<card name>"} - fetch a card\'s text and structured effect data',
+    "lookup_card": (
+        'lookup_card {"name": "<query>", "field": "<optional>"} - fetch a card\'s text and structured '
+        "effect data. Without \"field\", the query is tried in priority order as an exact name, then a "
+        'fuzzy/partial name, then an archetype, then a passcode. Pass "field" as one of "name", "fname" '
+        '(fuzzy/partial name), "archetype", or "id" (the card\'s passcode) to search only that one way -- '
+        "e.g. use field=\"id\" when the user gives you a passcode directly. If the result has "
+        '"ambiguous": true, more than one card matched -- do not guess which one; ask the user to narrow '
+        "it down with the exact name, a more specific partial name, or the passcode."
+    ),
     "get_rulings": 'get_rulings {"card_id": "<id>"} - fetch official rulings for a card',
     "search_rulebook": 'search_rulebook {"query": "<question>"} - semantic search over the Konami rulebook/PSCT guide',
     "resolve_chain": (
@@ -52,7 +60,10 @@ def build_system_prompt() -> str:
         "final answer, respond with a line starting with 'FINAL:' followed "
         "by your answer text, then '||CITES: id1, id2||' listing every "
         "source id (card:<id>, ruling:<id>, chunk:<id>) your answer relies "
-        "on -- use '||CITES: ||' if none apply.\n\nAvailable tools:\n" + tool_lines
+        "on -- use '||CITES: ||' if none apply. When speaking to the user "
+        "about a card's 8-digit numeric identifier, always call it its "
+        "'passcode' -- never 'id' or 'ygoprodeck_id', which are internal "
+        "names only.\n\nAvailable tools:\n" + tool_lines
     )
 
 

@@ -508,3 +508,42 @@ def test_post_questions_500_logs_the_actual_exception_traceback(caplog):
     assert exc_info[0] is RuntimeError
     formatted = "".join(traceback.format_exception(*exc_info))
     assert "something internal broke" in formatted
+
+
+def test_create_app_defaults_online_ingest_enabled_to_true(monkeypatch):
+    import aijudge.api.app as app_module
+
+    captured = {}
+
+    def fake_build_tool_dispatch(llm_client, embedding_client, *, online_ingest_enabled=True, on_ingest_start=None):
+        captured["online_ingest_enabled"] = online_ingest_enabled
+        captured["on_ingest_start"] = on_ingest_start
+        return {}
+
+    monkeypatch.setattr(app_module, "build_tool_dispatch", fake_build_tool_dispatch)
+
+    create_app(MockLLMClient(), MockEmbeddingClient(), find_matched_cards_fn=lambda question: [])
+
+    assert captured["online_ingest_enabled"] is True
+    assert captured["on_ingest_start"] is None
+
+
+def test_create_app_passes_online_ingest_enabled_false_through(monkeypatch):
+    import aijudge.api.app as app_module
+
+    captured = {}
+
+    def fake_build_tool_dispatch(llm_client, embedding_client, *, online_ingest_enabled=True, on_ingest_start=None):
+        captured["online_ingest_enabled"] = online_ingest_enabled
+        return {}
+
+    monkeypatch.setattr(app_module, "build_tool_dispatch", fake_build_tool_dispatch)
+
+    create_app(
+        MockLLMClient(),
+        MockEmbeddingClient(),
+        online_ingest_enabled=False,
+        find_matched_cards_fn=lambda question: [],
+    )
+
+    assert captured["online_ingest_enabled"] is False

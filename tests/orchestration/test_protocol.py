@@ -75,3 +75,20 @@ def test_build_system_prompt_instructs_refusal_for_off_topic_questions():
 def test_parses_refusal_line():
     parsed = parse_response("REFUSE: This assistant only answers Yu-Gi-Oh! TCG rules questions.")
     assert parsed == Refusal(text="This assistant only answers Yu-Gi-Oh! TCG rules questions.")
+
+
+def test_build_system_prompt_documents_lookup_card_field_param():
+    prompt = build_system_prompt()
+    assert '"field"' in prompt
+    for field_name in ("name", "fname", "archetype", "id"):
+        assert field_name in prompt
+
+
+def test_build_system_prompt_instructs_passcode_terminology_for_the_id_field():
+    prompt = build_system_prompt()
+    assert "passcode" in prompt.lower()
+
+
+def test_build_system_prompt_instructs_ambiguous_result_handling():
+    prompt = build_system_prompt()
+    assert "ambiguous" in prompt.lower()

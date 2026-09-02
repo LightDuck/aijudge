@@ -20,6 +20,10 @@ def _cors_origins_from_env() -> list[str] | None:
     return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
 
+def _online_ingest_enabled_from_env() -> bool:
+    return os.environ.get("AIJUDGE_ENABLE_ONLINE_INGEST", "true").strip().lower() != "false"
+
+
 def main(
     *,
     llm_client: LLMClient | None = None,
@@ -30,6 +34,7 @@ def main(
         llm_client or OllamaLLMClient(),
         embedding_client or OllamaEmbeddingClient(),
         cors_origins=_cors_origins_from_env(),
+        online_ingest_enabled=_online_ingest_enabled_from_env(),
     )
     host = os.environ.get("AIJUDGE_API_HOST", DEFAULT_HOST)
     port = int(os.environ.get("AIJUDGE_API_PORT", DEFAULT_PORT))

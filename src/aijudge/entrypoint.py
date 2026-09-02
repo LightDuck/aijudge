@@ -24,9 +24,13 @@ def build_embedding_client() -> EmbeddingClient:
     return OpenAIEmbeddingClient(_require_env("OPENAI_API_KEY"))
 
 
+def _online_ingest_enabled() -> bool:
+    return os.environ.get("AIJUDGE_ENABLE_ONLINE_INGEST", "true").strip().lower() != "false"
+
+
 def main() -> None:
     load_dotenv()
-    run_cli(build_llm_client(), build_embedding_client())
+    run_cli(build_llm_client(), build_embedding_client(), online_ingest_enabled=_online_ingest_enabled())
 
 
 if __name__ == "__main__":

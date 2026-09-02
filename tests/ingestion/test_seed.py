@@ -2,6 +2,7 @@ import os
 from datetime import date
 
 import pytest
+import requests
 
 pytestmark = pytest.mark.skipif("DATABASE_URL" not in os.environ, reason="requires a running Postgres instance")
 
@@ -63,6 +64,71 @@ def test_seed_card_stores_card_ruling_and_confirms_a_high_confidence_effect():
             (effects[0]["id"],),
         ).fetchone()
     assert row[0] == pytest.approx(0.97)
+
+
+def test_seed_card_passes_konami_id_from_misc_info_to_fetch_rulings():
+    from aijudge.ingestion.seed import seed_card
+    from aijudge.llm.client import MockLLMClient
+
+    desc = "You can target 1 banished monster; banish it."
+    received = []
+
+    def fake_fetch_card(name, http_get=None):
+        return {
+            "id": 47355498,
+            "name": name,
+            "type": "Quick-Play Spell",
+            "desc": desc,
+            "misc_info": [{"konami_id": 9729}],
+        }
+
+    def fake_fetch_rulings(konami_id, http_get=None):
+        received.append(konami_id)
+        return []
+
+    llm_client = MockLLMClient()
+    llm_client.queue_response(desc)  # split proposal: one effect, unchanged
+    llm_client.queue_response("0.97")  # review agent confidence for the parsed effect
+
+    seed_card(
+        "Called by the Grave",
+        llm_client=llm_client,
+        fetch_card_fn=fake_fetch_card,
+        fetch_rulings_fn=fake_fetch_rulings,
+    )
+
+    assert received == [9729]
+
+
+def test_seed_card_continues_when_fetching_rulings_fails():
+    from aijudge.db.cards_repo import get_card_by_name
+    from aijudge.db.effects_repo import get_confirmed_effects
+    from aijudge.db.rulings_repo import get_rulings_for_card
+    from aijudge.ingestion.seed import seed_card
+    from aijudge.llm.client import MockLLMClient
+
+    desc = "You can target 1 banished monster; banish it."
+
+    def fake_fetch_card(name, http_get=None):
+        return {"id": 47355498, "name": name, "type": "Quick-Play Spell", "desc": desc}
+
+    def fake_fetch_rulings(konami_id, http_get=None):
+        raise requests.exceptions.HTTPError("404 Client Error: Not Found")
+
+    llm_client = MockLLMClient()
+    llm_client.queue_response(desc)  # split proposal: one effect, unchanged
+    llm_client.queue_response("0.97")  # review agent confidence for the parsed effect
+
+    card_id = seed_card(
+        "Called by the Grave",
+        llm_client=llm_client,
+        fetch_card_fn=fake_fetch_card,
+        fetch_rulings_fn=fake_fetch_rulings,
+    )
+
+    assert get_card_by_name("Called by the Grave")["id"] == card_id
+    assert get_rulings_for_card(card_id) == []
+    assert len(get_confirmed_effects(card_id)) == 1
 
 
 def test_seed_card_leaves_low_confidence_effect_pending():

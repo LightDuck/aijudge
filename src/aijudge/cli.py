@@ -24,8 +24,14 @@ def run_cli(
     print_fn: Callable[[str], None] = print,
     find_matched_cards_fn: Callable[[str], list[dict]] = find_matched_cards,
     build_known_facts_context_fn: Callable[[dict], str] = build_known_facts_context,
+    online_ingest_enabled: bool = True,
 ) -> None:
-    tools = build_tool_dispatch(embedding_client)
+    tools = build_tool_dispatch(
+        llm_client,
+        embedding_client,
+        online_ingest_enabled=online_ingest_enabled,
+        on_ingest_start=lambda name: print_fn(f"Looking up {name}, this may take a moment..."),
+    )
     print_fn("AIJudge -- ask a Yu-Gi-Oh! rules question ('exit' or 'quit' to leave).")
 
     while True:

@@ -193,3 +193,210 @@ def test_list_card_names_returns_empty_list_when_no_cards():
     from aijudge.db.cards_repo import list_card_names
 
     assert list_card_names() == []
+
+
+def test_get_card_by_id_finds_inserted_card():
+    from aijudge.db.cards_repo import get_card_by_id, insert_card
+
+    card_id = insert_card(
+        name="Effect Veiler",
+        card_text="text",
+        card_type="Effect Monster",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="95440946",
+    )
+
+    card = get_card_by_id(card_id)
+
+    assert card is not None
+    assert card["id"] == card_id
+    assert card["name"] == "Effect Veiler"
+
+
+def test_get_card_by_id_returns_none_when_missing():
+    from aijudge.db.cards_repo import get_card_by_id
+
+    assert get_card_by_id("00000000-0000-0000-0000-000000000000") is None
+
+
+def test_get_cards_by_fname_matches_substring_case_insensitively():
+    from aijudge.db.cards_repo import get_cards_by_fname, insert_card
+
+    insert_card(
+        name="Salamangreat Almiraj",
+        card_text="text",
+        card_type="Effect Monster",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="11111111",
+    )
+    insert_card(
+        name="Effect Veiler",
+        card_text="text",
+        card_type="Effect Monster",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="95440946",
+    )
+
+    cards = get_cards_by_fname("salamangreat")
+
+    assert [card["name"] for card in cards] == ["Salamangreat Almiraj"]
+
+
+def test_get_cards_by_fname_returns_empty_list_when_no_match():
+    from aijudge.db.cards_repo import get_cards_by_fname
+
+    assert get_cards_by_fname("Nonexistent") == []
+
+
+def test_get_cards_by_archetype_matches_exactly():
+    from aijudge.db.cards_repo import get_cards_by_archetype, insert_card
+
+    insert_card(
+        name="Salamangreat Almiraj",
+        card_text="text",
+        card_type="Effect Monster",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="11111111",
+        archetype="Salamangreat",
+    )
+    insert_card(
+        name="Salamangreat Balelynx",
+        card_text="text",
+        card_type="Effect Monster",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="22222222",
+        archetype="Salamangreat",
+    )
+    insert_card(
+        name="Effect Veiler",
+        card_text="text",
+        card_type="Effect Monster",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="95440946",
+    )
+
+    cards = get_cards_by_archetype("Salamangreat")
+
+    assert {card["name"] for card in cards} == {"Salamangreat Almiraj", "Salamangreat Balelynx"}
+
+
+def test_get_cards_by_archetype_returns_empty_list_when_no_match():
+    from aijudge.db.cards_repo import get_cards_by_archetype
+
+    assert get_cards_by_archetype("Nonexistent") == []
+
+
+def test_find_card_by_priority_returns_single_on_exact_name():
+    from aijudge.db.cards_repo import find_card_by_priority, insert_card
+
+    insert_card(
+        name="Effect Veiler",
+        card_text="text",
+        card_type="Effect Monster",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="95440946",
+    )
+
+    status, cards = find_card_by_priority("Effect Veiler")
+
+    assert status == "single"
+    assert [card["name"] for card in cards] == ["Effect Veiler"]
+
+
+def test_find_card_by_priority_falls_back_to_fname():
+    from aijudge.db.cards_repo import find_card_by_priority, insert_card
+
+    insert_card(
+        name="Salamangreat Almiraj",
+        card_text="text",
+        card_type="Effect Monster",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="11111111",
+    )
+
+    status, cards = find_card_by_priority("Salamangreat Alm")
+
+    assert status == "single"
+    assert cards[0]["name"] == "Salamangreat Almiraj"
+
+
+def test_find_card_by_priority_falls_back_to_archetype_then_ygoprodeck_id():
+    from aijudge.db.cards_repo import find_card_by_priority, insert_card
+
+    insert_card(
+        name="Effect Veiler",
+        card_text="text",
+        card_type="Effect Monster",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="95440946",
+    )
+
+    status, cards = find_card_by_priority("95440946")
+
+    assert status == "single"
+    assert cards[0]["name"] == "Effect Veiler"
+
+
+def test_find_card_by_priority_returns_ambiguous_on_multiple_matches():
+    from aijudge.db.cards_repo import find_card_by_priority, insert_card
+
+    insert_card(
+        name="Salamangreat Almiraj",
+        card_text="text",
+        card_type="Effect Monster",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="11111111",
+        archetype="Salamangreat",
+    )
+    insert_card(
+        name="Salamangreat Balelynx",
+        card_text="text",
+        card_type="Effect Monster",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="22222222",
+        archetype="Salamangreat",
+    )
+
+    status, cards = find_card_by_priority("Salamangreat")
+
+    assert status == "ambiguous"
+    assert cards == []
+
+
+def test_find_card_by_priority_returns_none_when_nothing_matches():
+    from aijudge.db.cards_repo import find_card_by_priority
+
+    status, cards = find_card_by_priority("Nonexistent Card")
+
+    assert status == "none"
+    assert cards == []
+
+
+def test_find_card_by_priority_with_explicit_field_skips_chain():
+    from aijudge.db.cards_repo import find_card_by_priority, insert_card
+
+    insert_card(
+        name="Salamangreat Almiraj",
+        card_text="text",
+        card_type="Effect Monster",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="11111111",
+        archetype="Salamangreat",
+    )
+
+    status, cards = find_card_by_priority("Salamangreat", field="name")
+
+    assert status == "none"
+    assert cards == []

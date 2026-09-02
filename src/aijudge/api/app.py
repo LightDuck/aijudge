@@ -68,12 +68,17 @@ def create_app(
     tools: dict[str, Callable[[dict], dict]] | None = None,
     find_matched_cards_fn: Callable[[str], list[dict]] | None = None,
     build_known_facts_context_fn: Callable[[dict], str] | None = None,
+    online_ingest_enabled: bool = True,
 ) -> FastAPI:
     app = FastAPI()
     # Test-only seam: real callers never pass `tools` and get the DB/embedding-
     # backed dispatch below; tests can inject a stub dispatch to exercise the
     # citation-serialization path (lookup_card, etc.) without a live DB.
-    tools = tools if tools is not None else build_tool_dispatch(embedding_client)
+    tools = (
+        tools
+        if tools is not None
+        else build_tool_dispatch(llm_client, embedding_client, online_ingest_enabled=online_ingest_enabled)
+    )
     find_matched_cards_fn = find_matched_cards_fn if find_matched_cards_fn is not None else find_matched_cards
     build_known_facts_context_fn = (
         build_known_facts_context_fn if build_known_facts_context_fn is not None else build_known_facts_context
