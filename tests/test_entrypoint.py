@@ -42,7 +42,7 @@ def test_main_builds_real_clients_and_runs_cli(monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "oa-key")
     captured = {}
 
-    def fake_run_cli(llm_client, embedding_client):
+    def fake_run_cli(llm_client, embedding_client, **kwargs):
         captured["llm_client"] = llm_client
         captured["embedding_client"] = embedding_client
 
@@ -52,3 +52,34 @@ def test_main_builds_real_clients_and_runs_cli(monkeypatch):
 
     assert isinstance(captured["llm_client"], OpenRouterLLMClient)
     assert isinstance(captured["embedding_client"], OpenAIEmbeddingClient)
+
+
+def test_online_ingest_enabled_defaults_to_true(monkeypatch):
+    monkeypatch.delenv("AIJUDGE_ENABLE_ONLINE_INGEST", raising=False)
+    assert entrypoint._online_ingest_enabled() is True
+
+
+def test_online_ingest_enabled_reads_false_from_env(monkeypatch):
+    monkeypatch.setenv("AIJUDGE_ENABLE_ONLINE_INGEST", "false")
+    assert entrypoint._online_ingest_enabled() is False
+
+
+def test_online_ingest_enabled_is_case_insensitive(monkeypatch):
+    monkeypatch.setenv("AIJUDGE_ENABLE_ONLINE_INGEST", "FALSE")
+    assert entrypoint._online_ingest_enabled() is False
+
+
+def test_main_passes_online_ingest_toggle_to_run_cli(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "or-key")
+    monkeypatch.setenv("OPENAI_API_KEY", "oa-key")
+    monkeypatch.setenv("AIJUDGE_ENABLE_ONLINE_INGEST", "false")
+    captured = {}
+
+    def fake_run_cli(llm_client, embedding_client, **kwargs):
+        captured.update(kwargs)
+
+    monkeypatch.setattr(entrypoint, "run_cli", fake_run_cli)
+
+    entrypoint.main()
+
+    assert captured["online_ingest_enabled"] is False
