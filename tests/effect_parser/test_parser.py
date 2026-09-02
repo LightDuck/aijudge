@@ -264,6 +264,21 @@ def test_classify_damage_step_category_detects_card_moved_trigger_for_self_speci
     )
 
 
+def test_classify_damage_step_category_detects_card_moved_trigger_for_self_sent_to_gy():
+    # "sent" is the irregular past tense of "send" (e.g. Tearlaments Kitkallos:
+    # "If this card is sent to the GY by card effect") -- must match alongside
+    # the regular "send"/"sends"/"sending" forms already covered by \w*.
+    text = "you can send the top 5 cards of your Deck to the GY."
+    assert (
+        classify_damage_step_category(
+            text,
+            activation_condition="If this card is sent to the GY by card effect",
+            effect_type=EffectType.TRIGGER,
+        )
+        == "card_moved_trigger"
+    )
+
+
 def test_classify_damage_step_category_does_not_match_card_moved_trigger_for_a_non_self_card():
     text = "you can banish it instead."
     assert (

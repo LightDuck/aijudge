@@ -48,7 +48,11 @@ _DAMAGE_STEP_EXCEPTION_PATTERN = re.compile(
 # moving (e.g. "if a Salamangreat monster... is sent to the GY") is not
 # reliably Damage-Step-legal (real cards carve such conditions out
 # explicitly), so it is intentionally left unmatched rather than guessed.
-_SELF_MOVEMENT_VERBS = r"(?:destroy|banish|send|return|summon|flip|tribute)\w*"
+# "sent" is the irregular past tense of "send" (e.g. Tearlaments Kitkallos:
+# "if this card is sent to the GY by card effect") and needs its own bare
+# alternative rather than a "send"-plus-\w* stem match, since \w* after
+# "sent" would also swallow unrelated words like "sentence".
+_SELF_MOVEMENT_VERBS = r"(?:(?:destroy|banish|send)\w*|sent|(?:return|summon|flip|tribute)\w*)"
 _CARD_MOVED_TRIGGER_PATTERN = re.compile(
     rf"\bthis card\b.{{0,40}}?\b{_SELF_MOVEMENT_VERBS}\b"
     rf"|\b{_SELF_MOVEMENT_VERBS}\b.{{0,40}}?\bthis card\b",
