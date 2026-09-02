@@ -280,3 +280,112 @@ def test_lookup_card_logs_and_returns_not_found_on_unexpected_ingest_error():
     )
 
     assert result == {"found": False}
+
+
+def test_lookup_card_returns_ambiguous_when_local_priority_chain_matches_multiple():
+    from aijudge.db.cards_repo import insert_card
+    from aijudge.orchestration.tools import lookup_card
+
+    insert_card(
+        name="Salamangreat Almiraj",
+        card_text="text",
+        card_type="Effect Monster",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="11111111",
+        archetype="Salamangreat",
+    )
+    insert_card(
+        name="Salamangreat Balelynx",
+        card_text="text",
+        card_type="Effect Monster",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="22222222",
+        archetype="Salamangreat",
+    )
+
+    def fake_fetch_card(name, http_get=None):
+        raise AssertionError("fetch_card_fn should never be called on a local ambiguous match")
+
+    result = lookup_card(
+        {"name": "Salamangreat"},
+        online_ingest_enabled=True,
+        fetch_card_fn=fake_fetch_card,
+    )
+
+    assert result == {"found": False, "ambiguous": True}
+
+
+def test_lookup_card_field_skips_local_priority_chain():
+    from aijudge.db.cards_repo import insert_card
+    from aijudge.orchestration.tools import lookup_card
+
+    insert_card(
+        name="Salamangreat Almiraj",
+        card_text="text",
+        card_type="Effect Monster",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="11111111",
+        archetype="Salamangreat",
+    )
+
+    calls = []
+
+    def fake_fetch_card(name, field=None, http_get=None):
+        calls.append((name, field))
+        raise RuntimeError("simulate an offline API for this test")
+
+    result = lookup_card(
+        {"name": "Salamangreat", "field": "name"},
+        online_ingest_enabled=True,
+        fetch_card_fn=fake_fetch_card,
+    )
+
+    assert result == {"found": False}
+    assert calls == [("Salamangreat", "name")]
+
+
+def test_lookup_card_reloads_by_id_after_ingest_matched_via_non_name_field():
+    from aijudge.llm.client import MockLLMClient
+    from aijudge.orchestration.tools import lookup_card
+
+    desc = "You can only use each of the following effects once per turn."
+
+    def fake_fetch_card(name, http_get=None):
+        return {"id": 14558127, "name": "Ash Blossom & Joyous Spring", "type": "Effect Monster", "desc": desc}
+
+    llm_client = MockLLMClient()
+    llm_client.queue_response(desc)
+    llm_client.queue_response("0.97")
+
+    result = lookup_card(
+        {"name": "14558127"},
+        llm_client=llm_client,
+        online_ingest_enabled=True,
+        fetch_card_fn=fake_fetch_card,
+        fetch_rulings_fn=lambda name, http_get=None: [],
+    )
+
+    assert result["found"] is True
+    assert result["name"] == "Ash Blossom & Joyous Spring"
+
+
+def test_lookup_card_returns_ambiguous_when_ingest_fetch_raises_ambiguous_card_error():
+    from aijudge.ingestion.ygoprodeck_client import AmbiguousCardError
+    from aijudge.llm.client import MockLLMClient
+    from aijudge.orchestration.tools import lookup_card
+
+    def fake_fetch_card(name, http_get=None):
+        raise AmbiguousCardError("multiple cards matched")
+
+    result = lookup_card(
+        {"name": "Salamangreat"},
+        llm_client=MockLLMClient(),
+        online_ingest_enabled=True,
+        fetch_card_fn=fake_fetch_card,
+        fetch_rulings_fn=lambda name, http_get=None: [],
+    )
+
+    assert result == {"found": False, "ambiguous": True}

@@ -4,13 +4,13 @@ from typing import Callable
 
 import psycopg
 
-from aijudge.db.cards_repo import get_card_by_name
+from aijudge.db.cards_repo import find_card_by_priority, get_card_by_id, get_card_by_name
 from aijudge.db.effects_repo import get_confirmed_effects
 from aijudge.db.rulebook_repo import search_chunks
 from aijudge.db.rulings_repo import get_rulings_for_card
 from aijudge.embeddings.client import EmbeddingClient
 from aijudge.ingestion.seed import seed_card
-from aijudge.ingestion.ygoprodeck_client import CardNotFoundError, fetch_card
+from aijudge.ingestion.ygoprodeck_client import AmbiguousCardError, CardNotFoundError, fetch_card
 from aijudge.ingestion.ygoresources_client import fetch_rulings
 from aijudge.llm.client import LLMClient
 from aijudge.rules_engine.resolve import resolve_chain as _resolve_chain_scenario
@@ -41,9 +41,13 @@ def lookup_card(
     on_ingest_start: Callable[[str], None] | None = None,
 ) -> dict:
     name = args["name"]
-    card = get_card_by_name(name)
-    if card is not None:
-        return _card_result(card)
+    field = args.get("field")
+
+    status, cards = find_card_by_priority(name, field=field)
+    if status == "single":
+        return _card_result(cards[0])
+    if status == "ambiguous":
+        return {"found": False, "ambiguous": True}
 
     if not online_ingest_enabled:
         return {"found": False}
@@ -51,8 +55,17 @@ def lookup_card(
     if on_ingest_start is not None:
         on_ingest_start(name)
 
+    card_id = None
     try:
-        seed_card(name, llm_client=llm_client, fetch_card_fn=fetch_card_fn, fetch_rulings_fn=fetch_rulings_fn)
+        card_id = seed_card(
+            name,
+            llm_client=llm_client,
+            fetch_card_fn=fetch_card_fn,
+            fetch_rulings_fn=fetch_rulings_fn,
+            field=field,
+        )
+    except AmbiguousCardError:
+        return {"found": False, "ambiguous": True}
     except CardNotFoundError:
         return {"found": False}
     except psycopg.errors.UniqueViolation:
@@ -61,7 +74,10 @@ def lookup_card(
         logger.exception("online ingest failed for card name=%r", name)
         return {"found": False}
 
-    card = get_card_by_name(name)
+    if card_id is not None:
+        card = get_card_by_id(card_id)
+    else:
+        card = get_card_by_name(name)
     if card is None:
         return {"found": False}
     return _card_result(card)
