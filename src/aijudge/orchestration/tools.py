@@ -103,9 +103,20 @@ def resolve_chain(args: dict) -> dict:
     return asdict(result)
 
 
-def build_tool_dispatch(embedding_client: EmbeddingClient) -> dict[str, Callable[[dict], dict]]:
+def build_tool_dispatch(
+    llm_client: LLMClient,
+    embedding_client: EmbeddingClient,
+    *,
+    online_ingest_enabled: bool = True,
+    on_ingest_start: Callable[[str], None] | None = None,
+) -> dict[str, Callable[[dict], dict]]:
     return {
-        "lookup_card": lookup_card,
+        "lookup_card": lambda args: lookup_card(
+            args,
+            llm_client=llm_client,
+            online_ingest_enabled=online_ingest_enabled,
+            on_ingest_start=on_ingest_start,
+        ),
         "get_rulings": get_rulings,
         "search_rulebook": lambda args: _search_rulebook(args, embedding_client=embedding_client),
         "resolve_chain": resolve_chain,

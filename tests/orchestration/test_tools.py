@@ -1,6 +1,7 @@
 import pytest
 
 from aijudge.embeddings.client import MockEmbeddingClient
+from aijudge.llm.client import MockLLMClient
 from aijudge.orchestration.tools import build_tool_dispatch, resolve_chain
 from aijudge.rules_engine.resolve import UnsupportedScenarioError
 
@@ -38,5 +39,20 @@ def test_resolve_chain_wrapper_propagates_unsupported_scenario_error():
 
 
 def test_build_tool_dispatch_has_all_four_tools():
-    dispatch = build_tool_dispatch(MockEmbeddingClient())
+    dispatch = build_tool_dispatch(MockLLMClient(), MockEmbeddingClient())
     assert set(dispatch.keys()) == {"lookup_card", "get_rulings", "search_rulebook", "resolve_chain"}
+
+
+def test_build_tool_dispatch_lookup_card_skips_ingest_when_disabled(monkeypatch):
+    from aijudge.orchestration import tools as tools_module
+
+    monkeypatch.setattr(tools_module, "get_card_by_name", lambda name: None)
+
+    seed_calls = []
+    monkeypatch.setattr(tools_module, "seed_card", lambda *args, **kwargs: seed_calls.append((args, kwargs)))
+
+    dispatch = build_tool_dispatch(MockLLMClient(), MockEmbeddingClient(), online_ingest_enabled=False)
+    result = dispatch["lookup_card"]({"name": "Nonexistent Card"})
+
+    assert result == {"found": False}
+    assert seed_calls == []
