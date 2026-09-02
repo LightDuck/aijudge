@@ -121,3 +121,162 @@ def test_search_rulebook_wrapper_respects_default_max_distance():
 
     empty = _search_rulebook({"query": "something totally unrelated to yugioh at all"}, embedding_client=client)
     assert empty["chunks"] == []
+
+
+def test_lookup_card_ingests_unknown_card_on_miss_when_online_ingest_enabled():
+    from aijudge.db.cards_repo import get_card_by_name
+    from aijudge.llm.client import MockLLMClient
+    from aijudge.orchestration.tools import lookup_card
+
+    desc = "You can target 1 banished monster; banish it."
+
+    def fake_fetch_card(name, http_get=None):
+        return {"id": 47355498, "name": name, "type": "Quick-Play Spell", "desc": desc}
+
+    def fake_fetch_rulings(name, http_get=None):
+        return [{"text": "Can target monsters banished this turn.", "date": "2021-01-01"}]
+
+    llm_client = MockLLMClient()
+    llm_client.queue_response(desc)  # split proposal: one effect, unchanged
+    llm_client.queue_response("0.97")  # review agent confidence
+
+    result = lookup_card(
+        {"name": "Called by the Grave"},
+        llm_client=llm_client,
+        online_ingest_enabled=True,
+        fetch_card_fn=fake_fetch_card,
+        fetch_rulings_fn=fake_fetch_rulings,
+    )
+
+    assert result["found"] is True
+    assert result["name"] == "Called by the Grave"
+    assert result["card_text"] == desc
+    assert len(result["confirmed_effects"]) == 1
+    assert get_card_by_name("Called by the Grave") is not None
+
+
+def test_lookup_card_returns_not_found_when_card_not_found_error_is_raised():
+    from aijudge.db.cards_repo import get_card_by_name
+    from aijudge.ingestion.ygoprodeck_client import CardNotFoundError
+    from aijudge.llm.client import MockLLMClient
+    from aijudge.orchestration.tools import lookup_card
+
+    def fake_fetch_card(name, http_get=None):
+        raise CardNotFoundError(f"no card found for name={name!r}")
+
+    result = lookup_card(
+        {"name": "Definitely Not A Real Card"},
+        llm_client=MockLLMClient(),
+        online_ingest_enabled=True,
+        fetch_card_fn=fake_fetch_card,
+        fetch_rulings_fn=lambda name, http_get=None: [],
+    )
+
+    assert result == {"found": False}
+    assert get_card_by_name("Definitely Not A Real Card") is None
+
+
+def test_lookup_card_reuses_existing_row_on_unique_violation_race():
+    from datetime import date
+
+    from aijudge.db.cards_repo import get_card_by_name, insert_card
+    from aijudge.llm.client import MockLLMClient
+    from aijudge.orchestration.tools import lookup_card
+
+    def fake_fetch_card(name, http_get=None):
+        # Simulate a concurrent request winning the insert race: by the time
+        # our own seed_card() tries to INSERT, this row already exists.
+        insert_card(
+            name=name,
+            card_text="a pre-existing race winner's text",
+            card_type="Trap",
+            source="ygoprodeck",
+            fetched_at=date(2026, 8, 31),
+            ygoprodeck_id="99999999",
+        )
+        return {"id": 12345678, "name": name, "type": "Trap Card", "desc": "irrelevant, insert fails first"}
+
+    llm_client = MockLLMClient()  # no responses queued: insert_card raises
+    # before seed_card ever reaches clause-splitting/review
+
+    result = lookup_card(
+        {"name": "Race Card"},
+        llm_client=llm_client,
+        online_ingest_enabled=True,
+        fetch_card_fn=fake_fetch_card,
+        fetch_rulings_fn=lambda name, http_get=None: [],
+    )
+
+    assert result["found"] is True
+    assert result["card_text"] == "a pre-existing race winner's text"
+    assert get_card_by_name("Race Card") is not None
+
+
+def test_lookup_card_online_ingest_disabled_never_calls_fetch_card_fn():
+    from aijudge.orchestration.tools import lookup_card
+
+    calls = []
+
+    def fake_fetch_card(name, http_get=None):
+        calls.append(name)
+        raise AssertionError("fetch_card_fn should never be called when online_ingest_enabled is False")
+
+    result = lookup_card({"name": "Some Card"}, fetch_card_fn=fake_fetch_card)
+
+    assert result == {"found": False}
+    assert calls == []
+
+
+def test_lookup_card_calls_on_ingest_start_once_on_miss_and_not_on_hit():
+    from aijudge.llm.client import MockLLMClient
+    from aijudge.orchestration.tools import lookup_card
+
+    calls = []
+
+    def fake_fetch_card(name, http_get=None):
+        return {"id": 55667788, "name": name, "type": "Trap Card", "desc": "Target 1 card; destroy it."}
+
+    llm_client = MockLLMClient()
+    llm_client.queue_response("Target 1 card; destroy it.")
+    llm_client.queue_response("0.97")
+
+    result = lookup_card(
+        {"name": "Fresh Card"},
+        llm_client=llm_client,
+        online_ingest_enabled=True,
+        fetch_card_fn=fake_fetch_card,
+        fetch_rulings_fn=lambda name, http_get=None: [],
+        on_ingest_start=calls.append,
+    )
+    assert result["found"] is True
+    assert calls == ["Fresh Card"]
+
+    calls.clear()
+    hit = lookup_card(
+        {"name": "Fresh Card"},
+        llm_client=llm_client,
+        online_ingest_enabled=True,
+        fetch_card_fn=fake_fetch_card,
+        fetch_rulings_fn=lambda name, http_get=None: [],
+        on_ingest_start=calls.append,
+    )
+    assert hit["found"] is True
+    assert calls == []
+
+
+def test_lookup_card_logs_and_returns_not_found_on_unexpected_ingest_error():
+    from aijudge.llm.client import MockLLMClient
+    from aijudge.orchestration.tools import lookup_card
+
+    def fake_fetch_card(name, http_get=None):
+        raise RuntimeError("network exploded")
+
+    result = lookup_card(
+        {"name": "Unlucky Card"},
+        llm_client=MockLLMClient(),
+        online_ingest_enabled=True,
+        fetch_card_fn=fake_fetch_card,
+        fetch_rulings_fn=lambda name, http_get=None: [],
+    )
+
+    assert result == {"found": False}
