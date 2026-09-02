@@ -82,3 +82,41 @@ def test_main_parses_cors_origins_from_env(monkeypatch):
     )
 
     assert captured["cors_origins"] == ["http://localhost:5173", "http://localhost:4000"]
+
+
+def test_main_passes_online_ingest_toggle_from_env(monkeypatch):
+    monkeypatch.setenv("AIJUDGE_ENABLE_ONLINE_INGEST", "false")
+    captured = {}
+
+    monkeypatch.setattr(
+        main_module,
+        "create_app",
+        lambda llm, emb, **kwargs: captured.update(kwargs),
+    )
+
+    main(
+        llm_client=_StubLLMClient(),
+        embedding_client=_StubEmbeddingClient(),
+        run_fn=lambda app, **kwargs: None,
+    )
+
+    assert captured["online_ingest_enabled"] is False
+
+
+def test_main_defaults_online_ingest_toggle_to_true(monkeypatch):
+    monkeypatch.delenv("AIJUDGE_ENABLE_ONLINE_INGEST", raising=False)
+    captured = {}
+
+    monkeypatch.setattr(
+        main_module,
+        "create_app",
+        lambda llm, emb, **kwargs: captured.update(kwargs),
+    )
+
+    main(
+        llm_client=_StubLLMClient(),
+        embedding_client=_StubEmbeddingClient(),
+        run_fn=lambda app, **kwargs: None,
+    )
+
+    assert captured["online_ingest_enabled"] is True
