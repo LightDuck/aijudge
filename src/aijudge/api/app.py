@@ -129,11 +129,20 @@ def create_app(
                 )
             )
 
-        clarify_response = llm_client.complete(
-            build_clarification_prompt(question, known_facts_context=preflight_context),
-            system=build_system_prompt(),
-        )
-        items = disambiguation_items + parse_clarification_response(clarify_response)
+        if matches:
+            # No known card at all means the clarify pass has nothing to
+            # ground a decision in -- it tends to second-guess the card
+            # name itself (asking the user to confirm/spell it) even
+            # though lookup_card auto-imports on demand, so skip the call
+            # entirely rather than rely on the LLM following that
+            # instruction every time.
+            clarify_response = llm_client.complete(
+                build_clarification_prompt(question, known_facts_context=preflight_context),
+                system=build_system_prompt(),
+            )
+            items = disambiguation_items + parse_clarification_response(clarify_response)
+        else:
+            items = disambiguation_items
         if items:
             return {
                 "status": "needs_clarification",
