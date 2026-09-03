@@ -89,3 +89,45 @@ def test_damage_step_category_is_included_in_the_review_prompt():
     )
 
     assert "Damage Step category: atk_def_alter" in captured["prompt"]
+
+
+def test_review_parsed_effect_includes_other_effects_in_prompt_when_provided():
+    captured = {}
+
+    class _CapturingLLMClient:
+        def complete(self, prompt, *, system=None):
+            captured["prompt"] = prompt
+            return "0.9"
+
+    review_parsed_effect(
+        _CapturingLLMClient(),
+        raw_text="Effect A text.",
+        activation_condition=None,
+        cost=None,
+        targeting=None,
+        effect="Effect A text.",
+        other_effects=["Effect B text."],
+    )
+
+    assert "Effect B text." in captured["prompt"]
+    assert "shares a usage-limit restriction" in captured["prompt"]
+
+
+def test_review_parsed_effect_omits_other_effects_section_when_none():
+    captured = {}
+
+    class _CapturingLLMClient:
+        def complete(self, prompt, *, system=None):
+            captured["prompt"] = prompt
+            return "0.9"
+
+    review_parsed_effect(
+        _CapturingLLMClient(),
+        raw_text="Effect A text.",
+        activation_condition=None,
+        cost=None,
+        targeting=None,
+        effect="Effect A text.",
+    )
+
+    assert "shares a usage-limit restriction" not in captured["prompt"]

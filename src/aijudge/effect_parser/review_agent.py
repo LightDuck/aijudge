@@ -20,6 +20,7 @@ def review_parsed_effect(
     targeting: str | None,
     effect: str,
     damage_step_category: str | None = None,
+    other_effects: list[str] | None = None,
     threshold: float = DEFAULT_CONFIDENCE_THRESHOLD,
 ) -> ReviewResult:
     prompt = (
@@ -32,6 +33,13 @@ def review_parsed_effect(
         f"Effect: {effect}\n"
         f"Damage Step category: {damage_step_category}"
     )
+    if other_effects:
+        numbered = "\n".join(f"{i}. {text}" for i, text in enumerate(other_effects, start=1))
+        prompt += (
+            "\n\nThis effect shares a usage-limit restriction with other effects on "
+            "the same card. Verify the restriction's scope is consistent across all "
+            "of them. Other effects on this card:\n" + numbered
+        )
     response = llm_client.complete(prompt)
     confidence = float(response)
     if not 0.0 <= confidence <= 1.0:
