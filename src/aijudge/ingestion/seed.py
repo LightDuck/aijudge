@@ -186,4 +186,12 @@ def _insert_parsed_clause(
 
 
 def run_seed(llm_client: LLMClient) -> list[str]:
-    return [seed_card(name, llm_client=llm_client) for name in HAND_PICKED_CARDS]
+    # fetch_sets_index is meant to be called once per ingestion run (not
+    # once per card) and reused, since it's a large, slowly-changing
+    # catalog -- build it once here rather than letting each seed_card call
+    # fall back to its own default (which would re-fetch per card).
+    sets_index = fetch_sets_index()
+    return [
+        seed_card(name, llm_client=llm_client, fetch_sets_index_fn=lambda: sets_index)
+        for name in HAND_PICKED_CARDS
+    ]
