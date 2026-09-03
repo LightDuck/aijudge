@@ -322,3 +322,10 @@ isn't under `src/`.
 
 TDD: a failing test precedes implementation code for every change, most importantly in the rules engine and
 effect parser, where a wrong-but-confident result is the exact failure mode this project exists to avoid.
+
+## Git workflow
+
+Branch off `dev`, not `main`, for new work — worktrees included. `main` only receives merges from `dev` and can
+lag significantly behind it (this repo's git host default branch is `main`, so any tooling that bases a new
+branch/worktree off "the default branch" will silently pick the wrong, stale base unless told otherwise). Use
+`dev` as the base unless the user explicitly asks for a different base branch.
