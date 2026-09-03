@@ -27,6 +27,26 @@ _ATK_DEF_PATTERN = re.compile(
 
 _USAGE_LIMIT_PATTERN = re.compile(r"You can only [^.]*\bper turn\.", re.IGNORECASE)
 
+# Canonical, highly formulaic PSCT boilerplate for how a card may be
+# Summoned -- reused near-verbatim across thousands of cards, so precision
+# on these specific phrases is expected to be high; anything that doesn't
+# match one of them falls through to CONTINUOUS exactly as before, rather
+# than guessing (see design spec section 7 for the confidence rationale).
+# Deliberately does NOT match active-voice "cannot Special Summon [monsters
+# in general]" restrictions (a field-wide lockdown effect, e.g. Artmage
+# Power Patron) -- only passive-voice restrictions on how *this card*
+# itself may be Summoned.
+_SUMMONING_CONDITION_PATTERNS = (
+    re.compile(r"must (?:be|first be) .*summoned", re.IGNORECASE),
+    re.compile(r"cannot be special summoned except", re.IGNORECASE),
+    re.compile(r"cannot be normal summoned or set", re.IGNORECASE),
+    re.compile(r"cannot be used as .*material", re.IGNORECASE),
+)
+
+
+def _is_summoning_condition(text: str) -> bool:
+    return any(pattern.search(text) for pattern in _SUMMONING_CONDITION_PATTERNS)
+
 # Effects that self-declare Damage-Step legality in their own activation
 # condition -- "damage calculation" is treated as equivalent to "damage step"
 # for this project.
@@ -153,8 +173,10 @@ def classify_effect_type(card_text: str, *, card_type: str, race: str | None = N
        QUICK_LIKE (spell-trap). Checked first since real Quick Effects
        very commonly also start with "If"/"When".
     2. No colon AND no semicolon anywhere in the text (no PSCT
-       activation grammar at all): a restriction pattern ("you can
-       only") -> CONDITION; otherwise -> CONTINUOUS.
+       activation grammar at all): a canonical Summoning Condition
+       phrase (e.g. "must be Fusion Summoned", "cannot be Normal
+       Summoned or Set") -> SUMMONING_CONDITION; a restriction pattern
+       ("you can only") -> CONDITION; otherwise -> CONTINUOUS.
     3. Text starts with "if " or "when " (a game-action-fulfilled or
        effect-just-resolved condition) -> TRIGGER (monster) /
        TRIGGER_LIKE (spell-trap).
@@ -190,6 +212,8 @@ def classify_effect_type(card_text: str, *, card_type: str, race: str | None = N
         return EffectType.QUICK if is_monster else EffectType.QUICK_LIKE
 
     if ":" not in text and ";" not in text:
+        if _is_summoning_condition(text):
+            return EffectType.SUMMONING_CONDITION
         if "you can only" in lowered:
             return EffectType.CONDITION
         return EffectType.CONTINUOUS

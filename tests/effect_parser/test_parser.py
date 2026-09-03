@@ -411,3 +411,57 @@ def test_extract_usage_limit_text_finds_a_bare_restriction_sentence():
 def test_extract_usage_limit_text_returns_none_when_absent():
     text = "You can target 1 banished monster; banish it."
     assert extract_usage_limit_text(text) is None
+
+
+def test_summoning_condition_classified_for_must_be_fusion_summoned():
+    """Elemental HERO Mudballman."""
+    from aijudge.effect_parser.parser import classify_effect_type
+    from aijudge.rules_engine.models import EffectType
+
+    result = classify_effect_type(
+        "Must be Fusion Summoned and cannot be Special Summoned by other ways.",
+        card_type="Fusion Monster",
+    )
+
+    assert result == EffectType.SUMMONING_CONDITION
+
+
+def test_summoning_condition_cannot_be_normal_summoned_or_set():
+    from aijudge.effect_parser.parser import classify_effect_type
+    from aijudge.rules_engine.models import EffectType
+
+    result = classify_effect_type(
+        "Cannot be Normal Summoned or Set.",
+        card_type="Ritual Effect Monster",
+    )
+
+    assert result == EffectType.SUMMONING_CONDITION
+
+
+def test_active_voice_special_summon_restriction_stays_continuous():
+    """Artmage Power Patron: 'You cannot Special Summon from the Extra
+    Deck, except Fusion Monsters.' is a field-wide lockdown (active voice),
+    not a restriction on how *this card* is summoned (passive voice) --
+    must NOT match the Summoning Condition patterns."""
+    from aijudge.effect_parser.parser import classify_effect_type
+    from aijudge.rules_engine.models import EffectType
+
+    result = classify_effect_type(
+        "You cannot Special Summon from the Extra Deck, except Fusion Monsters.",
+        card_type="Effect Monster",
+    )
+
+    assert result == EffectType.CONTINUOUS
+
+
+def test_you_can_only_still_wins_over_default_continuous():
+    """Regression: existing CONDITION classification unaffected."""
+    from aijudge.effect_parser.parser import classify_effect_type
+    from aijudge.rules_engine.models import EffectType
+
+    result = classify_effect_type(
+        "You can only control 1 face-up.",
+        card_type="Effect Monster",
+    )
+
+    assert result == EffectType.CONDITION
