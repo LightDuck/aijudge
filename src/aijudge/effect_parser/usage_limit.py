@@ -1,6 +1,8 @@
 import re
 from dataclasses import dataclass, field
 
+from aijudge.llm.client import LLMClient
+
 _IS_USAGE_LIMIT_SENTENCE = re.compile(r"\byou can only\b", re.IGNORECASE)
 _CONTAINS_EFFECT_WORD = re.compile(r"\beffects?\b", re.IGNORECASE)
 _POSITIONAL_DIRECTION = re.compile(r"\b(preceding|following)\b", re.IGNORECASE)
@@ -81,3 +83,26 @@ def _positional_indices(direction: str, singular: bool, insertion_point: int, nu
     if singular:
         return [insertion_point] if num_following > 0 else []
     return list(range(insertion_point, insertion_point + num_following))
+
+
+_AMBIGUOUS_SCOPE_PROMPT_TEMPLATE = (
+    "The following restriction sentence was found on a Yu-Gi-Oh! card, but which "
+    "of the card's effects it applies to is not stated by position (no "
+    "'preceding'/'following' pointer). Read the card's effects and decide which "
+    "ones (by number) the restriction applies to. Respond with only a "
+    "comma-separated list of numbers (e.g. '1,2'), or 'all' if it applies to "
+    "every effect listed.\n\n"
+    "Restriction: {usage_limit_text}\n\n"
+    "Card's effects:\n{numbered_effects}"
+)
+
+
+def resolve_ambiguous_scope(llm_client: LLMClient, *, usage_limit_text: str, clauses: list[str]) -> list[int]:
+    numbered_effects = "\n".join(f"{i}. {text}" for i, text in enumerate(clauses, start=1))
+    prompt = _AMBIGUOUS_SCOPE_PROMPT_TEMPLATE.format(
+        usage_limit_text=usage_limit_text, numbered_effects=numbered_effects
+    )
+    response = llm_client.complete(prompt).strip()
+    if response.lower() == "all":
+        return list(range(len(clauses)))
+    return [int(token.strip()) - 1 for token in response.split(",") if token.strip()]

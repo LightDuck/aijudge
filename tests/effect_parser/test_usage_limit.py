@@ -145,3 +145,35 @@ def test_extract_verb_width():
     assert extract_verb_width('You can only activate 1 "Card" per turn.') == "narrow"
     assert extract_verb_width('You can only use 1 "Card" per turn.') == "broad"
     assert extract_verb_width("Clause with no restriction.") is None
+
+
+def test_resolve_ambiguous_scope_parses_comma_separated_indices():
+    from aijudge.effect_parser.usage_limit import resolve_ambiguous_scope
+    from aijudge.llm.client import MockLLMClient
+
+    llm_client = MockLLMClient()
+    llm_client.queue_response("1,2")
+
+    result = resolve_ambiguous_scope(
+        llm_client,
+        usage_limit_text='You can only use 1 of these effects of "Card" per turn.',
+        clauses=["Effect A.", "Effect B.", "Effect C."],
+    )
+
+    assert result == [0, 1]
+
+
+def test_resolve_ambiguous_scope_all_means_every_clause():
+    from aijudge.effect_parser.usage_limit import resolve_ambiguous_scope
+    from aijudge.llm.client import MockLLMClient
+
+    llm_client = MockLLMClient()
+    llm_client.queue_response("all")
+
+    result = resolve_ambiguous_scope(
+        llm_client,
+        usage_limit_text='You can only use 1 of these effects of "Card" per turn.',
+        clauses=["Effect A.", "Effect B."],
+    )
+
+    assert result == [0, 1]
