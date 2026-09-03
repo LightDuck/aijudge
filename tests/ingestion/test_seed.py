@@ -504,13 +504,14 @@ def test_seed_card_extracts_card_material_for_extra_deck_monster():
 
     with get_connection() as conn:
         rows = conn.execute(
-            "SELECT effect_type, effect FROM card_effects_structured WHERE card_id = %s ORDER BY effect_type",
+            "SELECT effect_type, effect, status FROM card_effects_structured WHERE card_id = %s ORDER BY effect_type",
             (card_id,),
         ).fetchall()
 
     material_rows = [row for row in rows if row[0] == "card_material"]
     assert len(material_rows) == 1
     assert material_rows[0][1] == '"Tearlaments Kitkallos" + 1 "Tearlaments" monster'
+    assert material_rows[0][2] == "confirmed"
 
 
 def test_seed_card_vanilla_extra_deck_monster_inserts_only_material_row():
@@ -543,12 +544,13 @@ def test_seed_card_vanilla_extra_deck_monster_inserts_only_material_row():
 
     with get_connection() as conn:
         rows = conn.execute(
-            "SELECT effect_type FROM card_effects_structured WHERE card_id = %s",
+            "SELECT effect_type, status FROM card_effects_structured WHERE card_id = %s",
             (card_id,),
         ).fetchall()
 
     assert len(rows) == 1
     assert rows[0][0] == "card_material"
+    assert rows[0][1] == "confirmed"
 
 
 def test_seed_card_duplicates_usage_limit_text_across_scoped_clauses():

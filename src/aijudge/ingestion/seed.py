@@ -78,12 +78,18 @@ def seed_card(
 
     material_text, remainder = extract_card_material(card_text, card_type=card_type)
     if material_text is not None:
-        insert_pending_effect(
+        material_id = insert_pending_effect(
             card_id=card_id,
             effect_type=EffectType.CARD_MATERIAL.value,
             effect=material_text,
             confidence_score=1.0,
         )
+        # Materials are extracted by a fully deterministic rule with no LLM
+        # judgment involved (unlike every other effect row, which goes
+        # through review_parsed_effect first) -- confidence_score=1.0
+        # already reflects that certainty, so confirm immediately rather
+        # than leaving it pending with nothing to gate on.
+        confirm_effect(material_id)
         if not remainder:
             return card_id
     else:
