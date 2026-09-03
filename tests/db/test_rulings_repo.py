@@ -27,6 +27,7 @@ def test_insert_and_get_rulings_for_card():
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="14558127",
+        deterministic_parse_eligible=True,
     )
 
     insert_ruling(
@@ -53,6 +54,7 @@ def test_get_rulings_for_card_returns_empty_list_when_none_exist():
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="99999999",
+        deterministic_parse_eligible=True,
     )
 
     assert get_rulings_for_card(card_id) == []

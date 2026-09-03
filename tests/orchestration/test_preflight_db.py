@@ -36,6 +36,7 @@ def test_find_matched_cards_returns_full_card_dict_for_a_mentioned_card():
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="95440946",
+        deterministic_parse_eligible=True,
     )
 
     matches = find_matched_cards("Can I activate Effect Veiler in response?")
@@ -62,6 +63,7 @@ def test_build_known_facts_context_includes_effect_type_and_spell_speed():
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="95440946",
+        deterministic_parse_eligible=True,
     )
     effect_id = insert_pending_effect(
         card_id=card_id,
@@ -89,6 +91,7 @@ def test_build_known_facts_context_includes_optional_fields_when_present():
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="95440946",
+        deterministic_parse_eligible=True,
     )
     effect_id = insert_pending_effect(
         card_id=card_id,
@@ -119,6 +122,7 @@ def test_build_known_facts_context_omits_optional_fields_when_none():
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="95440946",
+        deterministic_parse_eligible=True,
     )
     effect_id = insert_pending_effect(
         card_id=card_id,
@@ -143,6 +147,7 @@ def test_build_known_facts_context_is_empty_when_no_confirmed_effect():
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="95440946",
+        deterministic_parse_eligible=True,
     )
 
     assert build_known_facts_context(get_card_by_name("Effect Veiler")) == ""
@@ -165,6 +170,7 @@ def test_build_known_facts_context_reads_counter_trap_speed_from_race_not_card_t
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="40605147",
+        deterministic_parse_eligible=True,
     )
     effect_id = insert_pending_effect(
         card_id=card_id,
@@ -190,6 +196,7 @@ def test_build_known_facts_context_covers_every_confirmed_effect_with_damage_ste
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="84812061",
+        deterministic_parse_eligible=True,
     )
     ignition_id = insert_pending_effect(
         card_id=card_id,

@@ -28,6 +28,7 @@ def test_lookup_card_returns_card_text_and_not_found_flag():
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="14558127",
+        deterministic_parse_eligible=True,
     )
 
     result = lookup_card({"name": "Ash Blossom & Joyous Spring"})
@@ -51,6 +52,7 @@ def test_lookup_card_includes_confirmed_effects_when_present():
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="95440946",
+        deterministic_parse_eligible=True,
     )
     effect_id = insert_pending_effect(
         card_id=card_id,
@@ -76,6 +78,7 @@ def test_get_rulings_returns_empty_list_when_none_exist():
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="47355498",
+        deterministic_parse_eligible=True,
     )
 
     assert get_rulings({"card_id": card_id}) == {"rulings": []}
@@ -93,6 +96,7 @@ def test_get_rulings_serializes_ruling_date_to_isoformat():
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="10045474",
+        deterministic_parse_eligible=True,
     )
     insert_ruling(
         card_id=card_id,
@@ -294,6 +298,7 @@ def test_lookup_card_returns_ambiguous_when_local_priority_chain_matches_multipl
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="11111111",
         archetype="Salamangreat",
+        deterministic_parse_eligible=True,
     )
     insert_card(
         name="Salamangreat Balelynx",
@@ -303,6 +308,7 @@ def test_lookup_card_returns_ambiguous_when_local_priority_chain_matches_multipl
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="22222222",
         archetype="Salamangreat",
+        deterministic_parse_eligible=True,
     )
 
     def fake_fetch_card(name, http_get=None):
@@ -329,6 +335,7 @@ def test_lookup_card_field_skips_local_priority_chain():
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="11111111",
         archetype="Salamangreat",
+        deterministic_parse_eligible=True,
     )
 
     calls = []

@@ -26,6 +26,7 @@ def _make_card_id() -> str:
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="10045474",
+        deterministic_parse_eligible=True,
     )
 
 
