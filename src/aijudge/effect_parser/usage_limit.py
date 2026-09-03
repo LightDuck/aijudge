@@ -59,8 +59,10 @@ def _resolve_scope(sentence: str, insertion_point: int, num_following: int) -> t
     if not _CONTAINS_EFFECT_WORD.search(sentence):
         # A named-card restriction with no "effect" wording at all (e.g.
         # "You can only activate 1 'Card Name' per turn.") restricts the
-        # card by name/copies, not by clause position -- not clause-scoped.
-        return [], False
+        # whole card by name/copies, not one clause by position -- unlike
+        # a positional pointer, it isn't relative to where the sentence
+        # sits in the text, so it fans out to every other clause.
+        return list(range(0, insertion_point + num_following)), False
 
     if "these effects" in sentence.lower():
         # No positional pointer to resolve the set against -- genuinely

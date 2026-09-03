@@ -112,7 +112,7 @@ def test_group_select_with_positional_pointer_is_not_ambiguous():
     assert scopes[0].applies_to == [1]
 
 
-def test_named_card_restriction_without_effect_word_is_not_clause_scoped():
+def test_named_card_restriction_without_effect_word_scopes_to_all_clauses():
     from aijudge.effect_parser.usage_limit import resolve_usage_limit_scopes
 
     sentences = [
@@ -124,7 +124,28 @@ def test_named_card_restriction_without_effect_word_is_not_clause_scoped():
     clauses, scopes = resolve_usage_limit_scopes(sentences)
 
     assert clauses == ["Clause A.", "Clause B."]
-    assert scopes[0].applies_to == []
+    assert scopes[0].applies_to == [0, 1]
+    assert scopes[0].ambiguous is False
+
+
+def test_named_card_restriction_without_effect_word_fans_out_to_every_other_clause():
+    """A bare named-card restriction (no 'effect' word) restricts the whole
+    card, not one clause by position -- it should scope to every other
+    clause in a realistic multi-clause card, not just the adjacent one."""
+    from aijudge.effect_parser.usage_limit import resolve_usage_limit_scopes
+
+    sentences = [
+        "If this card is Normal or Special Summoned: You can target 1 card on the field; destroy it.",
+        'You can only activate 1 "Card Name" per turn.',
+        "During your Main Phase: You can banish this card from your GY to add 1 card to your hand.",
+        "If this card is destroyed by battle: You can Special Summon it during your next Standby Phase.",
+    ]
+
+    clauses, scopes = resolve_usage_limit_scopes(sentences)
+
+    assert clauses == [sentences[0], sentences[2], sentences[3]]
+    assert len(scopes) == 1
+    assert scopes[0].applies_to == [0, 1, 2]
     assert scopes[0].ambiguous is False
 
 

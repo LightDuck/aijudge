@@ -601,3 +601,47 @@ def test_seed_card_duplicates_usage_limit_text_across_scoped_clauses():
     assert by_type["continuous"]["usage_limit_text"] is None
     assert by_type["quick"]["usage_limit_text"] == expected_usage_limit
     assert by_type["trigger"]["usage_limit_text"] == expected_usage_limit
+
+
+def test_seed_card_stores_named_card_restriction_as_usage_limit_text_on_every_clause():
+    """A bare 'You can only activate 1 "Card Name" per turn.' restriction --
+    no 'effect' wording, so it isn't clause-scoped by position -- restricts
+    the whole card and must land as usage_limit_text on every resulting
+    effect row, not vanish because it was never written to any clause."""
+    from aijudge.db.effects_repo import get_confirmed_effects
+    from aijudge.ingestion.seed import seed_card
+    from aijudge.llm.client import MockLLMClient
+
+    effect_1 = "You can target 1 monster on the field; destroy it."
+    effect_2 = "During your Main Phase: You can Special Summon 1 monster from your GY."
+    restriction = 'You can only activate 1 "Some Card" per turn.'
+    desc = f"{effect_1} {effect_2} {restriction}"
+
+    def fake_fetch_card(name, http_get=None):
+        return {
+            "id": 12345678,
+            "name": name,
+            "type": "Effect Monster",
+            "desc": desc,
+            "card_sets": [{"set_name": "Some Set"}],
+        }
+
+    def fake_fetch_rulings(name, http_get=None):
+        return []
+
+    llm_client = MockLLMClient()
+    llm_client.queue_response("0.95")  # score_split_confidence for the 2 non-restriction clauses
+    llm_client.queue_response("0.97")  # review confidence for effect 1
+    llm_client.queue_response("0.97")  # review confidence for effect 2
+
+    card_id = seed_card(
+        "Some Card",
+        llm_client=llm_client,
+        fetch_card_fn=fake_fetch_card,
+        fetch_rulings_fn=fake_fetch_rulings,
+        fetch_sets_index_fn=lambda: {"Some Set": date(2020, 1, 1)},
+    )
+
+    effects = get_confirmed_effects(card_id)
+    assert len(effects) == 2
+    assert all(e["usage_limit_text"] == restriction for e in effects)
