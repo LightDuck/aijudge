@@ -9,6 +9,7 @@ from aijudge.db.effects_repo import get_confirmed_effects
 from aijudge.db.rulebook_repo import search_chunks
 from aijudge.db.rulings_repo import get_rulings_for_card
 from aijudge.embeddings.client import EmbeddingClient
+from aijudge.ingestion.printing_eligibility import fetch_sets_index
 from aijudge.ingestion.seed import seed_card
 from aijudge.ingestion.ygoprodeck_client import AmbiguousCardError, CardNotFoundError, fetch_card
 from aijudge.ingestion.ygoresources_client import fetch_rulings
@@ -38,6 +39,7 @@ def lookup_card(
     online_ingest_enabled: bool = False,
     fetch_card_fn: Callable[..., dict] = fetch_card,
     fetch_rulings_fn: Callable[..., list[dict]] = fetch_rulings,
+    fetch_sets_index_fn: Callable[..., dict] = fetch_sets_index,
     on_ingest_start: Callable[[str], None] | None = None,
 ) -> dict:
     name = args["name"]
@@ -62,6 +64,7 @@ def lookup_card(
             llm_client=llm_client,
             fetch_card_fn=fetch_card_fn,
             fetch_rulings_fn=fetch_rulings_fn,
+            fetch_sets_index_fn=fetch_sets_index_fn,
             field=field,
         )
     except AmbiguousCardError:

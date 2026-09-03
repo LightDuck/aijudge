@@ -5,11 +5,15 @@ from aijudge.db.cards_repo import insert_card
 from aijudge.db.effects_repo import confirm_effect, insert_pending_effect
 from aijudge.db.rulings_repo import insert_ruling
 from aijudge.effect_parser.clause_splitter import resolve_effect_clauses
-from aijudge.effect_parser.parser import classify_damage_step_category, classify_effect_type, extract_usage_limit_text, parse_psct
+from aijudge.effect_parser.parser import classify_damage_step_category, classify_effect_type, parse_psct
 from aijudge.effect_parser.review_agent import review_parsed_effect
+from aijudge.effect_parser.sentence_splitter import extract_card_material
+from aijudge.effect_parser.usage_limit import resolve_ambiguous_scope
+from aijudge.ingestion.printing_eligibility import fetch_sets_index, is_deterministic_parse_eligible
 from aijudge.ingestion.ygoprodeck_client import fetch_card
 from aijudge.ingestion.ygoresources_client import fetch_rulings
 from aijudge.llm.client import LLMClient
+from aijudge.rules_engine.models import EffectType
 
 HAND_PICKED_CARDS: list[str] = [
     "Ash Blossom & Joyous Spring",
@@ -28,12 +32,17 @@ def seed_card(
     llm_client: LLMClient,
     fetch_card_fn: Callable[..., dict] = fetch_card,
     fetch_rulings_fn: Callable[..., list[dict]] = fetch_rulings,
+    fetch_sets_index_fn: Callable[..., dict] = fetch_sets_index,
     field: str | None = None,
 ) -> str:
     card_data = fetch_card_fn(name, field=field) if field is not None else fetch_card_fn(name)
     card_type = card_data["type"]
     race = card_data.get("race")
     card_text = card_data["desc"]
+    card_sets = card_data.get("card_sets") or []
+
+    sets_index = fetch_sets_index_fn()
+    eligible = is_deterministic_parse_eligible(card_sets, sets_index)
 
     card_id = insert_card(
         name=card_data["name"],
@@ -43,6 +52,7 @@ def seed_card(
         source="ygoprodeck",
         fetched_at=datetime.now(timezone.utc).date(),
         ygoprodeck_id=str(card_data["id"]),
+        deterministic_parse_eligible=eligible,
     )
 
     misc_info = card_data.get("misc_info") or [{}]
@@ -62,45 +72,111 @@ def seed_card(
             ruling_date=date.fromisoformat(raw_date) if raw_date else None,
         )
 
-    effect_texts = resolve_effect_clauses(llm_client, card_text)
+    if not eligible:
+        _insert_unclassified(card_id, card_text)
+        return card_id
 
-    for effect_text in effect_texts:
-        effect_type = classify_effect_type(effect_text, card_type=card_type, race=race)
-        parsed = parse_psct(effect_text)
-        damage_step_category = classify_damage_step_category(
-            parsed.effect,
-            activation_condition=parsed.activation_condition,
-            effect_type=effect_type,
-        )
-        usage_limit_text = extract_usage_limit_text(effect_text)
-
-        review = review_parsed_effect(
-            llm_client,
-            raw_text=effect_text,
-            activation_condition=parsed.activation_condition,
-            cost=parsed.cost,
-            targeting=parsed.targeting,
-            effect=parsed.effect,
-            damage_step_category=damage_step_category,
-        )
-
-        effect_id = insert_pending_effect(
+    material_text, remainder = extract_card_material(card_text, card_type=card_type)
+    if material_text is not None:
+        insert_pending_effect(
             card_id=card_id,
-            effect_type=effect_type.value,
-            effect=parsed.effect,
-            activation_condition=parsed.activation_condition,
-            cost=parsed.cost,
-            targeting=parsed.targeting,
-            has_target=(parsed.targeting is not None),
-            confidence_score=review.confidence,
-            damage_step_category=damage_step_category,
-            usage_limit_text=usage_limit_text,
+            effect_type=EffectType.CARD_MATERIAL.value,
+            effect=material_text,
+            confidence_score=1.0,
         )
+        if not remainder:
+            return card_id
+    else:
+        remainder = card_text
 
-        if review.auto_confirmed:
-            confirm_effect(effect_id)
+    clauses, scopes = resolve_effect_clauses(llm_client, remainder)
+
+    usage_limit_by_clause: dict[int, str] = {}
+    for scope in scopes:
+        indices = (
+            resolve_ambiguous_scope(llm_client, usage_limit_text=scope.text, clauses=clauses)
+            if scope.ambiguous
+            else scope.applies_to
+        )
+        for index in indices:
+            usage_limit_by_clause[index] = scope.text
+
+    for index, effect_text in enumerate(clauses):
+        usage_limit_text = usage_limit_by_clause.get(index)
+        other_effects = None
+        if usage_limit_text is not None:
+            other_effects = [
+                text
+                for i, text in enumerate(clauses)
+                if i != index and usage_limit_by_clause.get(i) == usage_limit_text
+            ]
+
+        _insert_parsed_clause(
+            llm_client,
+            card_id=card_id,
+            card_type=card_type,
+            race=race,
+            effect_text=effect_text,
+            usage_limit_text=usage_limit_text,
+            other_effects=other_effects,
+        )
 
     return card_id
+
+
+def _insert_unclassified(card_id: str, card_text: str) -> None:
+    insert_pending_effect(
+        card_id=card_id,
+        effect_type=EffectType.UNCLASSIFIED.value,
+        effect=card_text,
+        confidence_score=0.0,
+    )
+
+
+def _insert_parsed_clause(
+    llm_client: LLMClient,
+    *,
+    card_id: str,
+    card_type: str,
+    race: str | None,
+    effect_text: str,
+    usage_limit_text: str | None,
+    other_effects: list[str] | None,
+) -> None:
+    effect_type = classify_effect_type(effect_text, card_type=card_type, race=race)
+    parsed = parse_psct(effect_text)
+    damage_step_category = classify_damage_step_category(
+        parsed.effect,
+        activation_condition=parsed.activation_condition,
+        effect_type=effect_type,
+    )
+
+    review = review_parsed_effect(
+        llm_client,
+        raw_text=effect_text,
+        activation_condition=parsed.activation_condition,
+        cost=parsed.cost,
+        targeting=parsed.targeting,
+        effect=parsed.effect,
+        damage_step_category=damage_step_category,
+        other_effects=other_effects,
+    )
+
+    effect_id = insert_pending_effect(
+        card_id=card_id,
+        effect_type=effect_type.value,
+        effect=parsed.effect,
+        activation_condition=parsed.activation_condition,
+        cost=parsed.cost,
+        targeting=parsed.targeting,
+        has_target=(parsed.targeting is not None),
+        confidence_score=review.confidence,
+        damage_step_category=damage_step_category,
+        usage_limit_text=usage_limit_text,
+    )
+
+    if review.auto_confirmed:
+        confirm_effect(effect_id)
 
 
 def run_seed(llm_client: LLMClient) -> list[str]:

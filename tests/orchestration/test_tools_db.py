@@ -135,13 +135,18 @@ def test_lookup_card_ingests_unknown_card_on_miss_when_online_ingest_enabled():
     desc = "You can target 1 banished monster; banish it."
 
     def fake_fetch_card(name, http_get=None):
-        return {"id": 47355498, "name": name, "type": "Quick-Play Spell", "desc": desc}
+        return {
+            "id": 47355498,
+            "name": name,
+            "type": "Quick-Play Spell",
+            "desc": desc,
+            "card_sets": [{"set_name": "Some Set"}],
+        }
 
     def fake_fetch_rulings(name, http_get=None):
         return [{"text": "Can target monsters banished this turn.", "date": "2021-01-01"}]
 
     llm_client = MockLLMClient()
-    llm_client.queue_response(desc)  # split proposal: one effect, unchanged
     llm_client.queue_response("0.97")  # review agent confidence
 
     result = lookup_card(
@@ -150,6 +155,7 @@ def test_lookup_card_ingests_unknown_card_on_miss_when_online_ingest_enabled():
         online_ingest_enabled=True,
         fetch_card_fn=fake_fetch_card,
         fetch_rulings_fn=fake_fetch_rulings,
+        fetch_sets_index_fn=lambda: {"Some Set": date(2020, 1, 1)},
     )
 
     assert result["found"] is True
@@ -194,6 +200,7 @@ def test_lookup_card_reuses_existing_row_on_unique_violation_race():
             name=name,
             card_text="a pre-existing race winner's text",
             card_type="Trap",
+            deterministic_parse_eligible=True,
             source="ygoprodeck",
             fetched_at=date(2026, 8, 31),
             ygoprodeck_id="99999999",
