@@ -57,12 +57,15 @@ def test_run_cli_answers_a_question_with_no_clarification_needed():
     llm.queue_response("PROCEED")
     llm.queue_response("FINAL: It does X. ||CITES: ||")
 
+    card = {"id": "1", "name": "Card X", "card_type": "Effect Monster"}
+
     run_cli(
         llm,
         MockEmbeddingClient(),
         input_fn=lambda _: next(inputs),
         print_fn=printed.append,
-        find_matched_cards_fn=lambda question: [],
+        find_matched_cards_fn=lambda question: [card],
+        build_known_facts_context_fn=lambda c: "",
     )
 
     assert "It does X." in printed
@@ -76,12 +79,15 @@ def test_run_cli_passes_the_system_prompt_to_the_clarification_call():
     llm.queue_response("PROCEED")
     llm.queue_response("FINAL: It does X. ||CITES: ||")
 
+    card = {"id": "1", "name": "Card X", "card_type": "Effect Monster"}
+
     run_cli(
         llm,
         MockEmbeddingClient(),
         input_fn=lambda _: next(inputs),
         print_fn=printed.append,
-        find_matched_cards_fn=lambda question: [],
+        find_matched_cards_fn=lambda question: [card],
+        build_known_facts_context_fn=lambda c: "",
     )
 
     assert llm.system_prompts[0] == build_system_prompt()
@@ -95,6 +101,30 @@ def test_run_cli_asks_clarification_questions_before_answering():
     llm.queue_response("CLARIFY: Which monster do you control?")
     llm.queue_response("FINAL: Yes, you can respond. ||CITES: ||")
 
+    card = {"id": "1", "name": "Effect Veiler", "card_type": "Effect Monster"}
+
+    run_cli(
+        llm,
+        MockEmbeddingClient(),
+        input_fn=lambda _: next(inputs),
+        print_fn=printed.append,
+        find_matched_cards_fn=lambda question: [card],
+        build_known_facts_context_fn=lambda c: "",
+    )
+
+    assert "Yes, you can respond." in printed
+
+
+def test_run_cli_skips_the_clarification_call_when_no_card_matches():
+    printed = []
+    inputs = iter(["what is tearlaments havnis effect?", "quit"])
+
+    llm = MockLLMClient()
+    # Only one response queued -- if the clarify pass ran anyway, it would
+    # consume this response itself (leaving run_loop's own call to raise
+    # AssertionError on the now-empty queue), so this asserts the skip.
+    llm.queue_response("FINAL: It negates a Spell/Trap Card. ||CITES: ||")
+
     run_cli(
         llm,
         MockEmbeddingClient(),
@@ -103,7 +133,7 @@ def test_run_cli_asks_clarification_questions_before_answering():
         find_matched_cards_fn=lambda question: [],
     )
 
-    assert "Yes, you can respond." in printed
+    assert "It negates a Spell/Trap Card." in printed
 
 
 def test_run_cli_disambiguates_when_multiple_cards_match():

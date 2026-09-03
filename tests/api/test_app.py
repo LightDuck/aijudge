@@ -40,7 +40,12 @@ def test_post_questions_returns_answer_when_no_clarification_needed():
     llm.queue_response("PROCEED")
     llm.queue_response("FINAL: Ash Blossom negates that effect. ||CITES: ||")
 
-    response = _client(llm).post("/questions", json={"question": "What does Ash Blossom do?"})
+    card = {"id": "1", "name": "Ash Blossom & Joyous Spring", "card_type": "Effect Monster"}
+    response = _client(
+        llm,
+        find_matched_cards_fn=lambda question: [card],
+        build_known_facts_context_fn=lambda c: "",
+    ).post("/questions", json={"question": "What does Ash Blossom do?"})
 
     assert response.status_code == 200
     assert response.json() == {"status": "answer", "text": "Ash Blossom negates that effect.", "citations": []}
@@ -50,7 +55,12 @@ def test_post_questions_returns_needs_clarification_when_llm_asks():
     llm = MockLLMClient()
     llm.queue_response("CLARIFY: Which card's effect are you asking about?")
 
-    response = _client(llm).post("/questions", json={"question": "What does it do?"})
+    card = {"id": "1", "name": "Some Card", "card_type": "Effect Monster"}
+    response = _client(
+        llm,
+        find_matched_cards_fn=lambda question: [card],
+        build_known_facts_context_fn=lambda c: "",
+    ).post("/questions", json={"question": "What does it do?"})
 
     assert response.status_code == 200
     assert response.json() == {
@@ -60,12 +70,30 @@ def test_post_questions_returns_needs_clarification_when_llm_asks():
     }
 
 
+def test_post_questions_skips_the_clarification_call_when_no_card_matches():
+    llm = MockLLMClient()
+    # Only one response queued -- if the clarify pass ran anyway, it would
+    # consume this response itself (leaving run_loop's own call to raise
+    # AssertionError on the now-empty queue), so this asserts the skip.
+    llm.queue_response("FINAL: It negates a Spell/Trap Card. ||CITES: ||")
+
+    response = _client(llm).post("/questions", json={"question": "what is tearlaments havnis effect?"})
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "answer", "text": "It negates a Spell/Trap Card.", "citations": []}
+
+
 def test_post_questions_passes_the_system_prompt_to_the_clarification_call():
     llm = MockLLMClient()
     llm.queue_response("PROCEED")
     llm.queue_response("FINAL: ok. ||CITES: ||")
 
-    _client(llm).post("/questions", json={"question": "x"})
+    card = {"id": "1", "name": "Some Card", "card_type": "Effect Monster"}
+    _client(
+        llm,
+        find_matched_cards_fn=lambda question: [card],
+        build_known_facts_context_fn=lambda c: "",
+    ).post("/questions", json={"question": "x"})
 
     assert llm.system_prompts[0] == build_system_prompt()
 
@@ -86,7 +114,6 @@ def test_post_questions_serializes_citation_content_without_leaking_raw_ids():
     # {label, text} pairs serialize correctly over the wire and that no
     # raw internal id (card:<uuid>, etc.) ever appears in the response.
     llm = MockLLMClient()
-    llm.queue_response("PROCEED")
     llm.queue_response('TOOL: lookup_card {"name": "Ash Blossom & Joyous Spring"}')
     llm.queue_response("FINAL: It negates the effect. ||CITES: card:abc123||")
 
@@ -142,7 +169,6 @@ def test_post_questions_response_model_strips_fields_not_declared_on_the_model(m
     import aijudge.api.app as app_module
 
     llm = MockLLMClient()
-    llm.queue_response("PROCEED")
     llm.queue_response("FINAL: ok. ||CITES: ||")
 
     def _leaky_result_response(result):
@@ -164,7 +190,6 @@ def test_post_questions_response_model_strips_fields_not_declared_on_the_model(m
 
 def test_post_questions_cors_allows_configured_origin():
     llm = MockLLMClient()
-    llm.queue_response("PROCEED")
     llm.queue_response("FINAL: ok. ||CITES: ||")
 
     client = _client(llm, cors_origins=["http://localhost:5173"])
