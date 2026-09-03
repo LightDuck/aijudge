@@ -329,3 +329,8 @@ Branch off `dev`, not `main`, for new work — worktrees included. `main` only r
 lag significantly behind it (this repo's git host default branch is `main`, so any tooling that bases a new
 branch/worktree off "the default branch" will silently pick the wrong, stale base unless told otherwise). Use
 `dev` as the base unless the user explicitly asks for a different base branch.
+
+When writing an implementation plan or spec doc (e.g. anything under `docs/superpowers/plans/` or
+`docs/superpowers/specs/`), always also commit a copy directly to `dev`, even if the work producing it happens on
+a worktree or feature branch. These docs are reference material for future sessions and should land on `dev`
+immediately rather than waiting on that branch's PR to merge.
