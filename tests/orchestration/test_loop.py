@@ -203,8 +203,26 @@ def test_run_loop_passes_the_system_prompt_on_every_llm_call():
     llm.queue_response('TOOL: lookup_card {"name": "Ash Blossom & Joyous Spring"}')
     llm.queue_response("FINAL: It negates the effect. ||CITES: card:abc123||")
 
-    tools = {"lookup_card": lambda args: {"found": True, "id": "abc123", "confirmed_effects": [{"effect": "..."}]}}
+    tools = {
+        "lookup_card": lambda args: {"found": True, "id": "abc123", "confirmed_effects": [{"effect": "..."}]},
+        "get_rulings": lambda args: {"rulings": []},
+        "search_rulebook": lambda args: {"chunks": []},
+        "resolve_chain": lambda args: {},
+    }
 
     run_loop("What does Ash Blossom do?", llm_client=llm, tools=tools)
 
-    assert llm.system_prompts == [build_system_prompt(), build_system_prompt()]
+    expected = build_system_prompt(available_tools=set(tools))
+    assert llm.system_prompts == [expected, expected]
+
+
+def test_run_loop_only_advertises_the_tools_actually_in_the_dispatch():
+    llm = MockLLMClient()
+    llm.queue_response("FINAL: It does not deal with rulings. ||CITES: ||")
+
+    tools = {"lookup_card": lambda args: {"found": False}}
+
+    run_loop("What does Ash Blossom do?", llm_client=llm, tools=tools)
+
+    assert "lookup_card" in llm.system_prompts[0]
+    assert "get_rulings" not in llm.system_prompts[0]

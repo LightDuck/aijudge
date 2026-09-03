@@ -141,15 +141,18 @@ def build_tool_dispatch(
     *,
     online_ingest_enabled: bool = True,
     on_ingest_start: Callable[[str], None] | None = None,
+    card_mode: bool = True,
 ) -> dict[str, Callable[[dict], dict]]:
-    return {
+    dispatch = {
         "lookup_card": lambda args: lookup_card(
             args,
             llm_client=llm_client,
             online_ingest_enabled=online_ingest_enabled,
             on_ingest_start=on_ingest_start,
         ),
-        "get_rulings": get_rulings,
         "search_rulebook": lambda args: _search_rulebook(args, embedding_client=embedding_client),
         "resolve_chain": resolve_chain,
     }
+    if not card_mode:
+        dispatch["get_rulings"] = get_rulings
+    return dispatch

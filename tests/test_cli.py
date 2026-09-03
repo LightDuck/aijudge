@@ -259,7 +259,9 @@ def test_run_cli_wires_on_ingest_start_callback_to_print_fn(monkeypatch):
 
     captured = {}
 
-    def fake_build_tool_dispatch(llm_client, embedding_client, *, online_ingest_enabled=True, on_ingest_start=None):
+    def fake_build_tool_dispatch(
+        llm_client, embedding_client, *, online_ingest_enabled=True, on_ingest_start=None, card_mode=True
+    ):
         captured["on_ingest_start"] = on_ingest_start
         captured["online_ingest_enabled"] = online_ingest_enabled
         return {}
@@ -280,7 +282,9 @@ def test_run_cli_passes_online_ingest_enabled_through_to_tool_dispatch(monkeypat
 
     captured = {}
 
-    def fake_build_tool_dispatch(llm_client, embedding_client, *, online_ingest_enabled=True, on_ingest_start=None):
+    def fake_build_tool_dispatch(
+        llm_client, embedding_client, *, online_ingest_enabled=True, on_ingest_start=None, card_mode=True
+    ):
         captured["online_ingest_enabled"] = online_ingest_enabled
         return {}
 
@@ -296,3 +300,104 @@ def test_run_cli_passes_online_ingest_enabled_through_to_tool_dispatch(monkeypat
     )
 
     assert captured["online_ingest_enabled"] is False
+
+
+def test_run_cli_defaults_to_card_mode(monkeypatch):
+    import aijudge.cli as cli_module
+
+    card_modes = []
+
+    def fake_build_tool_dispatch(
+        llm_client, embedding_client, *, online_ingest_enabled=True, on_ingest_start=None, card_mode=True
+    ):
+        card_modes.append(card_mode)
+        return {}
+
+    monkeypatch.setattr(cli_module, "build_tool_dispatch", fake_build_tool_dispatch)
+
+    printed = []
+    inputs = iter(["What does Ash Blossom do?", "quit"])
+    llm = MockLLMClient()
+    llm.queue_response("FINAL: It negates. ||CITES: ||")
+
+    run_cli(
+        llm,
+        MockEmbeddingClient(),
+        input_fn=lambda _: next(inputs),
+        print_fn=printed.append,
+        find_matched_cards_fn=lambda question: [],
+    )
+
+    assert True in card_modes
+    assert False not in card_modes
+
+
+def test_run_cli_ruling_marker_switches_mode_and_strips_marker_from_the_question(monkeypatch):
+    import aijudge.cli as cli_module
+
+    card_modes = []
+    seen_questions = []
+
+    def fake_build_tool_dispatch(
+        llm_client, embedding_client, *, online_ingest_enabled=True, on_ingest_start=None, card_mode=True
+    ):
+        card_modes.append(card_mode)
+        return {}
+
+    def fake_run_loop(question, *, llm_client, tools, clarification_context=""):
+        seen_questions.append(question)
+        from aijudge.orchestration.loop import LoopResult
+
+        return LoopResult(kind="answer", text="ok")
+
+    monkeypatch.setattr(cli_module, "build_tool_dispatch", fake_build_tool_dispatch)
+    monkeypatch.setattr(cli_module, "run_loop", fake_run_loop)
+
+    printed = []
+    inputs = iter(["{ruling} what does Ash Blossom do?", "quit"])
+
+    run_cli(
+        MockLLMClient(),
+        MockEmbeddingClient(),
+        input_fn=lambda _: next(inputs),
+        print_fn=printed.append,
+        find_matched_cards_fn=lambda question: [],
+    )
+
+    assert seen_questions == ["what does Ash Blossom do?"]
+    assert card_modes[-1] is False
+
+
+def test_run_cli_mode_persists_across_turns_after_marker_switch(monkeypatch):
+    import aijudge.cli as cli_module
+
+    card_modes = []
+
+    def fake_build_tool_dispatch(
+        llm_client, embedding_client, *, online_ingest_enabled=True, on_ingest_start=None, card_mode=True
+    ):
+        card_modes.append(card_mode)
+        return {}
+
+    def fake_run_loop(question, *, llm_client, tools, clarification_context=""):
+        from aijudge.orchestration.loop import LoopResult
+
+        return LoopResult(kind="answer", text="ok")
+
+    monkeypatch.setattr(cli_module, "build_tool_dispatch", fake_build_tool_dispatch)
+    monkeypatch.setattr(cli_module, "run_loop", fake_run_loop)
+
+    printed = []
+    inputs = iter(["{ruling} what does Ash Blossom do?", "what about Effect Veiler?", "quit"])
+
+    run_cli(
+        MockLLMClient(),
+        MockEmbeddingClient(),
+        input_fn=lambda _: next(inputs),
+        print_fn=printed.append,
+        find_matched_cards_fn=lambda question: [],
+    )
+
+    # Both the switching turn and the following unmarked turn stay in
+    # ruling mode -- the marker sets a session-level mode, not a one-shot.
+    assert card_modes[1:] == [False, False]

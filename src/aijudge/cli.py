@@ -11,7 +11,12 @@ from .orchestration.clarify import (
     parse_clarification_response,
 )
 from .orchestration.loop import run_loop
-from .orchestration.preflight import build_known_facts_context, find_matched_cards, find_mentioned_card_names
+from .orchestration.preflight import (
+    build_known_facts_context,
+    extract_mode_marker,
+    find_matched_cards,
+    find_mentioned_card_names,
+)
 from .orchestration.protocol import build_system_prompt
 from .orchestration.tools import build_tool_dispatch
 
@@ -26,11 +31,13 @@ def run_cli(
     build_known_facts_context_fn: Callable[[dict], str] = build_known_facts_context,
     online_ingest_enabled: bool = True,
 ) -> None:
+    card_mode = True  # session-level: card-fetch mode by default, switchable via {card}/{ruling} markers
     tools = build_tool_dispatch(
         llm_client,
         embedding_client,
         online_ingest_enabled=online_ingest_enabled,
         on_ingest_start=lambda name: print_fn(f"Looking up {name}, this may take a moment..."),
+        card_mode=card_mode,
     )
     print_fn("AIJudge -- ask a Yu-Gi-Oh! rules question ('exit' or 'quit' to leave).")
 
@@ -45,6 +52,20 @@ def run_cli(
             break
         if not stripped:
             continue
+
+        stripped, marker_mode = extract_mode_marker(stripped)
+        if marker_mode is not None:
+            card_mode = marker_mode
+        if not stripped:
+            continue
+
+        tools = build_tool_dispatch(
+            llm_client,
+            embedding_client,
+            online_ingest_enabled=online_ingest_enabled,
+            on_ingest_start=lambda name: print_fn(f"Looking up {name}, this may take a moment..."),
+            card_mode=card_mode,
+        )
 
         matches = find_matched_cards_fn(stripped)
         disambiguation_items: list[ClarificationItem] = []

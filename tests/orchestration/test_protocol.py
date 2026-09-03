@@ -92,3 +92,15 @@ def test_build_system_prompt_instructs_passcode_terminology_for_the_id_field():
 def test_build_system_prompt_instructs_ambiguous_result_handling():
     prompt = build_system_prompt()
     assert "ambiguous" in prompt.lower()
+
+
+def test_build_system_prompt_lists_only_the_given_available_tools():
+    prompt = build_system_prompt(available_tools={"lookup_card", "resolve_chain", "search_rulebook"})
+    assert "lookup_card" in prompt
+    assert "resolve_chain" in prompt
+    assert "search_rulebook" in prompt
+    assert "get_rulings" not in prompt
+
+
+def test_build_system_prompt_defaults_to_all_tools_when_available_tools_omitted():
+    assert build_system_prompt() == build_system_prompt(available_tools=None)

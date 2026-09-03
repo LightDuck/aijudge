@@ -48,7 +48,12 @@ def test_post_questions_returns_answer_when_no_clarification_needed():
     ).post("/questions", json={"question": "What does Ash Blossom do?"})
 
     assert response.status_code == 200
-    assert response.json() == {"status": "answer", "text": "Ash Blossom negates that effect.", "citations": []}
+    assert response.json() == {
+        "status": "answer",
+        "text": "Ash Blossom negates that effect.",
+        "citations": [],
+        "mode": "card",
+    }
 
 
 def test_post_questions_returns_needs_clarification_when_llm_asks():
@@ -67,6 +72,7 @@ def test_post_questions_returns_needs_clarification_when_llm_asks():
         "status": "needs_clarification",
         "question": "What does it do?",
         "items": [{"kind": "clarify", "text": "Which card's effect are you asking about?"}],
+        "mode": "card",
     }
 
 
@@ -80,7 +86,12 @@ def test_post_questions_skips_the_clarification_call_when_no_card_matches():
     response = _client(llm).post("/questions", json={"question": "what is tearlaments havnis effect?"})
 
     assert response.status_code == 200
-    assert response.json() == {"status": "answer", "text": "It negates a Spell/Trap Card.", "citations": []}
+    assert response.json() == {
+        "status": "answer",
+        "text": "It negates a Spell/Trap Card.",
+        "citations": [],
+        "mode": "card",
+    }
 
 
 def test_post_questions_passes_the_system_prompt_to_the_clarification_call():
@@ -274,6 +285,7 @@ def test_post_questions_returns_disambiguate_card_item_when_multiple_cards_match
                 "text": "Multiple cards match your question: Effect Veiler, Effector. Which one do you mean?",
             }
         ],
+        "mode": "card",
     }
 
 
@@ -386,7 +398,12 @@ def test_post_questions_answer_returns_final_result():
     )
 
     assert response.status_code == 200
-    assert response.json() == {"status": "answer", "text": "Yes, it does that.", "citations": []}
+    assert response.json() == {
+        "status": "answer",
+        "text": "Yes, it does that.",
+        "citations": [],
+        "mode": "card",
+    }
 
 
 class _RecordingLLMClient:
@@ -420,7 +437,12 @@ def test_post_questions_answer_threads_clarification_context_into_llm_prompt():
     )
 
     assert response.status_code == 200
-    assert response.json() == {"status": "answer", "text": "Yes, it does that.", "citations": []}
+    assert response.json() == {
+        "status": "answer",
+        "text": "Yes, it does that.",
+        "citations": [],
+        "mode": "card",
+    }
     assert len(llm.prompts) == 1
     assert "Yes, Ash Blossom is on the field." in llm.prompts[-1]
 
@@ -540,14 +562,19 @@ def test_create_app_defaults_online_ingest_enabled_to_true(monkeypatch):
 
     captured = {}
 
-    def fake_build_tool_dispatch(llm_client, embedding_client, *, online_ingest_enabled=True, on_ingest_start=None):
+    def fake_build_tool_dispatch(
+        llm_client, embedding_client, *, online_ingest_enabled=True, on_ingest_start=None, card_mode=True
+    ):
         captured["online_ingest_enabled"] = online_ingest_enabled
         captured["on_ingest_start"] = on_ingest_start
         return {}
 
     monkeypatch.setattr(app_module, "build_tool_dispatch", fake_build_tool_dispatch)
 
-    create_app(MockLLMClient(), MockEmbeddingClient(), find_matched_cards_fn=lambda question: [])
+    llm = MockLLMClient()
+    llm.queue_response("FINAL: ok. ||CITES: ||")
+    app = create_app(llm, MockEmbeddingClient(), find_matched_cards_fn=lambda question: [])
+    TestClient(app).post("/questions", json={"question": "x"})
 
     assert captured["online_ingest_enabled"] is True
     assert captured["on_ingest_start"] is None
@@ -558,17 +585,93 @@ def test_create_app_passes_online_ingest_enabled_false_through(monkeypatch):
 
     captured = {}
 
-    def fake_build_tool_dispatch(llm_client, embedding_client, *, online_ingest_enabled=True, on_ingest_start=None):
+    def fake_build_tool_dispatch(
+        llm_client, embedding_client, *, online_ingest_enabled=True, on_ingest_start=None, card_mode=True
+    ):
         captured["online_ingest_enabled"] = online_ingest_enabled
         return {}
 
     monkeypatch.setattr(app_module, "build_tool_dispatch", fake_build_tool_dispatch)
 
-    create_app(
-        MockLLMClient(),
+    llm = MockLLMClient()
+    llm.queue_response("FINAL: ok. ||CITES: ||")
+    app = create_app(
+        llm,
         MockEmbeddingClient(),
         online_ingest_enabled=False,
         find_matched_cards_fn=lambda question: [],
     )
+    TestClient(app).post("/questions", json={"question": "x"})
 
     assert captured["online_ingest_enabled"] is False
+
+
+def test_post_questions_defaults_to_card_mode():
+    llm = MockLLMClient()
+    llm.queue_response("FINAL: ok. ||CITES: ||")
+
+    response = _client(llm).post("/questions", json={"question": "What does Ash Blossom do?"})
+
+    assert response.json()["mode"] == "card"
+
+
+def test_post_questions_respects_explicit_ruling_mode_field():
+    llm = MockLLMClient()
+    llm.queue_response("FINAL: ok. ||CITES: ||")
+
+    response = _client(llm).post(
+        "/questions", json={"question": "What does Ash Blossom do?", "mode": "ruling"}
+    )
+
+    assert response.json()["mode"] == "ruling"
+
+
+def test_post_questions_marker_overrides_explicit_mode_field_and_is_stripped():
+    llm = MockLLMClient()
+    llm.queue_response("FINAL: ok. ||CITES: ||")
+
+    response = _client(llm).post(
+        "/questions", json={"question": "{ruling} What does Ash Blossom do?", "mode": "card"}
+    )
+
+    assert response.status_code == 200
+    assert response.json()["mode"] == "ruling"
+
+
+def test_post_questions_builds_tools_with_the_resolved_card_mode(monkeypatch):
+    import aijudge.api.app as app_module
+
+    card_modes = []
+
+    def fake_build_tool_dispatch(
+        llm_client, embedding_client, *, online_ingest_enabled=True, on_ingest_start=None, card_mode=True
+    ):
+        card_modes.append(card_mode)
+        return {}
+
+    monkeypatch.setattr(app_module, "build_tool_dispatch", fake_build_tool_dispatch)
+
+    llm = MockLLMClient()
+    llm.queue_response("FINAL: ok. ||CITES: ||")
+    app = create_app(llm, MockEmbeddingClient(), find_matched_cards_fn=lambda question: [])
+
+    TestClient(app).post("/questions", json={"question": "x", "mode": "ruling"})
+
+    assert card_modes == [False]
+
+
+def test_post_questions_answer_echoes_the_resolved_mode():
+    llm = MockLLMClient()
+    llm.queue_response("FINAL: Yes, it does that. ||CITES: ||")
+
+    response = _client(llm).post(
+        "/questions/answer",
+        json={
+            "question": "Is X active?",
+            "items": [{"kind": "continuous_check", "text": "Some Card"}],
+            "answers": ["Yes, it's on the field."],
+            "mode": "ruling",
+        },
+    )
+
+    assert response.json()["mode"] == "ruling"

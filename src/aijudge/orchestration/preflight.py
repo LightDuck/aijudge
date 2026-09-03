@@ -4,6 +4,20 @@ import re
 _FUZZY_CUTOFF = 0.75
 
 
+def extract_mode_marker(text: str) -> tuple[str, bool | None]:
+    """Detect a literal, case-sensitive "{card}" or "{ruling}" marker
+    anywhere in `text`, strip it out, and report the mode it selects --
+    True for card-fetch mode, False for ruling-fetch mode. Returns
+    (text, None) unchanged if neither marker is present. If both appear,
+    "{card}" wins (only that marker is stripped; "{ruling}" is left in
+    place as ordinary text)."""
+    if "{card}" in text:
+        return " ".join(text.replace("{card}", "", 1).split()), True
+    if "{ruling}" in text:
+        return " ".join(text.replace("{ruling}", "", 1).split()), False
+    return text, None
+
+
 def find_mentioned_card_names(question: str, known_names: list[str]) -> list[str]:
     """Return every name in `known_names` plausibly mentioned in `question`.
 

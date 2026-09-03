@@ -17,7 +17,12 @@ from aijudge.orchestration.clarify import (
     parse_clarification_response,
 )
 from aijudge.orchestration.loop import LoopResult, run_loop
-from aijudge.orchestration.preflight import build_known_facts_context, find_matched_cards, find_mentioned_card_names
+from aijudge.orchestration.preflight import (
+    build_known_facts_context,
+    extract_mode_marker,
+    find_matched_cards,
+    find_mentioned_card_names,
+)
 from aijudge.orchestration.protocol import build_system_prompt
 from aijudge.orchestration.tools import build_tool_dispatch
 
@@ -34,6 +39,16 @@ def _result_response(result: LoopResult) -> dict:
         "text": result.text,
         "citations": result.citations if result.kind == "answer" else None,
     }
+
+
+def _resolve_mode(question: str, requested_mode: str | None) -> tuple[str, bool]:
+    # A {card}/{ruling} marker in the question text is a stronger, per-call
+    # signal than the request's `mode` field (which the client may just be
+    # echoing back from a prior response), so it wins when both are present.
+    cleaned, marker_mode = extract_mode_marker(question)
+    if marker_mode is not None:
+        return cleaned, marker_mode
+    return cleaned, requested_mode != "ruling"
 
 
 def _resolve_preflight_context(
@@ -73,12 +88,17 @@ def create_app(
     app = FastAPI()
     # Test-only seam: real callers never pass `tools` and get the DB/embedding-
     # backed dispatch below; tests can inject a stub dispatch to exercise the
-    # citation-serialization path (lookup_card, etc.) without a live DB.
-    tools = (
-        tools
-        if tools is not None
-        else build_tool_dispatch(llm_client, embedding_client, online_ingest_enabled=online_ingest_enabled)
-    )
+    # citation-serialization path (lookup_card, etc.) without a live DB. The
+    # override ignores card_mode entirely -- it's a fixed stub, not a factory.
+    tools_override = tools
+
+    def _build_tools(card_mode: bool) -> dict[str, Callable[[dict], dict]]:
+        if tools_override is not None:
+            return tools_override
+        return build_tool_dispatch(
+            llm_client, embedding_client, online_ingest_enabled=online_ingest_enabled, card_mode=card_mode
+        )
+
     find_matched_cards_fn = find_matched_cards_fn if find_matched_cards_fn is not None else find_matched_cards
     build_known_facts_context_fn = (
         build_known_facts_context_fn if build_known_facts_context_fn is not None else build_known_facts_context
@@ -111,6 +131,10 @@ def create_app(
         question = body.question.strip()
         if not question:
             raise HTTPException(status_code=400, detail="question must not be empty")
+
+        question, card_mode = _resolve_mode(question, body.mode)
+        mode = "card" if card_mode else "ruling"
+        tools = _build_tools(card_mode)
 
         matches = find_matched_cards_fn(question)
         disambiguation_items: list[ClarificationItem] = []
@@ -148,10 +172,11 @@ def create_app(
                 "status": "needs_clarification",
                 "question": question,
                 "items": [{"kind": item.kind, "text": item.text} for item in items],
+                "mode": mode,
             }
 
         result = run_loop(question, llm_client=llm_client, tools=tools, clarification_context=preflight_context)
-        return _result_response(result)
+        return {**_result_response(result), "mode": mode}
 
     @app.post("/questions/answer", response_model=ResultResponse)
     def post_answer(body: AnswerRequest) -> dict:
@@ -160,6 +185,10 @@ def create_app(
             raise HTTPException(status_code=400, detail="question must not be empty")
         if len(body.items) != len(body.answers):
             raise HTTPException(status_code=400, detail="items and answers must be the same length")
+
+        question, card_mode = _resolve_mode(question, body.mode)
+        mode = "card" if card_mode else "ruling"
+        tools = _build_tools(card_mode)
 
         items = [ClarificationItem(kind=item.kind, text=item.text) for item in body.items]
         matches = find_matched_cards_fn(question)
@@ -170,6 +199,6 @@ def create_app(
             context = f"{preflight_context}\n\n{context}" if context else preflight_context
 
         result = run_loop(question, llm_client=llm_client, tools=tools, clarification_context=context)
-        return _result_response(result)
+        return {**_result_response(result), "mode": mode}
 
     return app

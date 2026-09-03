@@ -29,7 +29,7 @@ def run_loop(
     clarification_context: str = "",
     threshold: float = DEFAULT_CONFIDENCE_THRESHOLD,
 ) -> LoopResult:
-    system_prompt = build_system_prompt()
+    system_prompt = build_system_prompt(available_tools=set(tools))
     conversation = "Question: " + question
     if clarification_context:
         conversation += "\n\n" + clarification_context

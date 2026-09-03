@@ -46,8 +46,9 @@ class Refusal:
     text: str
 
 
-def build_system_prompt() -> str:
-    tool_lines = "\n".join(f"- {desc}" for desc in TOOL_DESCRIPTIONS.values())
+def build_system_prompt(available_tools: set[str] | None = None) -> str:
+    names = available_tools if available_tools is not None else TOOL_DESCRIPTIONS.keys()
+    tool_lines = "\n".join(f"- {TOOL_DESCRIPTIONS[name]}" for name in TOOL_DESCRIPTIONS if name in names)
     return (
         "You are a Yu-Gi-Oh! TCG rules-adjudication assistant. Answer only "
         "questions about Yu-Gi-Oh! rules and card interactions, citing your "

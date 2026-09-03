@@ -38,8 +38,19 @@ def test_resolve_chain_wrapper_propagates_unsupported_scenario_error():
         resolve_chain(scenario)
 
 
-def test_build_tool_dispatch_has_all_four_tools():
+def test_build_tool_dispatch_defaults_to_card_mode_which_omits_get_rulings():
     dispatch = build_tool_dispatch(MockLLMClient(), MockEmbeddingClient())
+    assert set(dispatch.keys()) == {"lookup_card", "search_rulebook", "resolve_chain"}
+
+
+def test_build_tool_dispatch_card_mode_true_omits_get_rulings():
+    dispatch = build_tool_dispatch(MockLLMClient(), MockEmbeddingClient(), card_mode=True)
+    assert "get_rulings" not in dispatch
+    assert set(dispatch.keys()) == {"lookup_card", "search_rulebook", "resolve_chain"}
+
+
+def test_build_tool_dispatch_card_mode_false_includes_get_rulings():
+    dispatch = build_tool_dispatch(MockLLMClient(), MockEmbeddingClient(), card_mode=False)
     assert set(dispatch.keys()) == {"lookup_card", "get_rulings", "search_rulebook", "resolve_chain"}
 
 
