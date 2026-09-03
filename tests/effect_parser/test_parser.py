@@ -358,6 +358,40 @@ def test_classify_damage_step_category_gates_card_moved_trigger_by_effect_type()
     )
 
 
+def test_card_moved_trigger_matches_fusion_summoned_card_self_reference():
+    """Tearlaments Rulkallos: 'If this Fusion Summoned card is sent to the
+    GY by a card effect' -- Extra Deck monsters commonly self-refer via
+    their summon-mechanic name instead of bare 'this card'."""
+    result = classify_damage_step_category(
+        "You can Special Summon this card.",
+        activation_condition="If this Fusion Summoned card is sent to the GY by a card effect",
+        effect_type=EffectType.TRIGGER,
+    )
+
+    assert result == "card_moved_trigger"
+
+
+def test_card_moved_trigger_matches_xyz_monster_self_reference():
+    result = classify_damage_step_category(
+        "You can Special Summon this card from your GY.",
+        activation_condition="If this Xyz Monster is destroyed by battle",
+        effect_type=EffectType.TRIGGER,
+    )
+
+    assert result == "card_moved_trigger"
+
+
+def test_card_moved_trigger_still_matches_bare_this_card():
+    """Regression: the existing literal 'this card' match must keep working."""
+    result = classify_damage_step_category(
+        "You can add 1 card to your hand.",
+        activation_condition="If this card is Tribute Summoned",
+        effect_type=EffectType.TRIGGER,
+    )
+
+    assert result == "card_moved_trigger"
+
+
 def test_extract_usage_limit_text_finds_a_trailing_once_per_turn_sentence():
     text = (
         "During your opponent's Main Phase (Quick Effect): You can send this "

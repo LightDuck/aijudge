@@ -44,7 +44,10 @@ _DAMAGE_STEP_EXCEPTION_PATTERN = re.compile(
 # A Trigger/Trigger-like/Quick/Quick-like effect whose *own card* undergoes a
 # zone-change verb as its activation condition -- e.g. "if this card is
 # destroyed by battle" or "if this card is Special Summoned". Deliberately
-# requires "this card" (self-reference); a condition about some *other* card
+# requires a self-reference (either bare "this card" or, for Extra Deck
+# monsters, "this <Xyz/Synchro/Fusion/Link/Pendulum> Monster"/"this Fusion
+# Summoned card" -- these cards routinely self-refer via their summon
+# mechanic instead of "this card"); a condition about some *other* card
 # moving (e.g. "if a Salamangreat monster... is sent to the GY") is not
 # reliably Damage-Step-legal (real cards carve such conditions out
 # explicitly), so it is intentionally left unmatched rather than guessed.
@@ -53,9 +56,10 @@ _DAMAGE_STEP_EXCEPTION_PATTERN = re.compile(
 # alternative rather than a "send"-plus-\w* stem match, since \w* after
 # "sent" would also swallow unrelated words like "sentence".
 _SELF_MOVEMENT_VERBS = r"(?:(?:destroy|banish|send)\w*|sent|(?:return|summon|flip|tribute)\w*)"
+_SELF_REFERENCE = r"(?:this card|this (?:Xyz|Synchro|Fusion|Link|Pendulum) Monster|this Fusion Summoned card)"
 _CARD_MOVED_TRIGGER_PATTERN = re.compile(
-    rf"\bthis card\b.{{0,40}}?\b{_SELF_MOVEMENT_VERBS}\b"
-    rf"|\b{_SELF_MOVEMENT_VERBS}\b.{{0,40}}?\bthis card\b",
+    rf"\b{_SELF_REFERENCE}\b.{{0,40}}?\b{_SELF_MOVEMENT_VERBS}\b"
+    rf"|\b{_SELF_MOVEMENT_VERBS}\b.{{0,40}}?\b{_SELF_REFERENCE}\b",
     re.IGNORECASE,
 )
 
