@@ -30,6 +30,7 @@ def test_insert_and_get_card_by_name():
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="47355498",
+        deterministic_parse_eligible=True,
     )
 
     card = get_card_by_name("Called by the Grave")
@@ -52,6 +53,7 @@ def test_insert_and_get_card_stores_race():
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="47355498",
+        deterministic_parse_eligible=True,
     )
 
     card = get_card_by_name("Called by the Grave")
@@ -68,6 +70,7 @@ def test_insert_card_race_defaults_to_none():
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="14558127",
+        deterministic_parse_eligible=True,
     )
 
     card = get_card_by_name("Ash Blossom & Joyous Spring")
@@ -90,6 +93,7 @@ def test_insert_errata_version_sets_has_errata_flag():
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="11111111",
+        deterministic_parse_eligible=True,
     )
 
     insert_errata_version(card_id=card_id, errata_date=date(2026, 8, 18), errata_text="Errata'd text.")
@@ -108,6 +112,7 @@ def test_get_card_by_name_returns_id_as_str():
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="22222222",
+        deterministic_parse_eligible=True,
     )
 
     card = get_card_by_name("Test Card for ID Type")
@@ -129,6 +134,7 @@ def test_get_card_by_ygoprodeck_id_finds_inserted_card():
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="95440946",
+        deterministic_parse_eligible=True,
     )
 
     card = get_card_by_ygoprodeck_id("95440946")
@@ -157,6 +163,7 @@ def test_get_card_by_ygoresources_id_finds_inserted_card():
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="40605147",
         ygoresources_id="ss-yr-001",
+        deterministic_parse_eligible=True,
     )
 
     card = get_card_by_ygoresources_id("ss-yr-001")
@@ -178,6 +185,7 @@ def test_get_card_by_ygoresources_id_returns_none_for_unmatched_id():
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="41420027",
         ygoresources_id="sj-yr-001",
+        deterministic_parse_eligible=True,
     )
 
     assert get_card_by_ygoresources_id("some-other-id") is None
@@ -193,6 +201,7 @@ def test_get_card_by_ygoresources_id_returns_none_when_card_has_no_ygoresources_
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="14558127",
+        deterministic_parse_eligible=True,
     )
 
     assert get_card_by_ygoresources_id("14558127") is None
@@ -209,6 +218,7 @@ def test_list_card_names_returns_every_inserted_card_name():
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="95440946",
+        deterministic_parse_eligible=True,
     )
     insert_card(
         name="Solemn Strike",
@@ -217,6 +227,7 @@ def test_list_card_names_returns_every_inserted_card_name():
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="40605147",
+        deterministic_parse_eligible=True,
     )
 
     assert set(list_card_names()) == {"Effect Veiler", "Solemn Strike"}
@@ -238,6 +249,7 @@ def test_get_card_by_id_finds_inserted_card():
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="95440946",
+        deterministic_parse_eligible=True,
     )
 
     card = get_card_by_id(card_id)
@@ -263,6 +275,7 @@ def test_get_cards_by_fname_matches_substring_case_insensitively():
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="11111111",
+        deterministic_parse_eligible=True,
     )
     insert_card(
         name="Effect Veiler",
@@ -271,6 +284,7 @@ def test_get_cards_by_fname_matches_substring_case_insensitively():
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="95440946",
+        deterministic_parse_eligible=True,
     )
 
     cards = get_cards_by_fname("salamangreat")
@@ -295,6 +309,7 @@ def test_get_cards_by_archetype_matches_exactly():
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="11111111",
         archetype="Salamangreat",
+        deterministic_parse_eligible=True,
     )
     insert_card(
         name="Salamangreat Balelynx",
@@ -304,6 +319,7 @@ def test_get_cards_by_archetype_matches_exactly():
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="22222222",
         archetype="Salamangreat",
+        deterministic_parse_eligible=True,
     )
     insert_card(
         name="Effect Veiler",
@@ -312,6 +328,7 @@ def test_get_cards_by_archetype_matches_exactly():
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="95440946",
+        deterministic_parse_eligible=True,
     )
 
     cards = get_cards_by_archetype("Salamangreat")
@@ -335,6 +352,7 @@ def test_find_card_by_priority_returns_single_on_exact_name():
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="95440946",
+        deterministic_parse_eligible=True,
     )
 
     status, cards = find_card_by_priority("Effect Veiler")
@@ -353,6 +371,7 @@ def test_find_card_by_priority_falls_back_to_fname():
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="11111111",
+        deterministic_parse_eligible=True,
     )
 
     status, cards = find_card_by_priority("Salamangreat Alm")
@@ -371,6 +390,7 @@ def test_find_card_by_priority_falls_back_to_archetype_then_ygoprodeck_id():
         source="ygoprodeck",
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="95440946",
+        deterministic_parse_eligible=True,
     )
 
     status, cards = find_card_by_priority("95440946")
@@ -390,6 +410,7 @@ def test_find_card_by_priority_returns_ambiguous_on_multiple_matches():
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="11111111",
         archetype="Salamangreat",
+        deterministic_parse_eligible=True,
     )
     insert_card(
         name="Salamangreat Balelynx",
@@ -399,6 +420,7 @@ def test_find_card_by_priority_returns_ambiguous_on_multiple_matches():
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="22222222",
         archetype="Salamangreat",
+        deterministic_parse_eligible=True,
     )
 
     status, cards = find_card_by_priority("Salamangreat")
@@ -427,9 +449,44 @@ def test_find_card_by_priority_with_explicit_field_skips_chain():
         fetched_at=date(2026, 8, 18),
         ygoprodeck_id="11111111",
         archetype="Salamangreat",
+        deterministic_parse_eligible=True,
     )
 
     status, cards = find_card_by_priority("Salamangreat", field="name")
 
     assert status == "none"
     assert cards == []
+
+
+def test_insert_card_requires_and_persists_deterministic_parse_eligible():
+    from aijudge.db.cards_repo import get_card_by_name, insert_card
+
+    insert_card(
+        name="Eligible Test Card",
+        card_text="Some effect text.",
+        card_type="Effect Monster",
+        source="ygoprodeck",
+        fetched_at=date(2026, 1, 1),
+        ygoprodeck_id="1",
+        deterministic_parse_eligible=True,
+    )
+
+    card = get_card_by_name("Eligible Test Card")
+
+    assert card["deterministic_parse_eligible"] is True
+
+
+def test_insert_card_no_longer_accepts_card_materials():
+    from aijudge.db.cards_repo import insert_card
+
+    with pytest.raises(TypeError):
+        insert_card(
+            name="Should Fail",
+            card_text="text",
+            card_type="Effect Monster",
+            source="ygoprodeck",
+            fetched_at=date(2026, 1, 1),
+            ygoprodeck_id="2",
+            deterministic_parse_eligible=True,
+            card_materials="should not be accepted",
+        )

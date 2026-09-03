@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS cards (
     source TEXT NOT NULL,
     fetched_at DATE NOT NULL,
     has_errata BOOLEAN NOT NULL DEFAULT FALSE,
-    card_materials TEXT,
+    deterministic_parse_eligible BOOLEAN NOT NULL DEFAULT TRUE,
     CHECK (race IN (
         'Normal', 'Field', 'Equip', 'Continuous', 'Quick-Play', 'Ritual', 'Counter',
         'Aqua', 'Beast', 'Beast-Warrior', 'Creator God', 'Cyberse', 'Dinosaur',
@@ -43,6 +43,13 @@ DO $$ BEGIN
     ) OR race IS NULL);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
+
+-- Same rationale as the race migration above: applied separately for
+-- pre-existing databases. card_materials is dropped outright, not kept
+-- for backwards compatibility -- nothing ever populated or read it (see
+-- design spec's Data model changes section).
+ALTER TABLE cards ADD COLUMN IF NOT EXISTS deterministic_parse_eligible BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE cards DROP COLUMN IF EXISTS card_materials;
 
 CREATE TABLE IF NOT EXISTS card_errata_versions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

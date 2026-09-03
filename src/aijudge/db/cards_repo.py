@@ -5,7 +5,7 @@ from .connection import get_connection
 _CARD_COLUMNS = [
     "id", "name", "card_text", "card_type", "race", "attribute", "monster_type",
     "level", "rank", "link_rating", "archetype", "atk", "def", "has_errata",
-    "ygoprodeck_id", "ygoresources_id",
+    "ygoprodeck_id", "ygoresources_id", "deterministic_parse_eligible",
 ]
 
 
@@ -17,6 +17,7 @@ def insert_card(
     source: str,
     fetched_at: date,
     ygoprodeck_id: str,
+    deterministic_parse_eligible: bool,
     race: str | None = None,
     attribute: str | None = None,
     monster_type: str | None = None,
@@ -27,7 +28,6 @@ def insert_card(
     atk: int | None = None,
     def_: int | None = None,
     ygoresources_id: str | None = None,
-    card_materials: str | None = None,
 ) -> str:
     with get_connection() as conn:
         row = conn.execute(
@@ -35,14 +35,14 @@ def insert_card(
             INSERT INTO cards (
                 name, card_text, card_type, race, attribute, monster_type,
                 level, rank, link_rating, archetype, atk, def,
-                ygoprodeck_id, ygoresources_id, source, fetched_at, card_materials
+                ygoprodeck_id, ygoresources_id, source, fetched_at, deterministic_parse_eligible
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
             """,
             (
                 name, card_text, card_type, race, attribute, monster_type,
                 level, rank, link_rating, archetype, atk, def_,
-                ygoprodeck_id, ygoresources_id, source, fetched_at, card_materials,
+                ygoprodeck_id, ygoresources_id, source, fetched_at, deterministic_parse_eligible,
             ),
         ).fetchone()
         conn.commit()
@@ -54,7 +54,7 @@ def get_card_by_name(name: str) -> dict | None:
         row = conn.execute(
             "SELECT id, name, card_text, card_type, race, attribute, monster_type, "
             "level, rank, link_rating, archetype, atk, def, has_errata, "
-            "ygoprodeck_id, ygoresources_id "
+            "ygoprodeck_id, ygoresources_id, deterministic_parse_eligible "
             "FROM cards WHERE name = %s",
             (name,),
         ).fetchone()
@@ -70,7 +70,7 @@ def get_card_by_id(card_id: str) -> dict | None:
         row = conn.execute(
             "SELECT id, name, card_text, card_type, race, attribute, monster_type, "
             "level, rank, link_rating, archetype, atk, def, has_errata, "
-            "ygoprodeck_id, ygoresources_id "
+            "ygoprodeck_id, ygoresources_id, deterministic_parse_eligible "
             "FROM cards WHERE id = %s",
             (card_id,),
         ).fetchone()
@@ -86,7 +86,7 @@ def get_cards_by_fname(fname: str) -> list[dict]:
         rows = conn.execute(
             "SELECT id, name, card_text, card_type, race, attribute, monster_type, "
             "level, rank, link_rating, archetype, atk, def, has_errata, "
-            "ygoprodeck_id, ygoresources_id "
+            "ygoprodeck_id, ygoresources_id, deterministic_parse_eligible "
             "FROM cards WHERE name ILIKE %s",
             (f"%{fname}%",),
         ).fetchall()
@@ -98,7 +98,7 @@ def get_cards_by_archetype(archetype: str) -> list[dict]:
         rows = conn.execute(
             "SELECT id, name, card_text, card_type, race, attribute, monster_type, "
             "level, rank, link_rating, archetype, atk, def, has_errata, "
-            "ygoprodeck_id, ygoresources_id "
+            "ygoprodeck_id, ygoresources_id, deterministic_parse_eligible "
             "FROM cards WHERE archetype = %s",
             (archetype,),
         ).fetchall()
@@ -110,7 +110,7 @@ def get_card_by_ygoprodeck_id(ygoprodeck_id: str) -> dict | None:
         row = conn.execute(
             "SELECT id, name, card_text, card_type, race, attribute, monster_type, "
             "level, rank, link_rating, archetype, atk, def, has_errata, "
-            "ygoprodeck_id, ygoresources_id "
+            "ygoprodeck_id, ygoresources_id, deterministic_parse_eligible "
             "FROM cards WHERE ygoprodeck_id = %s",
             (ygoprodeck_id,),
         ).fetchone()
@@ -152,7 +152,7 @@ def get_card_by_ygoresources_id(ygoresources_id: str) -> dict | None:
         row = conn.execute(
             "SELECT id, name, card_text, card_type, race, attribute, monster_type, "
             "level, rank, link_rating, archetype, atk, def, has_errata, "
-            "ygoprodeck_id, ygoresources_id "
+            "ygoprodeck_id, ygoresources_id, deterministic_parse_eligible "
             "FROM cards WHERE ygoresources_id = %s",
             (ygoresources_id,),
         ).fetchone()
