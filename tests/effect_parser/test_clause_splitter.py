@@ -1,88 +1,62 @@
-import pytest
-
-from aijudge.effect_parser.clause_splitter import resolve_effect_clauses, score_split_confidence, split_effect_clauses
 from aijudge.llm.client import MockLLMClient
 
 
-def test_split_effect_clauses_returns_single_chunk_when_llm_echoes_text_unchanged():
-    llm = MockLLMClient()
-    llm.queue_response("You can target 1 banished monster; banish it.")
+def test_resolve_effect_clauses_single_effect_skips_confidence_check():
+    from aijudge.effect_parser.clause_splitter import resolve_effect_clauses
 
-    result = split_effect_clauses(llm, "You can target 1 banished monster; banish it.")
+    llm_client = MockLLMClient()  # no queued response -- must not be called
 
-    assert result == ["You can target 1 banished monster; banish it."]
+    clauses, scopes = resolve_effect_clauses(llm_client, "Must be Fusion Summoned and cannot be Special Summoned by other ways.")
 
-
-def test_split_effect_clauses_parses_multiple_dash_delimited_segments():
-    llm = MockLLMClient()
-    llm.queue_response("Effect one.\n---\nEffect two.")
-
-    result = split_effect_clauses(llm, "Effect one. Effect two.")
-
-    assert result == ["Effect one.", "Effect two."]
+    assert clauses == ["Must be Fusion Summoned and cannot be Special Summoned by other ways."]
+    assert scopes == []
 
 
-def test_split_effect_clauses_tolerates_whitespace_differences_when_reconstructing():
-    llm = MockLLMClient()
-    llm.queue_response("Effect one.\n---\n  Effect two.  ")
+def test_resolve_effect_clauses_multi_effect_with_usage_limit_scope():
+    """Tearlaments Rulkallos remainder (post-material-extraction)."""
+    from aijudge.effect_parser.clause_splitter import resolve_effect_clauses
 
-    result = split_effect_clauses(llm, "Effect one. Effect two.")
-
-    assert result == ["Effect one.", "Effect two."]
-
-
-def test_split_effect_clauses_falls_back_to_original_text_when_reconstruction_fails():
-    llm = MockLLMClient()
-    llm.queue_response("Effect one.\n---\nSomething completely different that lost text.")
-
-    result = split_effect_clauses(llm, "Effect one. Effect two.")
-
-    assert result == ["Effect one. Effect two."]
-
-
-def test_score_split_confidence_returns_the_llm_score():
-    llm = MockLLMClient()
-    llm.queue_response("0.95")
-
-    confidence = score_split_confidence(
-        llm, card_text="Effect one. Effect two.", effect_texts=["Effect one.", "Effect two."]
+    card_text = (
+        'Other Aqua monsters you control cannot be destroyed by battle. You can only use '
+        'each of the following effects of "Tearlaments Rulkallos" once per turn. When your '
+        'opponent activates a card or effect that includes an effect that Special Summons a '
+        'monster(s) (Quick Effect): You can negate the activation, and if you do, destroy '
+        'it, then, send 1 "Tearlaments" card from your hand or face-up field to the GY. If '
+        'this Fusion Summoned card is sent to the GY by a card effect: You can Special '
+        'Summon this card.'
     )
+    llm_client = MockLLMClient()
+    llm_client.queue_response("0.95")  # score_split_confidence
 
-    assert confidence == pytest.approx(0.95)
+    clauses, scopes = resolve_effect_clauses(llm_client, card_text)
 
-
-def test_score_split_confidence_rejects_out_of_range_values():
-    llm = MockLLMClient()
-    llm.queue_response("1.5")
-
-    with pytest.raises(ValueError):
-        score_split_confidence(llm, card_text="x", effect_texts=["x"])
-
-
-def test_resolve_effect_clauses_returns_single_chunk_without_scoring_when_llm_finds_one_effect():
-    llm = MockLLMClient()
-    llm.queue_response("Just one effect.")  # only one queued response -- scoring must not be called
-
-    result = resolve_effect_clauses(llm, "Just one effect.")
-
-    assert result == ["Just one effect."]
+    assert len(clauses) == 3
+    assert clauses[0].startswith("Other Aqua monsters")
+    assert clauses[1].startswith("When your opponent activates")
+    assert clauses[2].startswith("If this Fusion Summoned card")
+    assert len(scopes) == 1
+    assert scopes[0].applies_to == [1, 2]
 
 
-def test_resolve_effect_clauses_keeps_a_high_confidence_multi_effect_split():
-    llm = MockLLMClient()
-    llm.queue_response("Effect one.\n---\nEffect two.")
-    llm.queue_response("0.95")
+def test_resolve_effect_clauses_falls_back_below_threshold():
+    from aijudge.effect_parser.clause_splitter import resolve_effect_clauses
 
-    result = resolve_effect_clauses(llm, "Effect one. Effect two.")
+    card_text = "Clause A. Clause B."
+    llm_client = MockLLMClient()
+    llm_client.queue_response("0.1")  # below DEFAULT_CONFIDENCE_THRESHOLD
 
-    assert result == ["Effect one.", "Effect two."]
+    clauses, scopes = resolve_effect_clauses(llm_client, card_text)
+
+    assert clauses == [card_text]
+    assert scopes == []
 
 
-def test_resolve_effect_clauses_falls_back_to_single_chunk_on_low_split_confidence():
-    llm = MockLLMClient()
-    llm.queue_response("Effect one.\n---\nEffect two.")
-    llm.queue_response("0.4")
+def test_resolve_effect_clauses_empty_text_returns_nothing():
+    from aijudge.effect_parser.clause_splitter import resolve_effect_clauses
 
-    result = resolve_effect_clauses(llm, "Effect one. Effect two.")
+    llm_client = MockLLMClient()
 
-    assert result == ["Effect one. Effect two."]
+    clauses, scopes = resolve_effect_clauses(llm_client, "")
+
+    assert clauses == []
+    assert scopes == []

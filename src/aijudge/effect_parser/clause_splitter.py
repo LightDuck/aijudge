@@ -1,44 +1,7 @@
 from aijudge.effect_parser.review_agent import DEFAULT_CONFIDENCE_THRESHOLD
+from aijudge.effect_parser.sentence_splitter import split_sentences
+from aijudge.effect_parser.usage_limit import UsageLimitScope, resolve_usage_limit_scopes
 from aijudge.llm.client import LLMClient
-
-_SPLIT_PROMPT_TEMPLATE = (
-    "The following is the raw rules text of a Yu-Gi-Oh! Trading Card Game card. "
-    "Identify its distinct, independently-activatable effects.\n\n"
-    "Rules:\n"
-    "- A trailing sentence that only states a usage limit (e.g. 'You can only use this "
-    "effect... once per turn.') is NOT its own effect -- keep it attached to the effect "
-    "it restricts.\n"
-    "- A sentence that only modifies, restricts, or grants an alternate activation method "
-    "for an effect already stated (such as an exception allowing activation from the hand) "
-    "is NOT its own effect -- keep it attached to that effect.\n"
-    "- A bulleted or enumerated list that only clarifies or elaborates a condition, cost, or "
-    "effect already stated in the same sentence is NOT a separate effect -- keep it attached "
-    "to that sentence.\n"
-    "- If the card has only one effect, return the entire text unchanged.\n"
-    "- Do not paraphrase, reword, or summarize. Every returned effect must be an exact "
-    "verbatim excerpt of the original text.\n\n"
-    "Separate each returned effect with a line containing exactly: ---\n\n"
-    "Card text:\n{card_text}"
-)
-
-
-def split_effect_clauses(llm_client: LLMClient, card_text: str) -> list[str]:
-    prompt = _SPLIT_PROMPT_TEMPLATE.format(card_text=card_text)
-    response = llm_client.complete(prompt)
-    candidates = [part.strip() for part in response.split("---")]
-    candidates = [part for part in candidates if part]
-    if candidates and _reconstructs(candidates, card_text):
-        return candidates
-    return [card_text]
-
-
-def _normalize(text: str) -> str:
-    return " ".join(text.split())
-
-
-def _reconstructs(candidates: list[str], card_text: str) -> bool:
-    return _normalize(" ".join(candidates)) == _normalize(card_text)
-
 
 _SPLIT_REVIEW_PROMPT_TEMPLATE = (
     "The following is the raw rules text of a Yu-Gi-Oh! Trading Card Game card, followed by "
@@ -63,11 +26,21 @@ def score_split_confidence(llm_client: LLMClient, *, card_text: str, effect_text
 
 def resolve_effect_clauses(
     llm_client: LLMClient, card_text: str, *, threshold: float = DEFAULT_CONFIDENCE_THRESHOLD
-) -> list[str]:
-    candidates = split_effect_clauses(llm_client, card_text)
-    if len(candidates) <= 1:
-        return candidates
-    confidence = score_split_confidence(llm_client, card_text=card_text, effect_texts=candidates)
+) -> tuple[list[str], list[UsageLimitScope]]:
+    """Deterministically segment `card_text` (already stripped of any Card
+    Material line by the caller) into effect clauses, resolving usage-limit
+    scope, then verify the resulting grouping via one LLM confidence call --
+    replacing what used to be an LLM-driven split. See design spec sections
+    3-5."""
+    sentences = split_sentences(card_text)
+    if not sentences:
+        return [], []
+
+    clauses, scopes = resolve_usage_limit_scopes(sentences)
+    if len(clauses) <= 1:
+        return clauses, scopes
+
+    confidence = score_split_confidence(llm_client, card_text=card_text, effect_texts=clauses)
     if confidence < threshold:
-        return [card_text]
-    return candidates
+        return [card_text], []
+    return clauses, scopes
