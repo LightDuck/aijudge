@@ -81,3 +81,11 @@ def test_effect_accepts_damage_step_category():
 def test_effect_damage_step_category_defaults_to_none():
     effect = Effect(card_id="1", card_name="Card A", effect_type=EffectType.IGNITION, controller="player_a")
     assert effect.damage_step_category is None
+
+
+def test_card_material_is_not_activatable():
+    assert is_activatable(EffectType.CARD_MATERIAL) is False
+
+
+def test_summoning_condition_is_not_activatable():
+    assert is_activatable(EffectType.SUMMONING_CONDITION) is False

@@ -12,6 +12,8 @@ class EffectType(str, Enum):
     EFFECT = "effect"
     TRIGGER_LIKE = "trigger-like"
     QUICK_LIKE = "quick-like"
+    CARD_MATERIAL = "card_material"
+    SUMMONING_CONDITION = "summoning_condition"
 
 
 class SpellSpeed(int, Enum):
@@ -22,7 +24,12 @@ class SpellSpeed(int, Enum):
 
 _QUICK_EFFECT_TYPES = {EffectType.QUICK, EffectType.QUICK_LIKE}
 
-_NON_ACTIVATABLE_EFFECT_TYPES = {EffectType.CONTINUOUS, EffectType.CONDITION}
+_NON_ACTIVATABLE_EFFECT_TYPES = {
+    EffectType.CONTINUOUS,
+    EffectType.CONDITION,
+    EffectType.CARD_MATERIAL,
+    EffectType.SUMMONING_CONDITION,
+}
 
 
 def is_activatable(effect_type: EffectType) -> bool:
