@@ -2291,12 +2291,97 @@ If either card's material extraction is empty/wrong, the most likely cause is a 
 
 - [ ] **Step 4: No commit for this task**
 
-This task is verification only. If Step 3 required a fix, that fix gets its own commit under the task it belongs to (amend the relevant task's commit message context, or add a small follow-up commit referencing which task's module it fixes).
+This task is verification only (a dry-run check via `extract_card_material`, not a real seed). If Step 3 required a fix, that fix gets its own commit under the task it belongs to (amend the relevant task's commit message context, or add a small follow-up commit referencing which task's module it fixes).
+
+---
+
+### Task 16: Re-seed Baronne de Fleur and Borreload Dragon with the new pipeline
+
+**This is a data operation against the local dev database, not a code change** — no new source files, no git commit of source. Decided after the spec's initial approval (see spec's "Explicitly out of scope" section, updated note): these two Link Monsters are the design's own multi-effect/material stress cases, and Task 15's Step 2 only proved `extract_card_material` works in isolation — it never touched the database or exercised the full rewired `seed_card`. This task actually replaces their existing (pre-redesign) rows.
+
+**Prerequisites:** Docker Postgres up (`docker compose up -d db`), migrations run, and a local Ollama server running with the `qwen3:8b` and `all-minilm` models pulled (same setup `python -m aijudge` needs — see CLAUDE.md). This task makes real LLM calls (local, $0 cost via Ollama) and a real YGOPRODeck API call per card — it is not mocked.
+
+**Files:**
+- None modified. Verification only confirms the existing Tasks 1-14 implementation behaves correctly against these two real cards.
+
+- [ ] **Step 1: Confirm both cards currently exist from the old pipeline**
+
+```python
+from aijudge.db.cards_repo import get_card_by_name
+
+for name in ("Baronne de Fleur", "Borreload Dragon"):
+    card = get_card_by_name(name)
+    assert card is not None, f"{name} should already be seeded from before this redesign"
+    print(name, "existing card_id:", card["id"])
+```
+
+- [ ] **Step 2: Delete their existing rows**
+
+No `delete_card` function exists in `cards_repo.py` (nothing in the codebase deletes cards today) — this is a one-off maintenance operation, so use raw SQL directly rather than adding permanent, otherwise-unused deletion API surface to the repo layer:
+
+```python
+from aijudge.db.connection import get_connection
+
+with get_connection() as conn:
+    for name in ("Baronne de Fleur", "Borreload Dragon"):
+        row = conn.execute("SELECT id FROM cards WHERE name = %s", (name,)).fetchone()
+        if row is None:
+            continue
+        card_id = row[0]
+        conn.execute("DELETE FROM card_effects_structured WHERE card_id = %s", (card_id,))
+        conn.execute("DELETE FROM rulings WHERE card_id = %s", (card_id,))
+        conn.execute("DELETE FROM card_errata_versions WHERE card_id = %s", (card_id,))
+        conn.execute("DELETE FROM cards WHERE id = %s", (card_id,))
+    conn.commit()
+```
+
+(deleted in FK-dependency order — `cards.id` is referenced by all three other tables with no `ON DELETE CASCADE`, so deleting `cards` first would fail with a foreign key violation)
+
+- [ ] **Step 3: Re-seed both cards with the real pipeline**
+
+```python
+from aijudge.ingestion.seed import seed_card
+from aijudge.llm.client import OllamaLLMClient
+
+llm_client = OllamaLLMClient()
+for name in ("Baronne de Fleur", "Borreload Dragon"):
+    card_id = seed_card(name, llm_client=llm_client)
+    print(name, "-> new card_id:", card_id)
+```
+
+- [ ] **Step 4: Verify the new rows look right**
+
+```python
+from aijudge.db.cards_repo import get_card_by_name
+from aijudge.db.effects_repo import get_confirmed_effects
+
+for name in ("Baronne de Fleur", "Borreload Dragon"):
+    card = get_card_by_name(name)
+    assert card["deterministic_parse_eligible"] is True
+
+    from aijudge.db.connection import get_connection
+    with get_connection() as conn:
+        rows = conn.execute(
+            "SELECT effect_type, status FROM card_effects_structured WHERE card_id = %s",
+            (card["id"],),
+        ).fetchall()
+
+    material_rows = [r for r in rows if r[0] == "card_material"]
+    assert len(material_rows) == 1, f"{name} should have exactly one Card Material row"
+    print(name, "rows:", rows)
+    print(name, "confirmed effects:", get_confirmed_effects(card["id"]))
+```
+
+Manually inspect the printed output: both cards should show one `card_material` row plus their real effect rows (Baronne de Fleur: 3 effects per CLAUDE.md's description of it as the clause-splitter's stress case; Borreload Dragon: whatever its real PSCT text decomposes into). Any row left `pending` (not auto-confirmed) is not a failure — it just means that clause's review confidence came in under `DEFAULT_CONFIDENCE_THRESHOLD` (0.75) and needs eventual human review, same as any other seeded card.
+
+- [ ] **Step 5: No git commit for this task**
+
+Nothing here is a source change. If Step 4 reveals a real bug (wrong classification, missing material extraction, wrong usage-limit scope), fix it in the relevant Task 1-14 file, add a regression test there, commit that fix under its own task, then re-run Steps 2-4 of this task.
 
 ---
 
 ## Notes for the executor
 
-- `HAND_PICKED_CARDS` is not re-seeded as part of this plan (spec's "Explicitly out of scope" — re-ingesting the 7 existing cards with the new pipeline is a separate follow-up decision, not implied by "the plan works").
+- `HAND_PICKED_CARDS` as a whole is not re-seeded as part of this plan — only Baronne de Fleur and Borreload Dragon (Task 16), per the spec's updated "Explicitly out of scope" note. The other 5 cards' existing rows are untouched.
 - Every DB-touching test (`tests/db/*`, `tests/orchestration/test_preflight_db.py`) auto-skips without `DATABASE_URL` set — bring up `docker compose up -d db` and run migrations before Task 12 if you want those to actually execute rather than skip.
-- Tasks 1-11 are pure-Python and require no DB; Tasks 12-14 need a running DB to fully verify (though 13-14's non-DB logic can still be unit-tested with faked repo functions per each existing test file's established pattern).
+- Tasks 1-11 are pure-Python and require no DB; Tasks 12-14 need a running DB to fully verify (though 13-14's non-DB logic can still be unit-tested with faked repo functions per each existing test file's established pattern). Task 16 additionally needs a running local Ollama server, and is the only task in this plan that isn't a code change.

@@ -429,11 +429,17 @@ existing seeded output for the cards already in `HAND_PICKED_CARDS`.
 
 ## Explicitly out of scope
 
-- **No re-ingestion of already-seeded cards as part of this change.**
-  `HAND_PICKED_CARDS`'s existing rows are not touched by this design;
-  re-running `seed.py` against them with the new pipeline (which will
-  change their output, particularly for Baronne de Fleur and Borreload
-  Dragon) is a separate follow-up decision.
+- **No re-ingestion of `HAND_PICKED_CARDS` as a whole.** The other 5
+  seeded cards' existing rows are not touched by this design. **Update
+  (decided after this spec's initial approval):** Baronne de Fleur and
+  Borreload Dragon specifically — the two Link Monsters whose material
+  lines the old pipeline swept into effect text unhandled — *are*
+  re-seeded with the new pipeline, as the implementation plan's final
+  task. That re-seed deletes and re-inserts just those two cards' rows
+  (and their dependent `card_effects_structured`/`rulings` rows); it is
+  a data operation against the local dev database, not a code change,
+  and requires the same Docker Postgres + Ollama setup `run_seed` does.
+  The remaining 5 cards stay out of scope for this change.
 - **No numeric/machine-readable frequency modeling.** Usage-limit
   frequency (count × period) stays a verbatim reference string, per the
   existing "never enforced" design — this document doesn't introduce
