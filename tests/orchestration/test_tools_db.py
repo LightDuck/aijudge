@@ -403,3 +403,64 @@ def test_lookup_card_returns_ambiguous_when_ingest_fetch_raises_ambiguous_card_e
     )
 
     assert result == {"found": False, "ambiguous": True}
+
+
+def test_lookup_card_default_fetch_sets_index_fn_is_cached_across_calls():
+    """fetch_sets_index is a large, slowly-changing catalog -- meant to be
+    fetched once and reused, not once per lookup_card call. Unlike
+    ingestion.seed.run_seed, each lookup_card online-ingest call is its own
+    independent invocation with no natural batch boundary, so tools.py's
+    default fetch_sets_index_fn is a small lru_cache(maxsize=1) wrapper
+    around the real fetch. Confirm it only calls the underlying fetch once
+    across two separate online-ingest lookups in this test."""
+    import aijudge.orchestration.tools as tools_module
+    from aijudge.llm.client import MockLLMClient
+
+    tools_module._cached_fetch_sets_index.cache_clear()
+
+    fetch_calls = []
+
+    def fake_fetch_sets_index():
+        fetch_calls.append(1)
+        return {"Some Set": date(2020, 1, 1)}
+
+    original_fetch_sets_index = tools_module.fetch_sets_index
+    tools_module.fetch_sets_index = fake_fetch_sets_index
+    try:
+        def make_fake_fetch_card(card_id):
+            def fake_fetch_card(name, http_get=None):
+                return {
+                    "id": card_id,
+                    "name": name,
+                    "type": "Quick-Play Spell",
+                    "desc": "You can target 1 banished monster; banish it.",
+                    "card_sets": [{"set_name": "Some Set"}],
+                }
+
+            return fake_fetch_card
+
+        llm_client = MockLLMClient()
+        llm_client.queue_response("0.97")  # review confidence, first card
+        llm_client.queue_response("0.97")  # review confidence, second card
+
+        first = tools_module.lookup_card(
+            {"name": "Called by the Grave"},
+            llm_client=llm_client,
+            online_ingest_enabled=True,
+            fetch_card_fn=make_fake_fetch_card(47355498),
+            fetch_rulings_fn=lambda name, http_get=None: [],
+        )
+        second = tools_module.lookup_card(
+            {"name": "Infinite Impermanence"},
+            llm_client=llm_client,
+            online_ingest_enabled=True,
+            fetch_card_fn=make_fake_fetch_card(10045474),
+            fetch_rulings_fn=lambda name, http_get=None: [],
+        )
+    finally:
+        tools_module.fetch_sets_index = original_fetch_sets_index
+        tools_module._cached_fetch_sets_index.cache_clear()
+
+    assert first["found"] is True
+    assert second["found"] is True
+    assert len(fetch_calls) == 1

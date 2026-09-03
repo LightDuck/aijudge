@@ -1,3 +1,4 @@
+import functools
 import logging
 from dataclasses import asdict
 from typing import Callable
@@ -21,6 +22,18 @@ logger = logging.getLogger(__name__)
 DEFAULT_MAX_DISTANCE = 0.15
 
 
+@functools.lru_cache(maxsize=1)
+def _cached_fetch_sets_index() -> dict:
+    """Thin cached wrapper around the real fetch_sets_index, local to this
+    module (not caching the imported function itself, which would affect
+    other callers/tests unexpectedly). Each `lookup_card` online-ingest call
+    is its own independent invocation, not part of a natural batch the way
+    `ingestion.seed.run_seed` has one -- caching here is the pragmatic fix
+    so repeated online-ingest calls within a process don't re-fetch this
+    large, slowly-changing catalog."""
+    return fetch_sets_index()
+
+
 def _card_result(card: dict) -> dict:
     return {
         "found": True,
@@ -39,7 +52,7 @@ def lookup_card(
     online_ingest_enabled: bool = False,
     fetch_card_fn: Callable[..., dict] = fetch_card,
     fetch_rulings_fn: Callable[..., list[dict]] = fetch_rulings,
-    fetch_sets_index_fn: Callable[..., dict] = fetch_sets_index,
+    fetch_sets_index_fn: Callable[..., dict] = _cached_fetch_sets_index,
     on_ingest_start: Callable[[str], None] | None = None,
 ) -> dict:
     name = args["name"]
