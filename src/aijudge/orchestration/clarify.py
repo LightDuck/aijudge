@@ -22,7 +22,10 @@ def build_clarification_prompt(question: str, *, known_facts_context: str = "") 
         "- If the question depends on a continuous or lingering effect card "
         "whose current on-board status you can't observe, respond with one "
         "or more lines: 'CONTINUOUS_CHECK: <card name>'\n"
-        "- If neither applies, respond with exactly: 'PROCEED'"
+        "- If neither applies, respond with exactly: 'PROCEED'\n"
+        "Do not ask the user to confirm whether a card name is spelled correctly, real, or exists "
+        "in the system -- the system automatically looks up (and imports, if needed) any card name "
+        "mentioned, so that kind of doubt should resolve to 'PROCEED' instead."
         f"{known_facts_section}\n\n"
         f"Question: {question}"
     )

@@ -60,6 +60,14 @@ def test_build_clarification_prompt_includes_known_facts_context_when_provided()
     assert "- Quick Effect, Spell Speed 2..." in prompt
 
 
+def test_build_clarification_prompt_instructs_against_asking_about_card_identity():
+    prompt = build_clarification_prompt("What are tearlaments scheiren effect?")
+    assert (
+        "Do not ask the user to confirm whether a card name is spelled correctly, real, or exists "
+        "in the system" in prompt
+    )
+
+
 def test_clarification_prompt_text_for_clarify_item_is_the_question_itself():
     item = ClarificationItem(kind="clarify", text="Which monster do you control?")
     assert clarification_prompt_text(item) == "Which monster do you control?"
