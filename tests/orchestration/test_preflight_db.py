@@ -222,3 +222,98 @@ def test_build_known_facts_context_covers_every_confirmed_effect_with_damage_ste
     quick_line = next(line for line in lines if "effect type quick" in line)
     assert "damage-step legal: False" in ignition_line
     assert "damage-step legal: True" in quick_line
+
+
+def test_build_known_facts_context_renders_card_material_distinctly():
+    from aijudge.db.cards_repo import get_card_by_name, insert_card
+    from aijudge.db.effects_repo import confirm_effect, insert_pending_effect
+    from aijudge.orchestration.preflight import build_known_facts_context
+
+    card_id = insert_card(
+        name="Tearlaments Rulkallos",
+        card_text='"Tearlaments Kitkallos" + 1 "Tearlaments" monster\nOther Aqua monsters...',
+        card_type="Fusion Monster",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="84330567",
+        deterministic_parse_eligible=True,
+    )
+    effect_id = insert_pending_effect(
+        card_id=card_id,
+        effect_type="card_material",
+        effect='"Tearlaments Kitkallos" + 1 "Tearlaments" monster',
+    )
+    confirm_effect(effect_id)
+
+    context = build_known_facts_context(get_card_by_name("Tearlaments Rulkallos"))
+
+    assert 'Card Material: "\\"Tearlaments Kitkallos\\" + 1 \\"Tearlaments\\" monster"' in context or (
+        "Card Material:" in context and '"Tearlaments Kitkallos" + 1 "Tearlaments" monster' in context
+    )
+    assert "spell speed" not in context
+    assert "activatable:" not in context
+
+
+def test_build_known_facts_context_renders_summoning_condition_distinctly():
+    from aijudge.db.cards_repo import get_card_by_name, insert_card
+    from aijudge.db.effects_repo import confirm_effect, insert_pending_effect
+    from aijudge.orchestration.preflight import build_known_facts_context
+
+    card_id = insert_card(
+        name="Elemental HERO Mudballman",
+        card_text='"Elemental HERO Bubbleman" + "Elemental HERO Clayman"\nMust be Fusion Summoned...',
+        card_type="Fusion Monster",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="52031567",
+        deterministic_parse_eligible=True,
+    )
+    effect_id = insert_pending_effect(
+        card_id=card_id,
+        effect_type="summoning_condition",
+        effect="Must be Fusion Summoned and cannot be Special Summoned by other ways.",
+    )
+    confirm_effect(effect_id)
+
+    context = build_known_facts_context(get_card_by_name("Elemental HERO Mudballman"))
+
+    assert "Summoning Condition:" in context
+    assert "Must be Fusion Summoned and cannot be Special Summoned by other ways." in context
+    assert "spell speed" not in context
+    assert "activatable:" not in context
+
+
+def test_build_known_facts_context_mixes_card_material_with_normal_effects():
+    from aijudge.db.cards_repo import get_card_by_name, insert_card
+    from aijudge.db.effects_repo import confirm_effect, insert_pending_effect
+    from aijudge.orchestration.preflight import build_known_facts_context
+
+    card_id = insert_card(
+        name="Tearlaments Rulkallos",
+        card_text="...",
+        card_type="Fusion Monster",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="84330567",
+        deterministic_parse_eligible=True,
+    )
+    material_id = insert_pending_effect(
+        card_id=card_id,
+        effect_type="card_material",
+        effect='"Tearlaments Kitkallos" + 1 "Tearlaments" monster',
+    )
+    confirm_effect(material_id)
+    quick_id = insert_pending_effect(
+        card_id=card_id,
+        effect_type="quick",
+        effect="You can negate the activation, and if you do, destroy it.",
+        activation_condition="When your opponent activates a card or effect... (Quick Effect)",
+    )
+    confirm_effect(quick_id)
+
+    context = build_known_facts_context(get_card_by_name("Tearlaments Rulkallos"))
+    lines = context.splitlines()
+
+    assert len(lines) == 3  # header + material line + quick effect line
+    assert "Card Material:" in lines[1]
+    assert "effect type quick" in lines[2]
