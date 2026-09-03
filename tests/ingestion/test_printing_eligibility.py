@@ -66,3 +66,49 @@ def test_ineligible_with_no_card_sets():
     from aijudge.ingestion.printing_eligibility import is_deterministic_parse_eligible
 
     assert is_deterministic_parse_eligible([], {"Some Set": date(2020, 1, 1)}) is False
+
+
+class _FakeResponse:
+    def __init__(self, payload):
+        self._payload = payload
+
+    def raise_for_status(self):
+        pass
+
+    def json(self):
+        return self._payload
+
+
+def test_fetch_sets_index_builds_name_to_date_map():
+    from aijudge.ingestion.printing_eligibility import fetch_sets_index
+
+    payload = [
+        {"set_name": "Legendary Collection 2", "set_code": "LCGX", "tcg_date": "2011-10-04"},
+        {"set_name": "Ra Yellow Mega Pack", "set_code": "RYMP", "tcg_date": "2012-02-17"},
+    ]
+    calls = []
+
+    def fake_http_get(url, timeout=None):
+        calls.append(url)
+        return _FakeResponse(payload)
+
+    index = fetch_sets_index(http_get=fake_http_get)
+
+    assert index == {
+        "Legendary Collection 2": date(2011, 10, 4),
+        "Ra Yellow Mega Pack": date(2012, 2, 17),
+    }
+    assert calls == ["https://db.ygoprodeck.com/api/v7/cardsets.php"]
+
+
+def test_fetch_sets_index_skips_rows_missing_tcg_date():
+    from aijudge.ingestion.printing_eligibility import fetch_sets_index
+
+    payload = [
+        {"set_name": "OCG-Only Set", "set_code": "OCG1"},
+        {"set_name": "Dated Set", "set_code": "DS1", "tcg_date": "2015-05-05"},
+    ]
+
+    index = fetch_sets_index(http_get=lambda url, timeout=None: _FakeResponse(payload))
+
+    assert index == {"Dated Set": date(2015, 5, 5)}
