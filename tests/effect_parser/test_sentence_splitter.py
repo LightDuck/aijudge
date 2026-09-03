@@ -60,3 +60,57 @@ def test_empty_text_returns_empty_list():
 
     assert split_sentences("") == []
     assert split_sentences("   ") == []
+
+
+def test_extracts_material_for_fusion_monster_tearlaments_rulkallos():
+    from aijudge.effect_parser.sentence_splitter import extract_card_material
+
+    card_text = (
+        '"Tearlaments Kitkallos" + 1 "Tearlaments" monster\r\n'
+        'Other Aqua monsters you control cannot be destroyed by battle.'
+    )
+
+    material, remainder = extract_card_material(card_text, card_type="Fusion Monster")
+
+    assert material == '"Tearlaments Kitkallos" + 1 "Tearlaments" monster'
+    assert remainder == "Other Aqua monsters you control cannot be destroyed by battle."
+
+
+def test_extracts_material_case_insensitively_for_xyz_monster():
+    """YGOPRODeck's real `type` field for Xyz monsters is 'XYZ Monster'
+    (all-caps XYZ), not 'Xyz Monster' -- this must match either way."""
+    from aijudge.effect_parser.sentence_splitter import extract_card_material
+
+    material, remainder = extract_card_material("2 Level 4 monsters", card_type="XYZ Monster")
+
+    assert material == "2 Level 4 monsters"
+    assert remainder == ""
+
+
+def test_vanilla_extra_deck_monster_has_empty_remainder():
+    """Gem-Knight Pearl: has_effect=0, the entire card_text is the
+    materials line."""
+    from aijudge.effect_parser.sentence_splitter import extract_card_material
+
+    material, remainder = extract_card_material("2 Level 4 monsters", card_type="XYZ Monster")
+
+    assert material == "2 Level 4 monsters"
+    assert remainder == ""
+
+
+def test_no_material_for_non_extra_deck_monster():
+    from aijudge.effect_parser.sentence_splitter import extract_card_material
+
+    card_text = "If this card is Tribute Summoned: You can add 1 card to your hand."
+
+    material, remainder = extract_card_material(card_text, card_type="Effect Monster")
+
+    assert material is None
+    assert remainder == card_text
+
+
+def test_synchro_and_link_also_match():
+    from aijudge.effect_parser.sentence_splitter import extract_card_material
+
+    assert extract_card_material("1 Tuner + 1+ non-Tuner monsters", card_type="Synchro Monster")[0] is not None
+    assert extract_card_material("2 monsters, including a Tuner", card_type="Link Monster")[0] is not None
