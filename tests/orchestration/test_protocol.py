@@ -55,6 +55,16 @@ def test_rejects_response_with_no_recognized_prefix():
         parse_response("I think the answer is yes.")
 
 
+def test_salvages_final_answer_missing_final_prefix_but_with_valid_cites_trailer():
+    parsed = parse_response("This card negates the effect. ||CITES: card:1, ruling:2||")
+    assert parsed == FinalAnswer(text="This card negates the effect.", cited_ids={"card:1", "ruling:2"})
+
+
+def test_rejects_missing_prefix_response_with_unclosed_cites_trailer():
+    with pytest.raises(ProtocolError):
+        parse_response("This card negates the effect. ||CITES: card:1")
+
+
 def test_build_system_prompt_lists_all_four_tools():
     prompt = build_system_prompt()
     for tool_name in ("lookup_card", "get_rulings", "search_rulebook", "resolve_chain"):

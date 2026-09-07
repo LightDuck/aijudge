@@ -99,4 +99,16 @@ def parse_response(response: str) -> ToolCall | FinalAnswer | Refusal:
         cited_ids = {c.strip() for c in cites_body.split(",") if c.strip()} if cites_body else set()
         return FinalAnswer(text=text_part.strip(), cited_ids=cited_ids)
 
+    # Local models (e.g. Qwen3-8B via Ollama) sometimes drop the literal
+    # 'FINAL:' prefix while still getting everything else right -- the
+    # answer text and a well-formed '||CITES: ...||' trailer. That shape is
+    # unambiguous (a TOOL: or REFUSE: response never ends in '||'), so treat
+    # it as an implicit FINAL: instead of forcing a retry the model tends to
+    # repeat verbatim rather than correct.
+    if "||CITES:" in response and response.endswith("||"):
+        text_part, _, cites_part = response.partition("||CITES:")
+        cites_body = cites_part.strip()[:-2].strip()
+        cited_ids = {c.strip() for c in cites_body.split(",") if c.strip()} if cites_body else set()
+        return FinalAnswer(text=text_part.strip(), cited_ids=cited_ids)
+
     raise ProtocolError(f"response must start with 'TOOL:' or 'FINAL:': {response!r}")
