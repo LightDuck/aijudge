@@ -8,3 +8,5 @@ htmlcov/
 data/
 .worktrees/
 .superpowers/
+graphify-out
+uv.lock
