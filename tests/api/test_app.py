@@ -118,6 +118,7 @@ def test_post_questions_serializes_citation_content_without_leaking_raw_ids():
     llm = MockLLMClient()
     llm.queue_response('TOOL: lookup_card {"name": "Ash Blossom & Joyous Spring"}')
     llm.queue_response("FINAL: It negates the effect. ||CITES: card:abc123||")
+    llm.queue_response("YES")
 
     stub_tools = {
         "lookup_card": lambda args: {
@@ -267,7 +268,7 @@ def test_post_questions_direct_final_answer_citing_the_grounded_id_does_not_esca
     # KNOWN FACTS on the first turn (no lookup_card call), citing the
     # matched card's id. Without grounded_cards pre-registering that id,
     # compute_confidence would treat it as fabricated and escalate.
-    llm = _CapturingLLMClient(["PROCEED", "FINAL: It negates that activation. ||CITES: card:1||"])
+    llm = _CapturingLLMClient(["PROCEED", "FINAL: It negates that activation. ||CITES: card:1||", "YES"])
 
     app = create_app(
         llm,
@@ -297,7 +298,7 @@ def test_post_questions_direct_final_answer_citing_the_grounded_id_does_not_esca
 
 
 def test_post_questions_answer_direct_final_answer_citing_the_grounded_id_does_not_escalate():
-    llm = _CapturingLLMClient(["FINAL: It negates that activation. ||CITES: card:1||"])
+    llm = _CapturingLLMClient(["FINAL: It negates that activation. ||CITES: card:1||", "YES"])
 
     app = create_app(
         llm,

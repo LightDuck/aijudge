@@ -1,6 +1,7 @@
 from aijudge.llm.client import MockLLMClient
-from aijudge.orchestration.loop import run_loop
+from aijudge.orchestration.loop import MAX_VERIFICATION_RETRIES, run_loop
 from aijudge.orchestration.protocol import build_system_prompt
+from aijudge.orchestration.verify import VERIFIER_SYSTEM_PROMPT
 from aijudge.rules_engine.resolve import UnsupportedScenarioError
 
 
@@ -18,6 +19,7 @@ def test_tool_call_then_final_answer_cites_the_returned_id():
     llm = MockLLMClient()
     llm.queue_response('TOOL: lookup_card {"name": "Ash Blossom & Joyous Spring"}')
     llm.queue_response("FINAL: It negates the effect. ||CITES: card:abc123||")
+    llm.queue_response("YES")
 
     tools = {"lookup_card": lambda args: {"found": True, "id": "abc123", "confirmed_effects": [{"effect": "..."}]}}
 
@@ -99,6 +101,7 @@ def test_malformed_tool_arguments_are_recoverable():
     llm.queue_response("TOOL: lookup_card {}")
     llm.queue_response('TOOL: lookup_card {"name": "Ash Blossom & Joyous Spring"}')
     llm.queue_response("FINAL: It negates the effect. ||CITES: card:abc123||")
+    llm.queue_response("YES")
 
     def _lookup(args):
         return {"found": True, "id": "abc123", "confirmed_effects": [{"effect": "..."}], "name": args["name"]}
@@ -125,6 +128,7 @@ def test_tool_call_then_final_answer_includes_citation_text():
     llm = MockLLMClient()
     llm.queue_response('TOOL: lookup_card {"name": "Ash Blossom & Joyous Spring"}')
     llm.queue_response("FINAL: It negates the effect. ||CITES: card:abc123||")
+    llm.queue_response("YES")
 
     tools = {
         "lookup_card": lambda args: {
@@ -168,6 +172,7 @@ def test_multiple_citations_are_sorted_by_id():
     llm.queue_response('TOOL: lookup_card {"name": "Card Z"}')
     llm.queue_response('TOOL: lookup_card {"name": "Card A"}')
     llm.queue_response("FINAL: Both cards matter. ||CITES: card:z9, card:a1||")
+    llm.queue_response("YES")
 
     def lookup_tool(args):
         name = args.get("name", "")
@@ -207,6 +212,7 @@ def test_grounded_cards_preseed_known_ids_so_direct_final_answer_is_not_fabricat
     # via `grounded_cards`, exactly as if lookup_card had returned it.
     llm = MockLLMClient()
     llm.queue_response("FINAL: It negates the effect. ||CITES: card:abc123||")
+    llm.queue_response("YES")
 
     grounded = [
         {
@@ -242,9 +248,58 @@ def test_run_loop_passes_the_system_prompt_on_every_llm_call():
     llm = MockLLMClient()
     llm.queue_response('TOOL: lookup_card {"name": "Ash Blossom & Joyous Spring"}')
     llm.queue_response("FINAL: It negates the effect. ||CITES: card:abc123||")
+    llm.queue_response("YES")
 
     tools = {"lookup_card": lambda args: {"found": True, "id": "abc123", "confirmed_effects": [{"effect": "..."}]}}
 
     run_loop("What does Ash Blossom do?", llm_client=llm, tools=tools)
 
-    assert llm.system_prompts == [build_system_prompt(), build_system_prompt()]
+    assert llm.system_prompts == [build_system_prompt(), build_system_prompt(), VERIFIER_SYSTEM_PROMPT]
+
+
+def test_structured_grounding_mismatch_retries_then_succeeds():
+    llm = MockLLMClient()
+    llm.queue_response('TOOL: lookup_card {"name": "Tearlaments Sulliek"}')
+    llm.queue_response("FINAL: It negates the effect of the target spell or trap card. ||CITES: card:abc123||")
+    llm.queue_response("NO")
+    llm.queue_response("FINAL: It negates the effects of the targeted Effect Monster. ||CITES: card:abc123||")
+    llm.queue_response("YES")
+
+    tools = {
+        "lookup_card": lambda args: {
+            "found": True,
+            "id": "abc123",
+            "name": "Tearlaments Sulliek",
+            "card_text": "...",
+            "confirmed_effects": [
+                {"effect": "Target 1 Effect Monster your opponent controls; negate its effects."}
+            ],
+        }
+    }
+
+    result = run_loop("What does Tearlaments Sulliek's first effect do?", llm_client=llm, tools=tools)
+
+    assert result.kind == "answer"
+    assert result.text == "It negates the effects of the targeted Effect Monster."
+
+
+def test_structured_grounding_mismatch_exhausts_retries_and_escalates():
+    llm = MockLLMClient()
+    llm.queue_response('TOOL: lookup_card {"name": "Tearlaments Sulliek"}')
+    for _ in range(MAX_VERIFICATION_RETRIES + 1):
+        llm.queue_response("FINAL: It negates the effect of the target spell or trap card. ||CITES: card:abc123||")
+        llm.queue_response("NO")
+
+    tools = {
+        "lookup_card": lambda args: {
+            "found": True,
+            "id": "abc123",
+            "confirmed_effects": [
+                {"effect": "Target 1 Effect Monster your opponent controls; negate its effects."}
+            ],
+        }
+    }
+
+    result = run_loop("What does Tearlaments Sulliek's first effect do?", llm_client=llm, tools=tools)
+
+    assert result.kind == "escalate"

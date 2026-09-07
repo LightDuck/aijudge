@@ -8,11 +8,13 @@ from aijudge.rules_engine.resolve import UnsupportedScenarioError
 
 from .confidence import DEFAULT_CONFIDENCE_THRESHOLD, SignalState, compute_confidence, update_signals
 from .protocol import FinalAnswer, ProtocolError, Refusal, ToolCall, build_system_prompt, parse_response
+from .verify import verify_structured_grounding
 
 logger = logging.getLogger(__name__)
 
 MAX_MALFORMED_RETRIES = 3
 MAX_TOOL_CALLS = 10
+MAX_VERIFICATION_RETRIES = 2
 NOT_SUPPORTED_MESSAGE = "not supported yet, contact dev team"
 ESCALATE_MESSAGE = "escalate to a human judge"
 
@@ -48,6 +50,7 @@ def run_loop(
         update_signals(state, "lookup_card", card)
     malformed_count = 0
     tool_call_count = 0
+    verification_retry_count = 0
 
     while True:
         response = llm_client.complete(conversation, system=system_prompt)
@@ -101,5 +104,26 @@ def run_loop(
         )
         if score < threshold:
             return LoopResult(kind="escalate", text=ESCALATE_MESSAGE)
+
+        verification = verify_structured_grounding(parsed.text, parsed.cited_ids, state, llm_client)
+        if not verification.ok:
+            verification_retry_count += 1
+            logger.debug(
+                "structured grounding verification failed (retry_count=%d): %s",
+                verification_retry_count, verification.mismatches,
+            )
+            if verification_retry_count > MAX_VERIFICATION_RETRIES:
+                logger.debug("verification retry budget exceeded -> escalate")
+                return LoopResult(kind="escalate", text=ESCALATE_MESSAGE)
+            mismatch_lines = "\n".join(
+                f"- {m['card_id']}: \"{m['effect_text']}\"" for m in verification.mismatches
+            )
+            conversation += (
+                "\n\nVERIFICATION_FAILED: your answer's description doesn't match the "
+                "stored effect text below. Revise your FINAL answer to accurately "
+                f"reflect it.\n{mismatch_lines}"
+            )
+            continue
+
         citations = [state.citation_index[cid] for cid in sorted(parsed.cited_ids)]
         return LoopResult(kind="answer", text=parsed.text, citations=citations)

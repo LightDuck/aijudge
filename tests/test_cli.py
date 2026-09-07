@@ -279,7 +279,7 @@ def test_run_cli_direct_final_answer_citing_the_grounded_id_does_not_escalate():
     printed = []
     inputs = iter(["What does Ghost Belle & Haunted Mansion do?", "quit"])
 
-    llm = _CapturingLLMClient(["PROCEED", "FINAL: It negates that activation. ||CITES: card:1||"])
+    llm = _CapturingLLMClient(["PROCEED", "FINAL: It negates that activation. ||CITES: card:1||", "YES"])
 
     card = {"id": "1", "name": "Ghost Belle & Haunted Mansion", "card_type": "Tuner Monster"}
 
