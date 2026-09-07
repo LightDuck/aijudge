@@ -9,6 +9,7 @@ MISSING_STRUCTURED_EFFECT_PENALTY = 0.2
 class SignalState:
     known_ids: set[str] = field(default_factory=set)
     citation_index: dict[str, dict] = field(default_factory=dict)
+    structured_effects: dict[str, list[dict]] = field(default_factory=dict)
     missing_structured_effect: bool = False
     retrieval_gap: bool = False
 
@@ -23,6 +24,11 @@ def update_signals(state: SignalState, tool_name: str, result: dict) -> None:
             }
             state.known_ids.add(card_id)
             state.citation_index[card_id] = citation
+            confirmed_effects = result.get("confirmed_effects")
+            if confirmed_effects:
+                state.structured_effects[card_id] = confirmed_effects
+            else:
+                state.missing_structured_effect = True
             ygoprodeck_id = result.get("ygoprodeck_id")
             if ygoprodeck_id:
                 # The LLM sometimes cites a card by its real-world passcode
@@ -33,8 +39,8 @@ def update_signals(state: SignalState, tool_name: str, result: dict) -> None:
                 passcode_id = f"card:{ygoprodeck_id}"
                 state.known_ids.add(passcode_id)
                 state.citation_index[passcode_id] = citation
-            if not result.get("confirmed_effects"):
-                state.missing_structured_effect = True
+                if confirmed_effects:
+                    state.structured_effects[passcode_id] = confirmed_effects
     elif tool_name == "get_rulings":
         rulings = result.get("rulings", [])
         if not rulings:

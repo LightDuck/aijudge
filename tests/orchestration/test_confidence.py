@@ -138,6 +138,31 @@ def test_update_signals_registers_ygoprodeck_id_as_citable_alias_for_card():
     assert state.citation_index["card:32896829"] == state.citation_index["card:abc"]
 
 
+def test_update_signals_tracks_structured_effects_for_card():
+    state = SignalState()
+    effects = [{"effect": "Target 1 Effect Monster your opponent controls; negate its effects."}]
+    update_signals(state, "lookup_card", {"found": True, "id": "abc", "confirmed_effects": effects})
+    assert state.structured_effects["card:abc"] == effects
+
+
+def test_update_signals_tracks_structured_effects_under_passcode_alias_too():
+    state = SignalState()
+    effects = [{"effect": "..."}]
+    update_signals(
+        state,
+        "lookup_card",
+        {"found": True, "id": "abc", "ygoprodeck_id": "32896829", "confirmed_effects": effects},
+    )
+    assert state.structured_effects["card:abc"] == effects
+    assert state.structured_effects["card:32896829"] == effects
+
+
+def test_update_signals_does_not_add_structured_effects_entry_when_missing():
+    state = SignalState()
+    update_signals(state, "lookup_card", {"found": True, "id": "abc", "confirmed_effects": []})
+    assert "card:abc" not in state.structured_effects
+
+
 def test_update_signals_without_ygoprodeck_id_registers_only_internal_id():
     state = SignalState()
     update_signals(state, "lookup_card", {"found": True, "id": "abc", "confirmed_effects": [{"effect": "..."}]})
