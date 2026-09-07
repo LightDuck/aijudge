@@ -35,6 +35,14 @@ def test_rejects_malformed_json_arguments():
         parse_response("TOOL: lookup_card {not json}")
 
 
+def test_salvages_tool_call_with_trailing_final_line_appended_in_same_turn():
+    parsed = parse_response(
+        'TOOL: lookup_card {"name": "Tearlaments Sulliek"}\n'
+        'FINAL: Tearlaments Sulliek does X. ||CITES: card:14614688||'
+    )
+    assert parsed == ToolCall(name="lookup_card", args={"name": "Tearlaments Sulliek"})
+
+
 def test_rejects_final_answer_missing_cites_trailer():
     with pytest.raises(ProtocolError):
         parse_response("FINAL: This card negates the effect.")
