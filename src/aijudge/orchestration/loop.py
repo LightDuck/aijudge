@@ -8,7 +8,7 @@ from aijudge.rules_engine.resolve import UnsupportedScenarioError
 
 from .confidence import DEFAULT_CONFIDENCE_THRESHOLD, SignalState, compute_confidence, update_signals
 from .protocol import FinalAnswer, ProtocolError, Refusal, ToolCall, build_system_prompt, parse_response
-from .verify import verify_structured_grounding
+from .verify import VerificationResult, verify_structured_grounding
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +24,25 @@ class LoopResult:
     kind: str
     text: str
     citations: list[dict] = field(default_factory=list)
+
+
+def _describe_mismatch(mismatch: dict, state: SignalState) -> str:
+    """Render one verification mismatch for the VERIFICATION_FAILED feedback
+    message: the card's human-readable name (from `state.citation_index`,
+    falling back to the raw id if it's somehow missing) followed by whatever
+    of its stored activation_condition/cost/targeting/effect breakdown is
+    present -- mirrors verify.py's own conditional-append rendering."""
+    card_label = state.citation_index.get(mismatch["card_id"], {}).get("label") or mismatch["card_id"]
+    parts = []
+    if mismatch.get("activation_condition"):
+        parts.append(f"activation condition: {mismatch['activation_condition']}")
+    if mismatch.get("cost"):
+        parts.append(f"cost: {mismatch['cost']}")
+    if mismatch.get("targeting"):
+        parts.append(f"targeting: {mismatch['targeting']}")
+    if mismatch.get("effect_text"):
+        parts.append(f"effect: {mismatch['effect_text']}")
+    return f"- {card_label}: \"{'; '.join(parts)}\""
 
 
 def run_loop(
@@ -51,6 +70,12 @@ def run_loop(
     malformed_count = 0
     tool_call_count = 0
     verification_retry_count = 0
+    # Card ids flagged by the most recent verification failure, and the
+    # mismatches that flagged them -- carried across loop turns so a redraft
+    # that drops every one of these citations (instead of fixing the prose)
+    # can be caught as a bypass attempt rather than silently passing.
+    flagged_card_ids: set[str] = set()
+    flagged_mismatches: list[dict] = []
 
     while True:
         response = llm_client.complete(conversation, system=system_prompt)
@@ -106,8 +131,25 @@ def run_loop(
             return LoopResult(kind="escalate", text=ESCALATE_MESSAGE)
 
         verification = verify_structured_grounding(parsed.text, parsed.cited_ids, state, llm_client)
+        if verification.ok and flagged_card_ids and not (flagged_card_ids & parsed.cited_ids):
+            # The prior turn's answer failed verification for these card(s);
+            # this redraft cites none of them, so verify_structured_grounding
+            # correctly found nothing to check -- but that's exactly the
+            # bypass this gate exists to prevent (dropping the citation
+            # instead of fixing the prose). Treat it as another verification
+            # failure under the same budget, reusing the prior mismatch
+            # details for the feedback message since there's nothing new to
+            # report.
+            logger.debug(
+                "redraft dropped every previously-flagged citation %s -> treating as verification failure",
+                flagged_card_ids,
+            )
+            verification = VerificationResult(ok=False, mismatches=flagged_mismatches)
+
         if not verification.ok:
             verification_retry_count += 1
+            flagged_mismatches = verification.mismatches
+            flagged_card_ids = {m["card_id"] for m in verification.mismatches}
             logger.debug(
                 "structured grounding verification failed (retry_count=%d): %s",
                 verification_retry_count, verification.mismatches,
@@ -115,13 +157,12 @@ def run_loop(
             if verification_retry_count > MAX_VERIFICATION_RETRIES:
                 logger.debug("verification retry budget exceeded -> escalate")
                 return LoopResult(kind="escalate", text=ESCALATE_MESSAGE)
-            mismatch_lines = "\n".join(
-                f"- {m['card_id']}: \"{m['effect_text']}\"" for m in verification.mismatches
-            )
+            mismatch_lines = "\n".join(_describe_mismatch(m, state) for m in verification.mismatches)
             conversation += (
-                "\n\nVERIFICATION_FAILED: your answer's description doesn't match the "
-                "stored effect text below. Revise your FINAL answer to accurately "
-                f"reflect it.\n{mismatch_lines}"
+                "\n\nVERIFICATION_FAILED: your previous FINAL answer was: "
+                f"\"{parsed.text}\"\nBut its description doesn't match the "
+                "stored effect text below. Revise your FINAL answer to "
+                f"accurately reflect it.\n{mismatch_lines}"
             )
             continue
 

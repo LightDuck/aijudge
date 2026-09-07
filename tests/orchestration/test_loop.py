@@ -5,6 +5,20 @@ from aijudge.orchestration.verify import VERIFIER_SYSTEM_PROMPT
 from aijudge.rules_engine.resolve import UnsupportedScenarioError
 
 
+class _CapturingLLMClient:
+    """A FIFO-response fake that also records every prompt it receives, so
+    tests can assert on what actually reached the LLM (MockLLMClient only
+    records `system_prompts`, not the `prompt` argument itself)."""
+
+    def __init__(self, responses):
+        self._queue = list(responses)
+        self.prompts = []
+
+    def complete(self, prompt, *, system=None):
+        self.prompts.append(prompt)
+        return self._queue.pop(0)
+
+
 def test_final_answer_with_no_tool_calls_returns_answer():
     llm = MockLLMClient()
     llm.queue_response("FINAL: Ash Blossom negates that effect. ||CITES: ||")
@@ -294,6 +308,103 @@ def test_structured_grounding_mismatch_exhausts_retries_and_escalates():
         "lookup_card": lambda args: {
             "found": True,
             "id": "abc123",
+            "confirmed_effects": [
+                {"effect": "Target 1 Effect Monster your opponent controls; negate its effects."}
+            ],
+        }
+    }
+
+    result = run_loop("What does Tearlaments Sulliek's first effect do?", llm_client=llm, tools=tools)
+
+    assert result.kind == "escalate"
+
+
+def test_verification_failed_feedback_includes_card_name_effect_text_and_prior_draft():
+    # Finding 2: the feedback message must show the model its own prior
+    # (wrong) draft, not just tell it "you were wrong". Finding 7 (bundled):
+    # it should name the card by its human-readable name, not the raw
+    # citation id.
+    llm = _CapturingLLMClient([
+        'TOOL: lookup_card {"name": "Tearlaments Sulliek"}',
+        "FINAL: It negates the effect of the target spell or trap card. ||CITES: card:abc123||",
+        "NO",
+        "FINAL: It negates the effects of the targeted Effect Monster. ||CITES: card:abc123||",
+        "YES",
+    ])
+
+    tools = {
+        "lookup_card": lambda args: {
+            "found": True,
+            "id": "abc123",
+            "name": "Tearlaments Sulliek",
+            "card_text": "...",
+            "confirmed_effects": [
+                {"effect": "Target 1 Effect Monster your opponent controls; negate its effects."}
+            ],
+        }
+    }
+
+    result = run_loop("What does Tearlaments Sulliek's first effect do?", llm_client=llm, tools=tools)
+
+    assert result.kind == "answer"
+    feedback_prompt = next(p for p in llm.prompts if "VERIFICATION_FAILED" in p)
+    assert "Tearlaments Sulliek" in feedback_prompt
+    assert "card:abc123" not in feedback_prompt.split("VERIFICATION_FAILED", 1)[1]
+    assert "Target 1 Effect Monster your opponent controls; negate its effects." in feedback_prompt
+    assert "It negates the effect of the target spell or trap card." in feedback_prompt
+
+
+def test_redraft_dropping_flagged_citation_is_treated_as_another_verification_failure_then_recovers():
+    # Finding 3: a redraft that responds with no citations at all (or drops
+    # the specific card(s) that just failed verification) must not silently
+    # bypass the gate. verify_structured_grounding alone would find nothing
+    # to check for an empty CITES and return ok=True -- this reproduces that
+    # bypass and confirms the fix treats it as another failed verification
+    # attempt under the same retry budget, which can still recover.
+    llm = MockLLMClient()
+    llm.queue_response('TOOL: lookup_card {"name": "Tearlaments Sulliek"}')
+    llm.queue_response("FINAL: It negates the effect of the target spell or trap card. ||CITES: card:abc123||")
+    llm.queue_response("NO")
+    llm.queue_response("FINAL: It negates something, not sure what. ||CITES: ||")
+    llm.queue_response("FINAL: It negates the effects of the targeted Effect Monster. ||CITES: card:abc123||")
+    llm.queue_response("YES")
+
+    tools = {
+        "lookup_card": lambda args: {
+            "found": True,
+            "id": "abc123",
+            "name": "Tearlaments Sulliek",
+            "card_text": "...",
+            "confirmed_effects": [
+                {"effect": "Target 1 Effect Monster your opponent controls; negate its effects."}
+            ],
+        }
+    }
+
+    result = run_loop("What does Tearlaments Sulliek's first effect do?", llm_client=llm, tools=tools)
+
+    assert result.kind == "answer"
+    assert result.text == "It negates the effects of the targeted Effect Monster."
+
+
+def test_redraft_dropping_flagged_citation_repeatedly_exhausts_budget_and_escalates():
+    # Companion to the above: if the redraft keeps dropping the flagged
+    # citation rather than ever re-citing it, the bypass-detection must
+    # still respect MAX_VERIFICATION_RETRIES and escalate rather than loop
+    # forever or silently return an ungrounded answer.
+    llm = MockLLMClient()
+    llm.queue_response('TOOL: lookup_card {"name": "Tearlaments Sulliek"}')
+    llm.queue_response("FINAL: It negates the effect of the target spell or trap card. ||CITES: card:abc123||")
+    llm.queue_response("NO")
+    for _ in range(MAX_VERIFICATION_RETRIES):
+        llm.queue_response("FINAL: It negates something, not sure what. ||CITES: ||")
+
+    tools = {
+        "lookup_card": lambda args: {
+            "found": True,
+            "id": "abc123",
+            "name": "Tearlaments Sulliek",
+            "card_text": "...",
             "confirmed_effects": [
                 {"effect": "Target 1 Effect Monster your opponent controls; negate its effects."}
             ],
