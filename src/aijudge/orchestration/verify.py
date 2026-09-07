@@ -18,7 +18,7 @@ VERIFIER_SYSTEM_PROMPT = (
 # The stored-effect breakdown fields to render, in the same order
 # `card_effects_structured`/`get_confirmed_effects` present them (activation
 # condition, then cost, then targeting, then the resolution effect itself).
-_BREAKDOWN_FIELDS = ("activation_condition", "cost", "targeting", "effect")
+_BREAKDOWN_FIELDS = ("activation_condition", "cost", "targeting", "effect", "usage_limit_text")
 
 _LEADING_TOKEN_RE = re.compile(r"[A-Za-z]+")
 
@@ -100,6 +100,7 @@ def verify_structured_grounding(
                 "cost": effect.get("cost"),
                 "targeting": effect.get("targeting"),
                 "effect_text": effect.get("effect"),
+                "usage_limit_text": effect.get("usage_limit_text"),
             })
 
     if not matched:
@@ -113,6 +114,7 @@ def verify_structured_grounding(
                 "cost": m["cost"],
                 "targeting": m["targeting"],
                 "effect": m["effect_text"],
+                "usage_limit_text": m["usage_limit_text"],
             }
             for m in matched
         ],

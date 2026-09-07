@@ -53,6 +53,27 @@ def test_build_verification_prompt_includes_targeting_and_cost_not_just_effect()
     assert "Target 1 Effect Monster your opponent controls" in prompt
 
 
+def test_build_verification_prompt_includes_usage_limit_text_when_present():
+    # A "You can only use each effect ... once per turn" restriction is a
+    # real, separately-stored fact (usage_limit_text) about a confirmed
+    # effect -- if the verifier's ground-truth rendering omits it, a
+    # correct answer that mentions the restriction looks like it invented
+    # an unsupported claim and gets wrongly flagged as a mismatch.
+    prompt = build_verification_prompt(
+        "Some answer.",
+        [
+            {
+                "activation_condition": None,
+                "cost": None,
+                "targeting": None,
+                "effect": "negate its effects.",
+                "usage_limit_text": 'You can only use this effect of "Card Name" once per turn.',
+            }
+        ],
+    )
+    assert 'You can only use this effect of "Card Name" once per turn.' in prompt
+
+
 def test_build_verification_prompt_includes_activation_condition_and_cost_when_present():
     prompt = build_verification_prompt(
         "Some answer.",
@@ -152,6 +173,7 @@ def test_verify_structured_grounding_flags_mismatch_on_no():
             "cost": None,
             "targeting": None,
             "effect_text": "Target 1 Effect Monster; negate its effects.",
+            "usage_limit_text": None,
         }
     ]
 
@@ -178,6 +200,38 @@ def test_verify_structured_grounding_threads_targeting_field_into_the_prompt():
     )
 
     assert "Target 1 Effect Monster your opponent controls" in llm.prompts[0]
+
+
+def test_verify_structured_grounding_threads_usage_limit_text_field_into_the_prompt():
+    # Full-path regression test mirroring
+    # test_verify_structured_grounding_threads_targeting_field_into_the_prompt:
+    # verify_structured_grounding's own `matched.append(...)` construction
+    # must carry usage_limit_text through, not just build_verification_prompt
+    # in isolation.
+    # Deliberately do NOT include the usage-limit sentence in the drafted
+    # answer text itself -- otherwise its presence in the full prompt would
+    # trivially come from the "BEGIN DRAFTED ANSWER" section instead of
+    # proving it reached the STORED EFFECT TEXT (ground truth) section.
+    llm = _CapturingLLMClient(["YES"])
+    state = SignalState()
+    state.structured_effects["card:abc"] = [
+        {
+            "activation_condition": None,
+            "cost": None,
+            "targeting": None,
+            "effect": 'You can add 1 "Tearlaments" Trap from your Deck to your hand.',
+            "usage_limit_text": 'You can only use each effect of "Tearlaments Scream" once per turn.',
+        }
+    ]
+
+    verify_structured_grounding(
+        'You can add 1 "Tearlaments" Trap from your Deck to your hand.',
+        {"card:abc"},
+        state,
+        llm,
+    )
+
+    assert 'You can only use each effect of "Tearlaments Scream" once per turn.' in llm.prompts[0]
 
 
 def test_verify_structured_grounding_dedupes_id_and_passcode_alias_for_same_card():
