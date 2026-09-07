@@ -45,6 +45,7 @@ def test_post_questions_returns_answer_when_no_clarification_needed():
         llm,
         find_matched_cards_fn=lambda question: [card],
         build_known_facts_context_fn=lambda c: "",
+        build_grounded_result_fn=lambda c: {"found": True, "id": c["id"], "name": c["name"], "confirmed_effects": []},
     ).post("/questions", json={"question": "What does Ash Blossom do?"})
 
     assert response.status_code == 200
@@ -93,6 +94,7 @@ def test_post_questions_passes_the_system_prompt_to_the_clarification_call():
         llm,
         find_matched_cards_fn=lambda question: [card],
         build_known_facts_context_fn=lambda c: "",
+        build_grounded_result_fn=lambda c: {"found": True, "id": c["id"], "name": c["name"], "confirmed_effects": []},
     ).post("/questions", json={"question": "x"})
 
     assert llm.system_prompts[0] == build_system_prompt()
@@ -213,6 +215,12 @@ def test_post_questions_folds_known_facts_for_a_single_matched_card_into_the_llm
             {"id": "1", "name": "Baronne de Fleur", "card_type": "Synchro Monster"}
         ],
         build_known_facts_context_fn=lambda card: f"KNOWN FACTS: {card['name']}",
+        build_grounded_result_fn=lambda card: {
+            "found": True,
+            "id": card["id"],
+            "name": card["name"],
+            "confirmed_effects": [],
+        },
     )
 
     response = TestClient(app).post(
@@ -234,6 +242,12 @@ def test_post_questions_passes_known_facts_to_the_clarification_call_for_a_singl
             {"id": "1", "name": "Baronne de Fleur", "card_type": "Synchro Monster"}
         ],
         build_known_facts_context_fn=lambda card: f"KNOWN FACTS: {card['name']}",
+        build_grounded_result_fn=lambda card: {
+            "found": True,
+            "id": card["id"],
+            "name": card["name"],
+            "confirmed_effects": [],
+        },
     )
 
     response = TestClient(app).post(
@@ -246,6 +260,81 @@ def test_post_questions_passes_known_facts_to_the_clarification_call_for_a_singl
     # data too, not just the run_loop call -- otherwise the LLM can ask for
     # clarification the deterministic layer already resolved.
     assert "KNOWN FACTS: Baronne de Fleur" in llm.prompts[0]
+
+
+def test_post_questions_direct_final_answer_citing_the_grounded_id_does_not_escalate():
+    # Reproduces the real-world escalation: the LLM answers straight from
+    # KNOWN FACTS on the first turn (no lookup_card call), citing the
+    # matched card's id. Without grounded_cards pre-registering that id,
+    # compute_confidence would treat it as fabricated and escalate.
+    llm = _CapturingLLMClient(["PROCEED", "FINAL: It negates that activation. ||CITES: card:1||"])
+
+    app = create_app(
+        llm,
+        MockEmbeddingClient(),
+        find_matched_cards_fn=lambda question: [
+            {"id": "1", "name": "Ghost Belle & Haunted Mansion", "card_type": "Tuner Monster"}
+        ],
+        build_known_facts_context_fn=lambda card: f"KNOWN FACTS: {card['name']} (cite as card:{card['id']})",
+        build_grounded_result_fn=lambda card: {
+            "found": True,
+            "id": card["id"],
+            "name": card["name"],
+            "card_text": "Ghost Belle card text.",
+            "confirmed_effects": [{"effect": "..."}],
+        },
+    )
+
+    response = TestClient(app).post(
+        "/questions", json={"question": "What does Ghost Belle & Haunted Mansion do?"}
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "answer"
+    assert response.json()["citations"] == [
+        {"label": "Ghost Belle & Haunted Mansion", "text": "Ghost Belle card text."}
+    ]
+
+
+def test_post_questions_answer_direct_final_answer_citing_the_grounded_id_does_not_escalate():
+    llm = _CapturingLLMClient(["FINAL: It negates that activation. ||CITES: card:1||"])
+
+    app = create_app(
+        llm,
+        MockEmbeddingClient(),
+        find_matched_cards_fn=lambda question: [
+            {"id": "1", "name": "Effect Veiler", "card_type": "Effect Monster"},
+            {"id": "2", "name": "Effector", "card_type": "Effect Monster"},
+        ],
+        build_known_facts_context_fn=lambda card: f"KNOWN FACTS: {card['name']} (cite as card:{card['id']})",
+        build_grounded_result_fn=lambda card: {
+            "found": True,
+            "id": card["id"],
+            "name": card["name"],
+            "card_text": "Effect Veiler card text.",
+            "confirmed_effects": [{"effect": "..."}],
+        },
+    )
+
+    response = TestClient(app).post(
+        "/questions/answer",
+        json={
+            "question": "Can I chain Effect Veiler or Effector here?",
+            "items": [
+                {
+                    "kind": "disambiguate_card",
+                    "text": "Multiple cards match your question: Effect Veiler, Effector. Which one do you mean?",
+                }
+            ],
+            "answers": ["Effect Veiler"],
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "answer"
+    assert response.json()["citations"] == [
+        {"label": "Effect Veiler", "text": "Effect Veiler card text."}
+    ]
 
 
 def test_post_questions_returns_disambiguate_card_item_when_multiple_cards_match():
@@ -288,6 +377,12 @@ def test_post_questions_answer_resolves_disambiguation_answer_to_known_facts():
             {"id": "2", "name": "Effector", "card_type": "Effect Monster"},
         ],
         build_known_facts_context_fn=lambda card: f"KNOWN FACTS: {card['name']}",
+        build_grounded_result_fn=lambda card: {
+            "found": True,
+            "id": card["id"],
+            "name": card["name"],
+            "confirmed_effects": [],
+        },
     )
 
     response = TestClient(app).post(
@@ -320,6 +415,12 @@ def test_post_questions_answer_resolves_disambiguation_answer_case_insensitive_f
             {"id": "2", "name": "Effector", "card_type": "Effect Monster"},
         ],
         build_known_facts_context_fn=lambda card: f"KNOWN FACTS: {card['name']}",
+        build_grounded_result_fn=lambda card: {
+            "found": True,
+            "id": card["id"],
+            "name": card["name"],
+            "confirmed_effects": [],
+        },
     )
 
     response = TestClient(app).post(

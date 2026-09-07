@@ -17,7 +17,12 @@ from aijudge.orchestration.clarify import (
     parse_clarification_response,
 )
 from aijudge.orchestration.loop import LoopResult, run_loop
-from aijudge.orchestration.preflight import build_known_facts_context, find_matched_cards, find_mentioned_card_names
+from aijudge.orchestration.preflight import (
+    build_grounded_result,
+    build_known_facts_context,
+    find_matched_cards,
+    find_mentioned_card_names,
+)
 from aijudge.orchestration.protocol import build_system_prompt
 from aijudge.orchestration.tools import build_tool_dispatch
 
@@ -36,17 +41,16 @@ def _result_response(result: LoopResult) -> dict:
     }
 
 
-def _resolve_preflight_context(
+def _resolve_preflight_card(
     matches: list[dict],
     items: list[ClarificationItem],
     answers: list[str],
-    build_known_facts_context_fn: Callable[[dict], str],
-) -> str:
+) -> dict | None:
     # Mirrors cli.py's preflight resolution, but re-derived from scratch on
     # every call since the API is stateless -- there's no in-process session
     # to carry `matches` between /questions and /questions/answer.
     if len(matches) == 1:
-        return build_known_facts_context_fn(matches[0])
+        return matches[0]
     if len(matches) > 1:
         disambiguate_index = next(
             (i for i, item in enumerate(items) if item.kind == "disambiguate_card"), None
@@ -54,10 +58,8 @@ def _resolve_preflight_context(
         if disambiguate_index is not None and disambiguate_index < len(answers):
             candidate_names = [match["name"] for match in matches]
             matched_names = find_mentioned_card_names(answers[disambiguate_index], candidate_names)
-            chosen = next((m for m in matches if m["name"] == matched_names[0]), None) if matched_names else None
-            if chosen is not None:
-                return build_known_facts_context_fn(chosen)
-    return ""
+            return next((m for m in matches if m["name"] == matched_names[0]), None) if matched_names else None
+    return None
 
 
 def create_app(
@@ -68,6 +70,7 @@ def create_app(
     tools: dict[str, Callable[[dict], dict]] | None = None,
     find_matched_cards_fn: Callable[[str], list[dict]] | None = None,
     build_known_facts_context_fn: Callable[[dict], str] | None = None,
+    build_grounded_result_fn: Callable[[dict], dict] | None = None,
     online_ingest_enabled: bool = True,
 ) -> FastAPI:
     app = FastAPI()
@@ -82,6 +85,9 @@ def create_app(
     find_matched_cards_fn = find_matched_cards_fn if find_matched_cards_fn is not None else find_matched_cards
     build_known_facts_context_fn = (
         build_known_facts_context_fn if build_known_facts_context_fn is not None else build_known_facts_context
+    )
+    build_grounded_result_fn = (
+        build_grounded_result_fn if build_grounded_result_fn is not None else build_grounded_result
     )
 
     def _backend_unavailable_handler(request: Request, exc: Exception) -> JSONResponse:
@@ -150,7 +156,14 @@ def create_app(
                 "items": [{"kind": item.kind, "text": item.text} for item in items],
             }
 
-        result = run_loop(question, llm_client=llm_client, tools=tools, clarification_context=preflight_context)
+        grounded_cards = [build_grounded_result_fn(matches[0])] if len(matches) == 1 else []
+        result = run_loop(
+            question,
+            llm_client=llm_client,
+            tools=tools,
+            clarification_context=preflight_context,
+            grounded_cards=grounded_cards,
+        )
         return _result_response(result)
 
     @app.post("/questions/answer", response_model=ResultResponse)
@@ -163,13 +176,21 @@ def create_app(
 
         items = [ClarificationItem(kind=item.kind, text=item.text) for item in body.items]
         matches = find_matched_cards_fn(question)
-        preflight_context = _resolve_preflight_context(matches, items, body.answers, build_known_facts_context_fn)
+        card = _resolve_preflight_card(matches, items, body.answers)
+        preflight_context = build_known_facts_context_fn(card) if card is not None else ""
+        grounded_cards = [build_grounded_result_fn(card)] if card is not None else []
 
         context = format_clarification_context(items, body.answers)
         if preflight_context:
             context = f"{preflight_context}\n\n{context}" if context else preflight_context
 
-        result = run_loop(question, llm_client=llm_client, tools=tools, clarification_context=context)
+        result = run_loop(
+            question,
+            llm_client=llm_client,
+            tools=tools,
+            clarification_context=context,
+            grounded_cards=grounded_cards,
+        )
         return _result_response(result)
 
     return app

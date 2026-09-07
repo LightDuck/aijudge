@@ -61,7 +61,10 @@ def build_known_facts_context(card: dict) -> str:
     confirmed_effects = get_confirmed_effects(card["id"])
     if not confirmed_effects:
         return ""
-    lines = ["KNOWN FACTS (deterministic -- do not contradict):"]
+    lines = [
+        f"KNOWN FACTS (deterministic -- do not contradict) -- if you answer using only "
+        f"these facts without calling lookup_card, cite {card['name']} as card:{card['id']}:"
+    ]
     for index, confirmed in enumerate(confirmed_effects, start=1):
         effect_type = EffectType(confirmed["effect_type"])
 
@@ -95,3 +98,22 @@ def build_known_facts_context(card: dict) -> str:
             line += f", usage limit: {confirmed['usage_limit_text']}"
         lines.append(line)
     return "\n".join(lines)
+
+
+def build_grounded_result(card: dict) -> dict:
+    """Build a `lookup_card`-tool-result-shaped dict for a card already
+    resolved via preflight matching, so `run_loop` can pre-register its id
+    as a legitimate citation source (via `update_signals`) without an
+    actual `lookup_card` tool call. Needed because a card whose KNOWN FACTS
+    already answer the question gives the LLM no reason to call
+    `lookup_card` itself, and without this, the id it's told to cite in
+    `build_known_facts_context`'s text would otherwise never appear in
+    `SignalState.known_ids` -- indistinguishable from a fabricated one."""
+    return {
+        "found": True,
+        "id": card["id"],
+        "ygoprodeck_id": card.get("ygoprodeck_id"),
+        "name": card["name"],
+        "card_text": card.get("card_text"),
+        "confirmed_effects": get_confirmed_effects(card["id"]),
+    }

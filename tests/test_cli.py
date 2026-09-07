@@ -66,6 +66,7 @@ def test_run_cli_answers_a_question_with_no_clarification_needed():
         print_fn=printed.append,
         find_matched_cards_fn=lambda question: [card],
         build_known_facts_context_fn=lambda c: "",
+        build_grounded_result_fn=lambda c: {"found": True, "id": c["id"], "name": c["name"], "confirmed_effects": []},
     )
 
     assert "It does X." in printed
@@ -88,6 +89,7 @@ def test_run_cli_passes_the_system_prompt_to_the_clarification_call():
         print_fn=printed.append,
         find_matched_cards_fn=lambda question: [card],
         build_known_facts_context_fn=lambda c: "",
+        build_grounded_result_fn=lambda c: {"found": True, "id": c["id"], "name": c["name"], "confirmed_effects": []},
     )
 
     assert llm.system_prompts[0] == build_system_prompt()
@@ -110,6 +112,7 @@ def test_run_cli_asks_clarification_questions_before_answering():
         print_fn=printed.append,
         find_matched_cards_fn=lambda question: [card],
         build_known_facts_context_fn=lambda c: "",
+        build_grounded_result_fn=lambda c: {"found": True, "id": c["id"], "name": c["name"], "confirmed_effects": []},
     )
 
     assert "Yes, you can respond." in printed
@@ -154,6 +157,12 @@ def test_run_cli_disambiguates_when_multiple_cards_match():
         print_fn=printed.append,
         find_matched_cards_fn=lambda question: matches,
         build_known_facts_context_fn=lambda card: f"KNOWN FACTS: {card['name']}",
+        build_grounded_result_fn=lambda card: {
+            "found": True,
+            "id": card["id"],
+            "name": card["name"],
+            "confirmed_effects": [],
+        },
     )
 
     assert "Yes." in printed
@@ -178,6 +187,12 @@ def test_run_cli_disambiguates_with_case_insensitive_fuzzy_match():
         print_fn=printed.append,
         find_matched_cards_fn=lambda question: matches,
         build_known_facts_context_fn=lambda card: f"KNOWN FACTS: {card['name']}",
+        build_grounded_result_fn=lambda card: {
+            "found": True,
+            "id": card["id"],
+            "name": card["name"],
+            "confirmed_effects": [],
+        },
     )
 
     assert "Yes." in printed
@@ -199,6 +214,7 @@ def test_run_cli_passes_known_facts_to_the_clarification_call_for_a_single_match
         print_fn=printed.append,
         find_matched_cards_fn=lambda question: [card],
         build_known_facts_context_fn=lambda c: f"KNOWN FACTS: {c['name']}",
+        build_grounded_result_fn=lambda c: {"found": True, "id": c["id"], "name": c["name"], "confirmed_effects": []},
     )
 
     assert "Yes." in printed
@@ -248,10 +264,42 @@ def test_run_cli_folds_preflight_facts_in_for_a_single_match():
         print_fn=printed.append,
         find_matched_cards_fn=lambda question: [card],
         build_known_facts_context_fn=lambda c: f"KNOWN FACTS: {c['name']}",
+        build_grounded_result_fn=lambda c: {"found": True, "id": c["id"], "name": c["name"], "confirmed_effects": []},
     )
 
     assert "Yes." in printed
     assert any("KNOWN FACTS: Effect Veiler" in p for p in llm.prompts)
+
+
+def test_run_cli_direct_final_answer_citing_the_grounded_id_does_not_escalate():
+    # Reproduces the real-world escalation: the LLM answers straight from
+    # KNOWN FACTS on the first turn (no lookup_card call), citing the
+    # matched card's id. Without grounded_cards pre-registering that id,
+    # compute_confidence would treat it as fabricated and escalate.
+    printed = []
+    inputs = iter(["What does Ghost Belle & Haunted Mansion do?", "quit"])
+
+    llm = _CapturingLLMClient(["PROCEED", "FINAL: It negates that activation. ||CITES: card:1||"])
+
+    card = {"id": "1", "name": "Ghost Belle & Haunted Mansion", "card_type": "Tuner Monster"}
+
+    run_cli(
+        llm,
+        MockEmbeddingClient(),
+        input_fn=lambda _: next(inputs),
+        print_fn=printed.append,
+        find_matched_cards_fn=lambda question: [card],
+        build_known_facts_context_fn=lambda c: f"KNOWN FACTS: {c['name']} (cite as card:{c['id']})",
+        build_grounded_result_fn=lambda c: {
+            "found": True,
+            "id": c["id"],
+            "name": c["name"],
+            "card_text": "Ghost Belle card text.",
+            "confirmed_effects": [{"effect": "..."}],
+        },
+    )
+
+    assert "It negates that activation." in printed
 
 
 def test_run_cli_wires_on_ingest_start_callback_to_print_fn(monkeypatch):

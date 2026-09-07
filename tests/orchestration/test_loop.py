@@ -198,6 +198,46 @@ def test_multiple_citations_are_sorted_by_id():
     ]
 
 
+def test_grounded_cards_preseed_known_ids_so_direct_final_answer_is_not_fabricated():
+    # Reproduces the KNOWN-FACTS-shortcut escalation: preflight already gave
+    # the LLM everything it needs, so it answers FINAL on the very first
+    # turn without ever calling lookup_card. Without a legitimate id to
+    # cite, the LLM fabricates one and compute_confidence correctly flags
+    # it -- unless the caller pre-registers the already-grounded card's id
+    # via `grounded_cards`, exactly as if lookup_card had returned it.
+    llm = MockLLMClient()
+    llm.queue_response("FINAL: It negates the effect. ||CITES: card:abc123||")
+
+    grounded = [
+        {
+            "found": True,
+            "id": "abc123",
+            "name": "Ash Blossom & Joyous Spring",
+            "card_text": "You can discard this card...",
+            "confirmed_effects": [{"effect": "..."}],
+        }
+    ]
+
+    result = run_loop("What does Ash Blossom do?", llm_client=llm, tools={}, grounded_cards=grounded)
+
+    assert result.kind == "answer"
+    assert result.citations == [
+        {"label": "Ash Blossom & Joyous Spring", "text": "You can discard this card..."}
+    ]
+
+
+def test_grounded_cards_defaults_to_no_preseeding():
+    # Without grounded_cards, behavior is unchanged from before this
+    # parameter existed -- a citation with no matching tool call still
+    # fabricates and escalates.
+    llm = MockLLMClient()
+    llm.queue_response("FINAL: It negates the effect. ||CITES: card:abc123||")
+
+    result = run_loop("What does Ash Blossom do?", llm_client=llm, tools={})
+
+    assert result.kind == "escalate"
+
+
 def test_run_loop_passes_the_system_prompt_on_every_llm_call():
     llm = MockLLMClient()
     llm.queue_response('TOOL: lookup_card {"name": "Ash Blossom & Joyous Spring"}')

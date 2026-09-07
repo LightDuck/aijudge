@@ -11,7 +11,12 @@ from .orchestration.clarify import (
     parse_clarification_response,
 )
 from .orchestration.loop import run_loop
-from .orchestration.preflight import build_known_facts_context, find_matched_cards, find_mentioned_card_names
+from .orchestration.preflight import (
+    build_grounded_result,
+    build_known_facts_context,
+    find_matched_cards,
+    find_mentioned_card_names,
+)
 from .orchestration.protocol import build_system_prompt
 from .orchestration.tools import build_tool_dispatch
 
@@ -24,6 +29,7 @@ def run_cli(
     print_fn: Callable[[str], None] = print,
     find_matched_cards_fn: Callable[[str], list[dict]] = find_matched_cards,
     build_known_facts_context_fn: Callable[[dict], str] = build_known_facts_context,
+    build_grounded_result_fn: Callable[[dict], dict] = build_grounded_result,
     online_ingest_enabled: bool = True,
 ) -> None:
     tools = build_tool_dispatch(
@@ -49,6 +55,7 @@ def run_cli(
         matches = find_matched_cards_fn(stripped)
         disambiguation_items: list[ClarificationItem] = []
         preflight_context = ""
+        grounded_cards: list[dict] = []
         if len(matches) == 1:
             # Ground the clarification-decision call itself, not just the
             # eventual run_loop call -- otherwise the LLM can ask the user
@@ -56,6 +63,7 @@ def run_cli(
             # resolve (e.g. "which effect do you mean?" for a card whose
             # effects are all already enumerated below).
             preflight_context = build_known_facts_context_fn(matches[0])
+            grounded_cards = [build_grounded_result_fn(matches[0])]
         elif len(matches) > 1:
             names = ", ".join(match["name"] for match in matches)
             disambiguation_items.append(
@@ -87,6 +95,7 @@ def run_cli(
             chosen = next((match for match in matches if match["name"] == matched_names[0]), None) if matched_names else None
             if chosen is not None:
                 preflight_context = build_known_facts_context_fn(chosen)
+                grounded_cards = [build_grounded_result_fn(chosen)]
             else:
                 print_fn("Couldn't match your answer to a specific card -- proceeding without that card's confirmed details.")
 
@@ -94,5 +103,11 @@ def run_cli(
         if preflight_context:
             context = f"{preflight_context}\n\n{context}" if context else preflight_context
 
-        result = run_loop(stripped, llm_client=llm_client, tools=tools, clarification_context=context)
+        result = run_loop(
+            stripped,
+            llm_client=llm_client,
+            tools=tools,
+            clarification_context=context,
+            grounded_cards=grounded_cards,
+        )
         print_fn(result.text)

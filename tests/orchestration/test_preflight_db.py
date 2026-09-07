@@ -136,6 +136,71 @@ def test_build_known_facts_context_omits_optional_fields_when_none():
     assert "None" not in context
 
 
+def test_build_known_facts_context_includes_a_citable_id_for_the_card():
+    # Without this, an LLM answering directly from KNOWN FACTS (skipping
+    # lookup_card entirely, since the facts already answer the question)
+    # has no legitimate id to put in its required CITES trailer and
+    # fabricates one instead -- which compute_confidence then correctly
+    # flags, escalating every such answer. Giving it the real citable id
+    # here closes that gap.
+    from aijudge.db.cards_repo import get_card_by_name, insert_card
+    from aijudge.db.effects_repo import confirm_effect, insert_pending_effect
+    from aijudge.orchestration.preflight import build_known_facts_context
+
+    card_id = insert_card(
+        name="Effect Veiler",
+        card_text=_EFFECT_VEILER_TEXT,
+        card_type="Effect Monster",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="95440946",
+        deterministic_parse_eligible=True,
+    )
+    effect_id = insert_pending_effect(
+        card_id=card_id,
+        effect_type="quick",
+        effect="negate the effects of 1 Effect Monster your opponent controls, also its ATK becomes 0.",
+    )
+    confirm_effect(effect_id)
+
+    card = get_card_by_name("Effect Veiler")
+    context = build_known_facts_context(card)
+
+    assert f"card:{card['id']}" in context
+
+
+def test_build_grounded_result_returns_a_lookup_card_shaped_dict():
+    from aijudge.db.cards_repo import get_card_by_name, insert_card
+    from aijudge.db.effects_repo import confirm_effect, insert_pending_effect
+    from aijudge.orchestration.preflight import build_grounded_result
+
+    card_id = insert_card(
+        name="Effect Veiler",
+        card_text=_EFFECT_VEILER_TEXT,
+        card_type="Effect Monster",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="95440946",
+        deterministic_parse_eligible=True,
+    )
+    effect_id = insert_pending_effect(
+        card_id=card_id,
+        effect_type="quick",
+        effect="negate the effects of 1 Effect Monster your opponent controls, also its ATK becomes 0.",
+    )
+    confirm_effect(effect_id)
+
+    card = get_card_by_name("Effect Veiler")
+    result = build_grounded_result(card)
+
+    assert result["found"] is True
+    assert result["id"] == card["id"]
+    assert result["ygoprodeck_id"] == "95440946"
+    assert result["name"] == "Effect Veiler"
+    assert result["card_text"] == _EFFECT_VEILER_TEXT
+    assert len(result["confirmed_effects"]) == 1
+
+
 def test_build_known_facts_context_is_empty_when_no_confirmed_effect():
     from aijudge.db.cards_repo import get_card_by_name, insert_card
     from aijudge.orchestration.preflight import build_known_facts_context

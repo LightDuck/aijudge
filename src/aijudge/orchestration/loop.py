@@ -31,6 +31,7 @@ def run_loop(
     tools: dict[str, Callable[[dict], dict]],
     clarification_context: str = "",
     threshold: float = DEFAULT_CONFIDENCE_THRESHOLD,
+    grounded_cards: list[dict] | None = None,
 ) -> LoopResult:
     system_prompt = build_system_prompt()
     conversation = "Question: " + question
@@ -38,6 +39,13 @@ def run_loop(
         conversation += "\n\n" + clarification_context
 
     state = SignalState()
+    for card in grounded_cards or ():
+        # Pre-register a preflight-matched card's id exactly as if
+        # lookup_card had returned it, so an LLM that answers directly from
+        # already-injected KNOWN FACTS (skipping the tool call since the
+        # facts already answer the question) has a legitimate id to cite
+        # instead of fabricating one and getting escalated.
+        update_signals(state, "lookup_card", card)
     malformed_count = 0
     tool_call_count = 0
 
