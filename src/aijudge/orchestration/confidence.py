@@ -17,11 +17,22 @@ def update_signals(state: SignalState, tool_name: str, result: dict) -> None:
     if tool_name == "lookup_card":
         if result.get("found"):
             card_id = f"card:{result['id']}"
-            state.known_ids.add(card_id)
-            state.citation_index[card_id] = {
+            citation = {
                 "label": result.get("name", ""),
                 "text": result.get("card_text", ""),
             }
+            state.known_ids.add(card_id)
+            state.citation_index[card_id] = citation
+            ygoprodeck_id = result.get("ygoprodeck_id")
+            if ygoprodeck_id:
+                # The LLM sometimes cites a card by its real-world passcode
+                # instead of (or alongside) the internal id lookup_card
+                # returned -- both identify the same already-grounded card,
+                # so both must count as known rather than one looking
+                # fabricated next to the other.
+                passcode_id = f"card:{ygoprodeck_id}"
+                state.known_ids.add(passcode_id)
+                state.citation_index[passcode_id] = citation
             if not result.get("confirmed_effects"):
                 state.missing_structured_effect = True
     elif tool_name == "get_rulings":

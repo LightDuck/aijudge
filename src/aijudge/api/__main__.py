@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import Callable
 
@@ -11,6 +12,14 @@ from .app import create_app
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8000
+
+
+def _configure_logging_from_env() -> None:
+    level_name = os.environ.get("AIJUDGE_LOG_LEVEL")
+    if level_name is None:
+        return
+    logging.basicConfig(level=level_name.upper())
+    logging.getLogger("aijudge").setLevel(level_name.upper())
 
 
 def _cors_origins_from_env() -> list[str] | None:
@@ -30,6 +39,7 @@ def main(
     embedding_client: EmbeddingClient | None = None,
     run_fn: Callable = uvicorn.run,
 ) -> None:
+    _configure_logging_from_env()
     app = create_app(
         llm_client or OllamaLLMClient(),
         embedding_client or OllamaEmbeddingClient(),

@@ -38,6 +38,7 @@ def _card_result(card: dict) -> dict:
     return {
         "found": True,
         "id": card["id"],
+        "ygoprodeck_id": card["ygoprodeck_id"],
         "name": card["name"],
         "card_text": card["card_text"],
         "card_type": card["card_type"],
@@ -59,17 +60,20 @@ def lookup_card(
     field = args.get("field")
 
     status, cards = find_card_by_priority(name, field=field)
+    logger.debug("lookup_card name=%r field=%r db status=%r matches=%d", name, field, status, len(cards))
     if status == "single":
         return _card_result(cards[0])
     if status == "ambiguous":
         return {"found": False, "ambiguous": True}
 
     if not online_ingest_enabled:
+        logger.debug("lookup_card name=%r: not found in db and online ingest disabled", name)
         return {"found": False}
 
     if on_ingest_start is not None:
         on_ingest_start(name)
 
+    logger.debug("lookup_card name=%r: not found in db, attempting online ingest", name)
     card_id = None
     try:
         card_id = seed_card(
@@ -80,11 +84,15 @@ def lookup_card(
             fetch_sets_index_fn=fetch_sets_index_fn,
             field=field,
         )
+        logger.debug("online ingest succeeded for name=%r -> card_id=%r", name, card_id)
     except AmbiguousCardError:
+        logger.debug("online ingest name=%r: AmbiguousCardError", name)
         return {"found": False, "ambiguous": True}
     except CardNotFoundError:
+        logger.debug("online ingest name=%r: CardNotFoundError", name)
         return {"found": False}
     except psycopg.errors.UniqueViolation:
+        logger.debug("online ingest name=%r: UniqueViolation, re-fetching concurrently-inserted row", name)
         pass  # a concurrent request won the insert race -- fall through and re-fetch its row
     except Exception:
         logger.exception("online ingest failed for card name=%r", name)
@@ -95,6 +103,7 @@ def lookup_card(
     else:
         card = get_card_by_name(name)
     if card is None:
+        logger.debug("lookup_card name=%r: post-ingest lookup found no row", name)
         return {"found": False}
     return _card_result(card)
 

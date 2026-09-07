@@ -118,3 +118,43 @@ def test_update_signals_indexes_chunk_citation_label_and_text():
         {"chunks": [{"id": "c1", "chunk_text": "Rule text.", "source": "rulebook"}]},
     )
     assert state.citation_index["chunk:c1"] == {"label": "rulebook", "text": "Rule text."}
+
+
+def test_update_signals_registers_ygoprodeck_id_as_citable_alias_for_card():
+    state = SignalState()
+    update_signals(
+        state,
+        "lookup_card",
+        {
+            "found": True,
+            "id": "abc",
+            "ygoprodeck_id": "32896829",
+            "name": "Ghost Belle & Haunted Mansion",
+            "card_text": "...",
+            "confirmed_effects": [{"effect": "..."}],
+        },
+    )
+    assert state.known_ids == {"card:abc", "card:32896829"}
+    assert state.citation_index["card:32896829"] == state.citation_index["card:abc"]
+
+
+def test_update_signals_without_ygoprodeck_id_registers_only_internal_id():
+    state = SignalState()
+    update_signals(state, "lookup_card", {"found": True, "id": "abc", "confirmed_effects": [{"effect": "..."}]})
+    assert state.known_ids == {"card:abc"}
+
+
+def test_compute_confidence_accepts_passcode_citation_alongside_internal_id():
+    # Reproduces the false-positive escalation: the LLM correctly grounded its
+    # answer via lookup_card, but cited the card by its real-world passcode
+    # (which it knows from training data, not from any tool result) in
+    # addition to the internal id lookup_card actually returned. That passcode
+    # refers to the exact same already-looked-up card, so it must not be
+    # treated as a fabricated source the way an unrelated unknown id would be.
+    state = SignalState()
+    update_signals(
+        state,
+        "lookup_card",
+        {"found": True, "id": "abc", "ygoprodeck_id": "32896829", "confirmed_effects": [{"effect": "..."}]},
+    )
+    assert compute_confidence({"card:abc", "card:32896829"}, state) == 1.0
