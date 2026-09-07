@@ -196,3 +196,16 @@ FinalAnswer parsed
   above as a possible future optimization if verifier-call cost/latency becomes a problem, not built now (YAGNI).
 - A feature flag to disable the verification gate — not needed; it's cheap (skips entirely when there's nothing
   structured to check) and always-on keeps the design simple.
+
+## Amendments
+
+**2026-09-07, post-implementation review:** Component 2 as originally specified rendered only
+`card_effects_structured.effect` (the post-`;` resolution clause) into the verification prompt. This proved unable
+to catch the spec's own motivating example: `parse_psct` splits card text into separate
+`activation_condition`/`cost`/`targeting`/`effect` fields, and for "Target 1 Effect Monster your opponent controls;
+negate its effects.", the word "Effect Monster" lives in `targeting`, not `effect` — a verifier that only ever sees
+`effect` has nothing to contradict an "Effect Monster" → "spell or trap card" swap in the drafted answer, i.e. it
+cannot catch the exact failure this design exists to catch. `build_verification_prompt`/`verify_structured_grounding`
+now render each matched effect's full stored breakdown (activation_condition/cost/targeting/effect, omitting any
+field that's `None`, mirroring `preflight.build_known_facts_context`'s conditional-append style) instead of just
+`effect`.

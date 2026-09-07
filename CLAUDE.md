@@ -219,7 +219,12 @@ spec:
   - `confidence.py` — `compute_confidence()`: starts at `1.0`, returns `0.0` outright if the answer cites an id
     no tool result actually surfaced (`known_ids`), otherwise subtracts `RETRIEVAL_GAP_PENALTY` (0.3) if any
     `get_rulings`/`search_rulebook` call came back empty and `MISSING_STRUCTURED_EFFECT_PENALTY` (0.2) if a
-    looked-up card had no `confirmed_effects`. `update_signals()` accumulates these signals per tool call.
+    looked-up card had no `confirmed_effects`. `update_signals()` accumulates these signals per tool call, and on
+    a `lookup_card` hit with non-empty `confirmed_effects` also populates `SignalState.structured_effects` --
+    keyed under both the internal id and, when present, the passcode alias (same dual-keying as
+    `citation_index`) -- with the card's full `confirmed_effects` list (the whole
+    activation_condition/cost/targeting/effect breakdown, not just `effect` text). `verify.py`'s grounding gate
+    (below) reads this directly rather than re-fetching.
   - `loop.py` — `run_loop()`: repeatedly calls the LLM, dispatches `ToolCall`s and folds results back into the
     conversation, and on a `FinalAnswer` scores it via `compute_confidence()` against `threshold` (default
     `DEFAULT_CONFIDENCE_THRESHOLD = 0.9`) — below threshold escalates instead of answering. A `Refusal` short-
@@ -229,7 +234,38 @@ spec:
     `compute_confidence` has no signal that would ever penalize it. Malformed LLM responses or tool-arg errors
     (`KeyError`/`ValueError`/`TypeError`) get fed back as `ERROR:` context, capped at `MAX_MALFORMED_RETRIES = 3`;
     total tool calls are capped at `MAX_TOOL_CALLS = 10`. Either cap, or an `UnsupportedScenarioError` from
-    `resolve_chain`, ends the loop with `kind="not_supported"` rather than looping forever or guessing.
+    `resolve_chain`, ends the loop with `kind="not_supported"` rather than looping forever or guessing. Once a
+    `FinalAnswer` clears the confidence gate, a second, independent gate runs: `verify_structured_grounding()`
+    (from `verify.py`) checks, via a second LLM call, whether the answer's prose actually matches the stored
+    effect breakdown of any structured-effect card it cites. A mismatch is fed back into `conversation` as a
+    `VERIFICATION_FAILED` message -- naming each mismatched card by name (via `state.citation_index`, not its raw
+    citation id) with its stored breakdown, plus the prior draft text (`parsed.text`) so the model can see what it
+    got wrong -- and the loop retries, bounded by `MAX_VERIFICATION_RETRIES = 2`, a separate budget from
+    `MAX_MALFORMED_RETRIES` since these are different failure classes (protocol/tool-argument errors vs. content
+    correctness). A redraft that evades the check by citing none of the cards a prior turn was flagged for (e.g.
+    dropping the citation instead of fixing the prose) is itself treated as another verification failure under
+    the same counter/budget -- not a free pass to a silently ungrounded answer. Exceeding the retry budget
+    escalates (`kind="escalate"`) exactly like a low confidence score does.
+  - `verify.py` — the structured-grounding verification gate `loop.py` calls after the confidence check passes.
+    `VERIFIER_SYSTEM_PROMPT` frames a narrow strict-fact-checker role, deliberately not
+    `protocol.build_system_prompt()`, which would pull in tool-use/persona instructions irrelevant to this
+    narrower task. `build_verification_prompt(answer_text, structured_effects)` renders every matched effect's
+    full stored breakdown -- `activation_condition`/`cost`/`targeting`/`effect`, each omitted when `None`,
+    mirroring `preflight.build_known_facts_context`'s conditional-append style -- not just `effect` alone, which
+    can't distinguish e.g. a targeting swap (the word distinguishing "Effect Monster" from "spell or trap card" in
+    the spec's own motivating example lives in `targeting`; see the spec doc's Amendments section) -- followed by
+    the drafted answer fenced between explicit `BEGIN`/`END DRAFTED ANSWER` markers so answer text (downstream of
+    a user-controlled question) has less room to be read as instructions. `parse_verification_response(response)`
+    tolerates this project's default Qwen3-8B-via-Ollama formatting sloppiness (the same class of issue commits
+    `7b95e2c`/`b2dce55` salvage elsewhere in this layer): it strips markdown/whitespace/punctuation and accepts a
+    leading bare `YES` token, but rejects anything whose leading token isn't `YES` or that also contains a
+    standalone `NO`. `verify_structured_grounding(answer_text, cited_ids, state, llm_client)` collects
+    `state.structured_effects` for every cited id (deduped by list identity so a card cited under both its
+    internal id and passcode alias isn't double-counted), returns `VerificationResult(ok=True)` with **zero LLM
+    calls** if nothing matched, otherwise makes exactly one LLM call bundling all matched cards' effects and
+    returns `VerificationResult(ok, mismatches)` -- each mismatch carries its `card_id` plus the full
+    `activation_condition`/`cost`/`targeting`/`effect_text` breakdown (not just bare text), for `loop.py`'s
+    feedback-message construction.
   - `clarify.py` — a pre-loop pass: `build_clarification_prompt()` asks the LLM whether the question is
     ambiguous or hinges on an unobservable continuous/lingering effect; `parse_clarification_response()` turns
     `CLARIFY:`/`CONTINUOUS_CHECK:` lines into `ClarificationItem`s (or an empty list on `PROCEED`), deduping
