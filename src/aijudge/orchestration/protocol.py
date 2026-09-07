@@ -82,7 +82,13 @@ def parse_response(response: str) -> ToolCall | FinalAnswer | Refusal:
         if name not in TOOL_NAMES:
             raise ProtocolError(f"unrecognized tool name: {name!r}")
         try:
-            args = json.loads(json_part)
+            # raw_decode (rather than json.loads) parses just the leading
+            # JSON object and ignores anything after it -- some models
+            # (e.g. Qwen3-8B via Ollama) append a stray 'FINAL: ...' line
+            # to the same turn as a TOOL: call, which json.loads would
+            # reject outright as "Extra data". The tool call's own JSON is
+            # still well-formed, so honor it and drop the trailing noise.
+            args, _ = json.JSONDecoder().raw_decode(json_part.strip())
         except json.JSONDecodeError as error:
             raise ProtocolError(f"invalid JSON arguments for tool {name!r}: {error}")
         return ToolCall(name=name, args=args)
