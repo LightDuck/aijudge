@@ -248,8 +248,8 @@ needed):
 - `test_loop.py` / new end-to-end pipeline test: `MockLLMClient`-driven scenarios covering (a) single resolved
   card, cited, verified, answered; (b) two cards, one resolves and one doesn't, partial answer; (c) all
   extracted names fail, honest "not found" answer with empty citations, `kind="answer"` not `"escalate"`;
-  (d) zero cards extracted, `kind="off_topic"`/`"not_supported"`; (e) LLM attempts `TOOL:` anyway despite empty
-  dispatch, degrades to `not_supported` after retries via existing `KeyError` path.
+  (d) zero cards extracted, `kind="not_supported"` returned directly with no `run_loop` call; (e) LLM attempts
+  `TOOL:` anyway despite empty dispatch, degrades to `not_supported` after retries via existing `KeyError` path.
 
 ## Open Questions / Explicitly Deferred
 
