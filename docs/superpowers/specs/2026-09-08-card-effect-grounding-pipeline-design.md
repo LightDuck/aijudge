@@ -122,7 +122,13 @@ the DB has never seen).
 class CardResolution:
     name: str                    # the name as extracted/matched
     status: str                  # "resolved" | "not_found" | "ambiguous"
-    card: dict | None = None     # lookup_card()'s full result, when status == "resolved"
+    card: dict | None = None     # the RAW card row (get_card_by_id shape), when status == "resolved" --
+                                  # NOT lookup_card()'s own trimmed result, which lacks `race`.
+                                  # build_known_facts_context() reads card["race"] for correct
+                                  # spell-speed classification (see CLAUDE.md's cards.race notes), so
+                                  # resolution must re-fetch the raw row via get_card_by_id(result["id"])
+                                  # after a successful lookup_card() call rather than reuse its result
+                                  # shape directly.
 
 def resolve_named_cards(
     names: list[str],
@@ -148,12 +154,21 @@ design. Both are reported to the user as `not_found`.
 No candidate list is threaded through for `ambiguous` (see Scope) — `lookup_card` itself doesn't return one
 today; enriching it is future work if this turns out to matter in practice.
 
-### 3. `orchestration/preflight.py` (extend)
+### 3. `orchestration/card_effect_pipeline.py` (new module, not `preflight.py`)
 
-New `build_pipeline_context(local_matches, extracted_resolutions) -> str`: concatenates
-`build_known_facts_context(card)` (existing, unchanged) for every resolved card — local matches and newly-
-resolved extracted names alike — followed by a `LOOKUP FAILURES` block listing `(name, status)` for every
-unresolved name, e.g.:
+Revised during implementation planning: `build_pipeline_context()` lives in the new `card_effect_pipeline.py`
+module (alongside the top-level `resolve_card_effect_question()` orchestrator it's built for), not in
+`preflight.py`. `preflight.py` today has zero dependency on `tools.py`/LLM-facing code; folding a
+`CardResolution`-consuming function into it would entangle that DB-only module with `card_resolution.py`'s
+heavier import chain for no benefit, since nothing else in `preflight.py` needs it. Behavior and signature are
+unchanged: `build_pipeline_context(resolutions: list[CardResolution]) -> str` concatenates
+`build_known_facts_context(card)` (existing, unchanged) for every resolved extracted name, followed by a
+`LOOKUP FAILURES` block listing `(name, status)` for every unresolved one, e.g.:
+
+Note this function only ever sees resolutions from the extraction branch (Component 2) — a local match (from
+`find_matched_cards`) is rendered directly via `build_known_facts_context`/`build_grounded_result` in the entry
+points (Component 7) without ever becoming a `CardResolution` at all, since local matching doesn't go through
+`lookup_card`/`resolve_named_cards`.
 
 ```
 LOOKUP FAILURES (deterministic -- report these to the user, do not guess their effects):
@@ -222,11 +237,28 @@ there's no genuine rules ambiguity for a human judge to adjudicate, only an iden
 ### 7. Entry points (`cli.py`, `api/app.py`)
 
 Both currently call `find_matched_cards` then either inject `KNOWN FACTS` (1 match) or add a
-`disambiguate_card` clarification item (>1 match) or do nothing (0 matches, today's gap). This design replaces
-the "0 matches" branch: it calls `extract_card_names`, and then either returns `LoopResult(kind="not_supported")`
-directly with no `run_loop` call (0 names extracted — see Architecture diagram) or calls `resolve_named_cards` →
-`build_pipeline_context` → `run_loop` with `tools={}` and `build_answering_system_prompt()` (≥1 names extracted).
-The existing `disambiguate_card` clarification flow for *local* ambiguous matches (>1 local match) is unchanged.
+`disambiguate_card` clarification item (>1 match) or do nothing (0 matches, today's gap), and in every case
+still call `run_loop` with the *full* tool dispatch and `build_system_prompt()`.
+
+**The restricted pathway applies uniformly to every card-effect question, not only the 0-local-matches branch.**
+An already-seeded card (the common case once cards are seeded) gets exactly the same safety properties as a
+freshly-extracted one — nothing in this design's motivation (mandatory grounding, no discretionary tools,
+forbid-fabrication instructions, the hardened confidence rule) is specific to *how* the card was found. Leaving
+the 1-local-match path on the old, unrestricted flow would mean the majority of real questions never benefit
+from this restructure at all.
+
+Concretely: the disambiguation flow for `>1` local matches is unchanged (still deterministic, still happens
+before any LLM answering turn), and the pre-answer clarification pass (`clarify.py`'s `CLARIFY:`/
+`CONTINUOUS_CHECK:` items, which still uses `build_system_prompt()` for that one narrow decision-call) is also
+unchanged — this design only changes what happens at the final answering `run_loop` call, for every case:
+- `0` local matches: call `extract_card_names`, then either return `LoopResult(kind="not_supported")` directly
+  with no `run_loop` call (0 names extracted — see Architecture diagram), or `resolve_named_cards` →
+  `build_pipeline_context` → `run_loop` with `tools={}`, `build_answering_system_prompt()`, and every resolved
+  card as `grounded_cards` (≥1 names extracted).
+- `1` or more local matches: build `grounded_cards` from every local match (today only the single-match case
+  populates `grounded_cards`; the >1 case already routes to disambiguation and never reaches `run_loop` in the
+  same turn) and call the same restricted `run_loop` — `tools={}`, `build_answering_system_prompt()` — instead
+  of today's full tool dispatch and `build_system_prompt()`.
 
 ## Testing Approach
 
