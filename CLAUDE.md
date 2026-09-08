@@ -366,7 +366,8 @@ lag significantly behind it (this repo's git host default branch is `main`, so a
 branch/worktree off "the default branch" will silently pick the wrong, stale base unless told otherwise). Use
 `dev` as the base unless the user explicitly asks for a different base branch.
 
-When writing an implementation plan or spec doc (e.g. anything under `docs/superpowers/plans/` or
-`docs/superpowers/specs/`), always also commit a copy directly to `dev`, even if the work producing it happens on
-a worktree or feature branch. These docs are reference material for future sessions and should land on `dev`
-immediately rather than waiting on that branch's PR to merge.
+Spec and plan docs (e.g. anything under `docs/superpowers/plans/` or `docs/superpowers/specs/`) are written and
+committed directly to `dev`, even if the work producing them happens on a worktree or feature branch — these docs
+are reference material for future sessions and should land on `dev` immediately rather than waiting on that
+branch's PR to merge. Implementing a plan is a separate step: create a new branch off `dev` (worktrees included,
+per above) for the implementation work itself — don't implement directly on `dev`.
