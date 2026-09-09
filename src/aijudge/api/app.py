@@ -175,7 +175,11 @@ def create_app(
         preflight_context = build_known_facts_context_fn(card) if card is not None else ""
         grounded_cards = [build_grounded_result_fn(card)] if card is not None else []
 
-        if not matches:
+        if not matches or not grounded_cards:
+            # 0 local matches, or a disambiguation-miss (matches > 1 but the
+            # answer didn't fuzzy-resolve, leaving grounded_cards empty): try
+            # mandatory extraction + deterministic lookup instead of
+            # proceeding ungrounded (the original gap).
             resolution = resolve_card_effect_question_fn(
                 question,
                 llm_client=llm_client,

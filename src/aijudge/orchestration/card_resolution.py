@@ -33,9 +33,16 @@ def resolve_named_cards(
         if result.get("ambiguous"):
             resolutions.append(CardResolution(name=name, status="ambiguous"))
         elif result.get("found"):
-            resolutions.append(
-                CardResolution(name=name, status="resolved", card=get_card_by_id_fn(result["id"]))
-            )
+            card = get_card_by_id_fn(result["id"])
+            if card is None:
+                # Narrow race: lookup_card_fn reported the card found, but
+                # the row is gone by the time we re-fetch it. Downgrade
+                # rather than report "resolved" with no data -- callers
+                # (build_known_facts_context, build_grounded_result) assume
+                # a resolved resolution always carries a real card dict.
+                resolutions.append(CardResolution(name=name, status="not_found"))
+            else:
+                resolutions.append(CardResolution(name=name, status="resolved", card=card))
         else:
             resolutions.append(CardResolution(name=name, status="not_found"))
     return resolutions

@@ -298,10 +298,17 @@ def test_run_cli_passes_known_facts_to_the_clarification_call_for_a_single_match
 
 
 def test_run_cli_prints_a_notice_when_disambiguation_answer_matches_nothing():
+    # A disambiguation-miss (matches > 1 but nothing resolved) must NOT fall
+    # through to run_loop ungrounded -- that reproduces the exact bug shape
+    # this branch exists to close (an uncited answer scoring confidence 1.0).
+    # It must fall back to the same mandatory pipeline as a 0-local-matches
+    # question. Here the pipeline reports unsupported, so NOT_SUPPORTED_MESSAGE
+    # is printed and run_loop is never reached (only the clarify call
+    # consumes an LLM response).
     printed = []
     inputs = iter(["Can I chain Effect Veiler or Effector here?", "I have no idea what you mean", "quit"])
 
-    llm = _CapturingLLMClient(["PROCEED", "FINAL: Yes. ||CITES: ||"])
+    llm = _CapturingLLMClient(["PROCEED"])
 
     matches = [
         {"id": "1", "name": "Effect Veiler", "card_type": "Effect Monster"},
@@ -315,11 +322,56 @@ def test_run_cli_prints_a_notice_when_disambiguation_answer_matches_nothing():
         print_fn=printed.append,
         find_matched_cards_fn=lambda question: matches,
         build_known_facts_context_fn=lambda card: f"KNOWN FACTS: {card['name']}",
+        resolve_card_effect_question_fn=lambda question, **kwargs: PipelineResolution(supported=False),
     )
 
-    assert "Yes." in printed
     assert any("Couldn't match your answer" in p for p in printed)
+    assert NOT_SUPPORTED_MESSAGE in printed
     assert not any("KNOWN FACTS" in p for p in llm.prompts)
+
+
+def test_run_cli_disambiguation_answer_matches_nothing_falls_back_to_pipeline_when_supported():
+    # Same disambiguation-miss as above, but the fallback pipeline DOES
+    # resolve a card -- its context/grounded_cards must reach run_loop so
+    # the final answer is grounded, instead of the LLM answering ungrounded.
+    printed = []
+    inputs = iter(["Can I chain Effect Veiler or Effector here?", "I have no idea what you mean", "quit"])
+
+    llm = _CapturingLLMClient(["PROCEED", "FINAL: It does the thing. ||CITES: card:99||", "YES"])
+
+    matches = [
+        {"id": "1", "name": "Effect Veiler", "card_type": "Effect Monster"},
+        {"id": "2", "name": "Effector", "card_type": "Effect Monster"},
+    ]
+
+    def fake_resolve(question, **kwargs):
+        return PipelineResolution(
+            supported=True,
+            context="KNOWN FACTS: Some New Card (cite as card:99)",
+            grounded_cards=[
+                {
+                    "found": True,
+                    "id": "99",
+                    "name": "Some New Card",
+                    "card_text": "...",
+                    "confirmed_effects": [{"effect": "..."}],
+                }
+            ],
+        )
+
+    run_cli(
+        llm,
+        MockEmbeddingClient(),
+        input_fn=lambda _: next(inputs),
+        print_fn=printed.append,
+        find_matched_cards_fn=lambda question: matches,
+        build_known_facts_context_fn=lambda card: f"KNOWN FACTS: {card['name']}",
+        resolve_card_effect_question_fn=fake_resolve,
+    )
+
+    assert "It does the thing." in printed
+    assert any("Couldn't match your answer" in p for p in printed)
+    assert any("KNOWN FACTS: Some New Card" in p for p in llm.prompts)
 
 
 def test_run_cli_folds_preflight_facts_in_for_a_single_match():

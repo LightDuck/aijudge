@@ -61,7 +61,13 @@ def test_build_pipeline_context_renders_known_facts_for_resolved_cards():
         CardResolution(
             name="Tearlaments Scream",
             status="resolved",
-            card={"id": "abc", "name": "Tearlaments Scream", "race": None},
+            card={
+                "id": "abc",
+                "name": "Tearlaments Scream",
+                "race": None,
+                "card_type": "Fusion Monster",
+                "card_text": "...",
+            },
         )
     ]
 
@@ -92,7 +98,13 @@ def test_build_pipeline_context_omits_failures_block_when_everything_resolved():
         CardResolution(
             name="Tearlaments Scream",
             status="resolved",
-            card={"id": "abc", "name": "Tearlaments Scream", "race": None},
+            card={
+                "id": "abc",
+                "name": "Tearlaments Scream",
+                "race": None,
+                "card_type": "Fusion Monster",
+                "card_text": "...",
+            },
         )
     ]
 

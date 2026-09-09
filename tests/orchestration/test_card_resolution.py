@@ -36,6 +36,23 @@ def test_resolve_named_cards_marks_missing_card_as_not_found():
     assert resolutions == [CardResolution(name="Nonexistent Card", status="not_found")]
 
 
+def test_resolve_named_cards_downgrades_to_not_found_when_get_card_by_id_returns_none():
+    # Narrow race: lookup_card_fn reports the card found, but by the time
+    # get_card_by_id_fn re-fetches the raw row (e.g. the row was deleted in
+    # between), it comes back None. Reporting status="resolved" with
+    # card=None would later crash build_known_facts_context /
+    # build_grounded_result with an unguarded TypeError -- this must
+    # downgrade to "not_found" instead, which every caller already handles.
+    resolutions = resolve_named_cards(
+        ["Vanishing Card"],
+        llm_client=None,
+        lookup_card_fn=lambda args, **kwargs: {"found": True, "id": "abc", "name": "Vanishing Card"},
+        get_card_by_id_fn=lambda card_id: None,
+    )
+
+    assert resolutions == [CardResolution(name="Vanishing Card", status="not_found")]
+
+
 def test_resolve_named_cards_marks_ambiguous_match_as_ambiguous():
     resolutions = resolve_named_cards(
         ["Tearlaments"],

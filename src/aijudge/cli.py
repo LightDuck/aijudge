@@ -83,8 +83,10 @@ def run_cli(
             else:
                 print_fn("Couldn't match your answer to a specific card -- proceeding without that card's confirmed details.")
 
-        if not matches:
-            # 0 local matches: try mandatory extraction + deterministic
+        if not matches or not grounded_cards:
+            # 0 local matches, or a disambiguation-miss (matches > 1 but the
+            # user's answer didn't fuzzy-resolve to any candidate, leaving
+            # grounded_cards empty): try mandatory extraction + deterministic
             # lookup instead of proceeding ungrounded (the original gap).
             resolution = resolve_card_effect_question_fn(
                 stripped,

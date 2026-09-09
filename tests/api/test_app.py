@@ -454,8 +454,14 @@ def test_post_questions_answer_resolves_disambiguation_answer_case_insensitive_f
     assert any("KNOWN FACTS: Effect Veiler" in p for p in llm.prompts)
 
 
-def test_post_questions_answer_proceeds_without_known_facts_when_disambiguation_answer_matches_nothing():
-    llm = _CapturingLLMClient(["FINAL: Yes. ||CITES: ||"])
+def test_post_questions_answer_falls_back_to_pipeline_when_disambiguation_answer_matches_nothing_and_pipeline_unsupported():
+    # A disambiguation-miss (matches > 1 but the answer didn't fuzzy-resolve)
+    # must NOT fall through to run_loop ungrounded -- that reproduces the
+    # exact bug shape this branch exists to close (an uncited answer scoring
+    # confidence 1.0). It must fall back to the same mandatory pipeline as a
+    # 0-local-matches question. Here the pipeline reports unsupported, so
+    # not_supported is returned and run_loop is never reached.
+    llm = _CapturingLLMClient([])
 
     app = create_app(
         llm,
@@ -465,6 +471,55 @@ def test_post_questions_answer_proceeds_without_known_facts_when_disambiguation_
             {"id": "2", "name": "Effector", "card_type": "Effect Monster"},
         ],
         build_known_facts_context_fn=lambda card: f"KNOWN FACTS: {card['name']}",
+        resolve_card_effect_question_fn=lambda question, **kw: PipelineResolution(supported=False),
+    )
+
+    response = TestClient(app).post(
+        "/questions/answer",
+        json={
+            "question": "Can I chain Effect Veiler or Effector here?",
+            "items": [
+                {
+                    "kind": "disambiguate_card",
+                    "text": "Multiple cards match your question: Effect Veiler, Effector. Which one do you mean?",
+                }
+            ],
+            "answers": ["I have no idea what you mean"],
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "not_supported"
+    assert not any("KNOWN FACTS" in p for p in llm.prompts)
+
+
+def test_post_questions_answer_falls_back_to_pipeline_when_disambiguation_answer_matches_nothing_and_pipeline_supported():
+    # Same disambiguation-miss, but the fallback pipeline DOES resolve a
+    # card -- its context/grounded_cards must reach run_loop so the final
+    # answer is grounded, instead of the LLM answering ungrounded.
+    llm = _CapturingLLMClient(["FINAL: It does the thing. ||CITES: card:99||", "YES"])
+
+    app = create_app(
+        llm,
+        MockEmbeddingClient(),
+        find_matched_cards_fn=lambda question: [
+            {"id": "1", "name": "Effect Veiler", "card_type": "Effect Monster"},
+            {"id": "2", "name": "Effector", "card_type": "Effect Monster"},
+        ],
+        build_known_facts_context_fn=lambda card: f"KNOWN FACTS: {card['name']}",
+        resolve_card_effect_question_fn=lambda question, **kw: PipelineResolution(
+            supported=True,
+            context="KNOWN FACTS: Some New Card (cite as card:99)",
+            grounded_cards=[
+                {
+                    "found": True,
+                    "id": "99",
+                    "name": "Some New Card",
+                    "card_text": "...",
+                    "confirmed_effects": [{"effect": "..."}],
+                }
+            ],
+        ),
     )
 
     response = TestClient(app).post(
@@ -483,7 +538,8 @@ def test_post_questions_answer_proceeds_without_known_facts_when_disambiguation_
 
     assert response.status_code == 200
     assert response.json()["status"] == "answer"
-    assert not any("KNOWN FACTS" in p for p in llm.prompts)
+    assert response.json()["text"] == "It does the thing."
+    assert any("KNOWN FACTS: Some New Card" in p for p in llm.prompts)
 
 
 def test_post_questions_answer_returns_final_result():

@@ -103,8 +103,8 @@ def run_loop(
             if tool_call_count > MAX_TOOL_CALLS:
                 logger.debug("tool call budget exceeded -> not_supported")
                 return LoopResult(kind="not_supported", text=NOT_SUPPORTED_MESSAGE)
-            tool = tools[parsed.name]
             try:
+                tool = tools[parsed.name]
                 result = tool(parsed.args)
             except UnsupportedScenarioError:
                 logger.debug("UnsupportedScenarioError from tool %s -> not_supported", parsed.name)

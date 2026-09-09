@@ -138,6 +138,22 @@ def test_malformed_tool_arguments_exhausted_surfaces_not_supported():
     assert result.kind == "not_supported"
 
 
+def test_tool_call_against_empty_tool_dispatch_degrades_to_not_supported_not_a_crash():
+    # tools={} is the restricted answering pathway used by cli.py/api/app.py
+    # now. parse_response validates a TOOL: line's name against the static
+    # TOOL_NAMES set, not against whatever `tools` dict was actually passed
+    # to run_loop -- so an LLM emitting a TOOL: line here must not raise an
+    # uncaught KeyError out of run_loop; it should be treated like any other
+    # malformed/tool-arg-error retry and eventually degrade to not_supported.
+    llm = MockLLMClient()
+    for _ in range(5):
+        llm.queue_response('TOOL: lookup_card {"name": "Ash Blossom & Joyous Spring"}')
+
+    result = run_loop("What does Ash Blossom do?", llm_client=llm, tools={})
+
+    assert result.kind == "not_supported"
+
+
 def test_tool_call_then_final_answer_includes_citation_text():
     llm = MockLLMClient()
     llm.queue_response('TOOL: lookup_card {"name": "Ash Blossom & Joyous Spring"}')
