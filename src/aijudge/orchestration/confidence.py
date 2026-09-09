@@ -68,6 +68,8 @@ def update_signals(state: SignalState, tool_name: str, result: dict) -> None:
 def compute_confidence(cited_ids: set[str], state: SignalState) -> float:
     if cited_ids - state.known_ids:
         return 0.0
+    if state.known_ids and not cited_ids:
+        return 0.0
 
     score = 1.0
     if state.retrieval_gap:

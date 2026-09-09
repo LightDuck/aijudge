@@ -354,20 +354,23 @@ def test_verification_failed_feedback_includes_card_name_effect_text_and_prior_d
     assert "It negates the effect of the target spell or trap card." in feedback_prompt
 
 
-def test_redraft_dropping_flagged_citation_is_treated_as_another_verification_failure_then_recovers():
-    # Finding 3: a redraft that responds with no citations at all (or drops
-    # the specific card(s) that just failed verification) must not silently
-    # bypass the gate. verify_structured_grounding alone would find nothing
-    # to check for an empty CITES and return ok=True -- this reproduces that
-    # bypass and confirms the fix treats it as another failed verification
-    # attempt under the same retry budget, which can still recover.
+def test_redraft_dropping_citation_entirely_after_verification_failure_escalates_immediately():
+    # Behavior change from the hardened compute_confidence rule (Task 5):
+    # previously a redraft that dropped the flagged citation entirely
+    # (||CITES: ||) got one more chance via the verify_structured_grounding
+    # bypass-detection path below (it trivially "passes" verification when
+    # there's nothing cited to check, and the loop used to treat that as
+    # another correctable verification failure). Now that compute_confidence
+    # hard-fails any answer citing nothing while known_ids is populated
+    # (closing the "cite nothing to dodge grounding checks" gap for good),
+    # that citation-drop is caught earlier, at the confidence gate itself --
+    # before verification, and its bypass-detection recovery, ever runs
+    # again.
     llm = MockLLMClient()
     llm.queue_response('TOOL: lookup_card {"name": "Tearlaments Sulliek"}')
     llm.queue_response("FINAL: It negates the effect of the target spell or trap card. ||CITES: card:abc123||")
     llm.queue_response("NO")
     llm.queue_response("FINAL: It negates something, not sure what. ||CITES: ||")
-    llm.queue_response("FINAL: It negates the effects of the targeted Effect Monster. ||CITES: card:abc123||")
-    llm.queue_response("YES")
 
     tools = {
         "lookup_card": lambda args: {
@@ -383,15 +386,15 @@ def test_redraft_dropping_flagged_citation_is_treated_as_another_verification_fa
 
     result = run_loop("What does Tearlaments Sulliek's first effect do?", llm_client=llm, tools=tools)
 
-    assert result.kind == "answer"
-    assert result.text == "It negates the effects of the targeted Effect Monster."
+    assert result.kind == "escalate"
 
 
 def test_redraft_dropping_flagged_citation_repeatedly_exhausts_budget_and_escalates():
-    # Companion to the above: if the redraft keeps dropping the flagged
-    # citation rather than ever re-citing it, the bypass-detection must
-    # still respect MAX_VERIFICATION_RETRIES and escalate rather than loop
-    # forever or silently return an ungrounded answer.
+    # Companion to the above: repeatedly dropping the citation still ends
+    # in escalate -- now via the hardened compute_confidence rule firing on
+    # the very first empty-citation redraft (Task 5), rather than via
+    # MAX_VERIFICATION_RETRIES exhaustion as before. The assertion is
+    # unchanged; only *why* it escalates changed.
     llm = MockLLMClient()
     llm.queue_response('TOOL: lookup_card {"name": "Tearlaments Sulliek"}')
     llm.queue_response("FINAL: It negates the effect of the target spell or trap card. ||CITES: card:abc123||")

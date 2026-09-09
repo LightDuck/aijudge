@@ -183,3 +183,13 @@ def test_compute_confidence_accepts_passcode_citation_alongside_internal_id():
         {"found": True, "id": "abc", "ygoprodeck_id": "32896829", "confirmed_effects": [{"effect": "..."}]},
     )
     assert compute_confidence({"card:abc", "card:32896829"}, state) == 1.0
+
+
+def test_compute_confidence_zero_when_known_ids_populated_but_nothing_cited():
+    state = SignalState(known_ids={"card:abc"})
+    assert compute_confidence(set(), state) == 0.0
+
+
+def test_compute_confidence_unaffected_when_known_ids_empty_and_nothing_cited():
+    state = SignalState()
+    assert compute_confidence(set(), state) == 1.0
