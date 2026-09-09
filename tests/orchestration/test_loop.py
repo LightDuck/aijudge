@@ -414,3 +414,21 @@ def test_redraft_dropping_flagged_citation_repeatedly_exhausts_budget_and_escala
     result = run_loop("What does Tearlaments Sulliek's first effect do?", llm_client=llm, tools=tools)
 
     assert result.kind == "escalate"
+
+
+def test_run_loop_uses_default_system_prompt_when_none_given():
+    llm = MockLLMClient()
+    llm.queue_response("FINAL: ok. ||CITES: ||")
+
+    run_loop("A question", llm_client=llm, tools={})
+
+    assert llm.system_prompts == [build_system_prompt()]
+
+
+def test_run_loop_uses_provided_system_prompt_override():
+    llm = MockLLMClient()
+    llm.queue_response("FINAL: ok. ||CITES: ||")
+
+    run_loop("A question", llm_client=llm, tools={}, system_prompt="CUSTOM PROMPT")
+
+    assert llm.system_prompts == ["CUSTOM PROMPT"]

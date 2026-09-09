@@ -53,8 +53,9 @@ def run_loop(
     clarification_context: str = "",
     threshold: float = DEFAULT_CONFIDENCE_THRESHOLD,
     grounded_cards: list[dict] | None = None,
+    system_prompt: str | None = None,
 ) -> LoopResult:
-    system_prompt = build_system_prompt()
+    system_prompt = system_prompt if system_prompt is not None else build_system_prompt()
     conversation = "Question: " + question
     if clarification_context:
         conversation += "\n\n" + clarification_context
