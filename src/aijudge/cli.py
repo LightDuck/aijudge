@@ -3,6 +3,7 @@ from typing import Callable
 from aijudge.embeddings.client import EmbeddingClient
 from aijudge.llm.client import LLMClient
 
+from .orchestration.card_effect_pipeline import PipelineResolution, resolve_card_effect_question
 from .orchestration.clarify import (
     ClarificationItem,
     build_clarification_prompt,
@@ -10,15 +11,14 @@ from .orchestration.clarify import (
     format_clarification_context,
     parse_clarification_response,
 )
-from .orchestration.loop import run_loop
+from .orchestration.loop import NOT_SUPPORTED_MESSAGE, run_loop
 from .orchestration.preflight import (
     build_grounded_result,
     build_known_facts_context,
     find_matched_cards,
     find_mentioned_card_names,
 )
-from .orchestration.protocol import build_system_prompt
-from .orchestration.tools import build_tool_dispatch
+from .orchestration.protocol import build_answering_system_prompt, build_system_prompt
 
 
 def run_cli(
@@ -30,14 +30,9 @@ def run_cli(
     find_matched_cards_fn: Callable[[str], list[dict]] = find_matched_cards,
     build_known_facts_context_fn: Callable[[dict], str] = build_known_facts_context,
     build_grounded_result_fn: Callable[[dict], dict] = build_grounded_result,
+    resolve_card_effect_question_fn: Callable[..., PipelineResolution] = resolve_card_effect_question,
     online_ingest_enabled: bool = True,
 ) -> None:
-    tools = build_tool_dispatch(
-        llm_client,
-        embedding_client,
-        online_ingest_enabled=online_ingest_enabled,
-        on_ingest_start=lambda name: print_fn(f"Looking up {name}, this may take a moment..."),
-    )
     print_fn("AIJudge -- ask a Yu-Gi-Oh! rules question ('exit' or 'quit' to leave).")
 
     while True:
@@ -57,11 +52,6 @@ def run_cli(
         preflight_context = ""
         grounded_cards: list[dict] = []
         if len(matches) == 1:
-            # Ground the clarification-decision call itself, not just the
-            # eventual run_loop call -- otherwise the LLM can ask the user
-            # for clarification the deterministic KNOWN FACTS already
-            # resolve (e.g. "which effect do you mean?" for a card whose
-            # effects are all already enumerated below).
             preflight_context = build_known_facts_context_fn(matches[0])
             grounded_cards = [build_grounded_result_fn(matches[0])]
         elif len(matches) > 1:
@@ -74,12 +64,6 @@ def run_cli(
             )
 
         if matches:
-            # No known card at all means the clarify pass has nothing to
-            # ground a decision in -- it tends to second-guess the card
-            # name itself (asking the user to confirm/spell it) even
-            # though lookup_card auto-imports on demand, so skip the call
-            # entirely rather than rely on the LLM following that
-            # instruction every time.
             clarify_response = llm_client.complete(
                 build_clarification_prompt(stripped, known_facts_context=preflight_context),
                 system=build_system_prompt(),
@@ -99,6 +83,21 @@ def run_cli(
             else:
                 print_fn("Couldn't match your answer to a specific card -- proceeding without that card's confirmed details.")
 
+        if not matches:
+            # 0 local matches: try mandatory extraction + deterministic
+            # lookup instead of proceeding ungrounded (the original gap).
+            resolution = resolve_card_effect_question_fn(
+                stripped,
+                llm_client=llm_client,
+                online_ingest_enabled=online_ingest_enabled,
+                on_ingest_start=lambda name: print_fn(f"Looking up {name}, this may take a moment..."),
+            )
+            if not resolution.supported:
+                print_fn(NOT_SUPPORTED_MESSAGE)
+                continue
+            preflight_context = resolution.context
+            grounded_cards = resolution.grounded_cards
+
         context = format_clarification_context(items, answers)
         if preflight_context:
             context = f"{preflight_context}\n\n{context}" if context else preflight_context
@@ -106,8 +105,9 @@ def run_cli(
         result = run_loop(
             stripped,
             llm_client=llm_client,
-            tools=tools,
+            tools={},
             clarification_context=context,
             grounded_cards=grounded_cards,
+            system_prompt=build_answering_system_prompt(),
         )
         print_fn(result.text)
