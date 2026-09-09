@@ -10,21 +10,21 @@ from starlette.responses import JSONResponse
 
 from aijudge.embeddings.client import EmbeddingClient
 from aijudge.llm.client import LLMClient
+from aijudge.orchestration.card_effect_pipeline import PipelineResolution, resolve_card_effect_question
 from aijudge.orchestration.clarify import (
     ClarificationItem,
     build_clarification_prompt,
     format_clarification_context,
     parse_clarification_response,
 )
-from aijudge.orchestration.loop import LoopResult, run_loop
+from aijudge.orchestration.loop import NOT_SUPPORTED_MESSAGE, LoopResult, run_loop
 from aijudge.orchestration.preflight import (
     build_grounded_result,
     build_known_facts_context,
     find_matched_cards,
     find_mentioned_card_names,
 )
-from aijudge.orchestration.protocol import build_system_prompt
-from aijudge.orchestration.tools import build_tool_dispatch
+from aijudge.orchestration.protocol import build_answering_system_prompt, build_system_prompt
 
 from .schemas import AnswerRequest, NeedsClarificationResponse, QuestionRequest, ResultResponse
 
@@ -46,9 +46,6 @@ def _resolve_preflight_card(
     items: list[ClarificationItem],
     answers: list[str],
 ) -> dict | None:
-    # Mirrors cli.py's preflight resolution, but re-derived from scratch on
-    # every call since the API is stateless -- there's no in-process session
-    # to carry `matches` between /questions and /questions/answer.
     if len(matches) == 1:
         return matches[0]
     if len(matches) > 1:
@@ -67,21 +64,13 @@ def create_app(
     embedding_client: EmbeddingClient,
     *,
     cors_origins: list[str] | None = None,
-    tools: dict[str, Callable[[dict], dict]] | None = None,
     find_matched_cards_fn: Callable[[str], list[dict]] | None = None,
     build_known_facts_context_fn: Callable[[dict], str] | None = None,
     build_grounded_result_fn: Callable[[dict], dict] | None = None,
+    resolve_card_effect_question_fn: Callable[..., PipelineResolution] | None = None,
     online_ingest_enabled: bool = True,
 ) -> FastAPI:
     app = FastAPI()
-    # Test-only seam: real callers never pass `tools` and get the DB/embedding-
-    # backed dispatch below; tests can inject a stub dispatch to exercise the
-    # citation-serialization path (lookup_card, etc.) without a live DB.
-    tools = (
-        tools
-        if tools is not None
-        else build_tool_dispatch(llm_client, embedding_client, online_ingest_enabled=online_ingest_enabled)
-    )
     find_matched_cards_fn = find_matched_cards_fn if find_matched_cards_fn is not None else find_matched_cards
     build_known_facts_context_fn = (
         build_known_facts_context_fn if build_known_facts_context_fn is not None else build_known_facts_context
@@ -89,11 +78,13 @@ def create_app(
     build_grounded_result_fn = (
         build_grounded_result_fn if build_grounded_result_fn is not None else build_grounded_result
     )
+    resolve_card_effect_question_fn = (
+        resolve_card_effect_question_fn
+        if resolve_card_effect_question_fn is not None
+        else resolve_card_effect_question
+    )
 
     def _backend_unavailable_handler(request: Request, exc: Exception) -> JSONResponse:
-        # Starlette dispatches sync exception handlers via run_in_threadpool, so
-        # sys.exc_info() is empty on that worker thread -- exc_info=True (the
-        # logger.exception() default) would log nothing. Pass exc explicitly.
         logger.exception("backend connection error", exc_info=exc)
         return JSONResponse(status_code=503, content={"detail": "backend unavailable"})
 
@@ -122,9 +113,6 @@ def create_app(
         disambiguation_items: list[ClarificationItem] = []
         preflight_context = ""
         if len(matches) == 1:
-            # Ground the clarification-decision call itself, not just the
-            # eventual run_loop call -- otherwise the LLM can ask for
-            # clarification the deterministic KNOWN FACTS already resolve.
             preflight_context = build_known_facts_context_fn(matches[0])
         elif len(matches) > 1:
             names = ", ".join(match["name"] for match in matches)
@@ -136,12 +124,6 @@ def create_app(
             )
 
         if matches:
-            # No known card at all means the clarify pass has nothing to
-            # ground a decision in -- it tends to second-guess the card
-            # name itself (asking the user to confirm/spell it) even
-            # though lookup_card auto-imports on demand, so skip the call
-            # entirely rather than rely on the LLM following that
-            # instruction every time.
             clarify_response = llm_client.complete(
                 build_clarification_prompt(question, known_facts_context=preflight_context),
                 system=build_system_prompt(),
@@ -157,12 +139,25 @@ def create_app(
             }
 
         grounded_cards = [build_grounded_result_fn(matches[0])] if len(matches) == 1 else []
+        if not matches:
+            resolution = resolve_card_effect_question_fn(
+                question,
+                llm_client=llm_client,
+                online_ingest_enabled=online_ingest_enabled,
+                on_ingest_start=None,
+            )
+            if not resolution.supported:
+                return _result_response(LoopResult(kind="not_supported", text=NOT_SUPPORTED_MESSAGE))
+            preflight_context = resolution.context
+            grounded_cards = resolution.grounded_cards
+
         result = run_loop(
             question,
             llm_client=llm_client,
-            tools=tools,
+            tools={},
             clarification_context=preflight_context,
             grounded_cards=grounded_cards,
+            system_prompt=build_answering_system_prompt(),
         )
         return _result_response(result)
 
@@ -180,6 +175,18 @@ def create_app(
         preflight_context = build_known_facts_context_fn(card) if card is not None else ""
         grounded_cards = [build_grounded_result_fn(card)] if card is not None else []
 
+        if not matches:
+            resolution = resolve_card_effect_question_fn(
+                question,
+                llm_client=llm_client,
+                online_ingest_enabled=online_ingest_enabled,
+                on_ingest_start=None,
+            )
+            if not resolution.supported:
+                return _result_response(LoopResult(kind="not_supported", text=NOT_SUPPORTED_MESSAGE))
+            preflight_context = resolution.context
+            grounded_cards = resolution.grounded_cards
+
         context = format_clarification_context(items, body.answers)
         if preflight_context:
             context = f"{preflight_context}\n\n{context}" if context else preflight_context
@@ -187,9 +194,10 @@ def create_app(
         result = run_loop(
             question,
             llm_client=llm_client,
-            tools=tools,
+            tools={},
             clarification_context=context,
             grounded_cards=grounded_cards,
+            system_prompt=build_answering_system_prompt(),
         )
         return _result_response(result)
 
