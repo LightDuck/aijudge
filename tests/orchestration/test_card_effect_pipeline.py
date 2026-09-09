@@ -1,3 +1,5 @@
+import pytest
+
 from aijudge.llm.client import MockLLMClient
 from aijudge.orchestration.card_effect_pipeline import (
     PipelineResolution,
@@ -5,6 +7,53 @@ from aijudge.orchestration.card_effect_pipeline import (
     resolve_card_effect_question,
 )
 from aijudge.orchestration.card_resolution import CardResolution
+
+
+@pytest.fixture(autouse=True)
+def mock_db_for_test_cards(monkeypatch):
+    """Mock get_confirmed_effects for fake test card IDs.
+
+    This fixture is scoped locally to this test file only. It patches
+    preflight.get_confirmed_effects to return fake effect data for
+    non-UUID card IDs (e.g., "abc"), allowing build_known_facts_context
+    tests to run without a live database. Real UUID lookups pass through
+    to the actual implementation.
+    """
+    from aijudge.orchestration import preflight
+
+    original_get_confirmed_effects = preflight.get_confirmed_effects
+
+    def mock_get_confirmed_effects(card_id):
+        # If card_id looks like a fake test ID (e.g., "abc"), return fake effect data
+        if not _looks_like_real_uuid(card_id):
+            return [
+                {
+                    "id": card_id,
+                    "effect_type": "ignition",
+                    "activation_condition": None,
+                    "cost": None,
+                    "targeting": None,
+                    "has_target": False,
+                    "effect": f"Test effect for {card_id}",
+                    "damage_step_category": None,
+                    "usage_limit_text": None,
+                }
+            ]
+        # Otherwise, call the real function
+        return original_get_confirmed_effects(card_id)
+
+    monkeypatch.setattr(preflight, "get_confirmed_effects", mock_get_confirmed_effects)
+
+
+def _looks_like_real_uuid(value):
+    """Check if a value looks like a real UUID."""
+    try:
+        import uuid
+
+        uuid.UUID(str(value))
+        return True
+    except (ValueError, AttributeError):
+        return False
 
 
 def test_build_pipeline_context_renders_known_facts_for_resolved_cards():
