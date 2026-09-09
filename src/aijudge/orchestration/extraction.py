@@ -1,5 +1,6 @@
 import re
 
+from aijudge.call_log import call_site
 from aijudge.llm.client import LLMClient
 
 EXTRACTION_SYSTEM_PROMPT = (
@@ -32,5 +33,6 @@ def parse_extraction_response(response: str) -> list[str]:
 
 
 def extract_card_names(question: str, *, llm_client: LLMClient) -> list[str]:
-    response = llm_client.complete(build_extraction_prompt(question), system=EXTRACTION_SYSTEM_PROMPT)
+    with call_site("extraction"):
+        response = llm_client.complete(build_extraction_prompt(question), system=EXTRACTION_SYSTEM_PROMPT)
     return parse_extraction_response(response)

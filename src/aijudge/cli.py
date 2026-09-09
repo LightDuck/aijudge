@@ -1,5 +1,6 @@
 from typing import Callable
 
+from aijudge.call_log import CallLogger, call_site
 from aijudge.embeddings.client import EmbeddingClient
 from aijudge.llm.client import LLMClient
 
@@ -32,6 +33,7 @@ def run_cli(
     build_grounded_result_fn: Callable[[dict], dict] = build_grounded_result,
     resolve_card_effect_question_fn: Callable[..., PipelineResolution] = resolve_card_effect_question,
     online_ingest_enabled: bool = True,
+    call_logger: CallLogger | None = None,
 ) -> None:
     print_fn("AIJudge -- ask a Yu-Gi-Oh! rules question ('exit' or 'quit' to leave).")
 
@@ -64,10 +66,11 @@ def run_cli(
             )
 
         if matches:
-            clarify_response = llm_client.complete(
-                build_clarification_prompt(stripped, known_facts_context=preflight_context),
-                system=build_system_prompt(),
-            )
+            with call_site("clarify"):
+                clarify_response = llm_client.complete(
+                    build_clarification_prompt(stripped, known_facts_context=preflight_context),
+                    system=build_system_prompt(),
+                )
             items = disambiguation_items + parse_clarification_response(clarify_response)
         else:
             items = disambiguation_items
@@ -111,5 +114,6 @@ def run_cli(
             clarification_context=context,
             grounded_cards=grounded_cards,
             system_prompt=build_answering_system_prompt(),
+            call_logger=call_logger,
         )
         print_fn(result.text)

@@ -1,3 +1,6 @@
+import json
+
+from aijudge.call_log import CallLogger, LoggingLLMClient
 from aijudge.llm.client import MockLLMClient
 from aijudge.orchestration.extraction import (
     EXTRACTION_SYSTEM_PROMPT,
@@ -5,6 +8,20 @@ from aijudge.orchestration.extraction import (
     extract_card_names,
     parse_extraction_response,
 )
+
+
+def test_extract_card_names_tags_its_llm_call_with_extraction_site(tmp_path):
+    log_path = tmp_path / "aijudge.jsonl"
+    call_logger = CallLogger(str(log_path))
+    inner = MockLLMClient()
+    inner.queue_response("Ash Blossom & Joyous Spring")
+    wrapped = LoggingLLMClient(inner, call_logger)
+
+    extract_card_names("What does Ash Blossom do?", llm_client=wrapped)
+
+    with open(log_path, encoding="utf-8") as f:
+        records = [json.loads(line) for line in f if line.strip()]
+    assert records[0]["site"] == "extraction"
 
 
 def test_build_extraction_prompt_includes_the_question():

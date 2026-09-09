@@ -1,7 +1,31 @@
+import json
+
 import pytest
 
+from aijudge.call_log import CallLogger, LoggingLLMClient
 from aijudge.effect_parser.review_agent import review_parsed_effect
 from aijudge.llm.client import MockLLMClient
+
+
+def test_review_parsed_effect_tags_its_llm_call_with_review_agent_site(tmp_path):
+    log_path = tmp_path / "aijudge.jsonl"
+    call_logger = CallLogger(str(log_path))
+    inner = MockLLMClient()
+    inner.queue_response("0.95")
+    wrapped = LoggingLLMClient(inner, call_logger)
+
+    review_parsed_effect(
+        wrapped,
+        raw_text="You can target 1 banished monster; banish it.",
+        activation_condition=None,
+        cost=None,
+        targeting="target 1 banished monster",
+        effect="banish it.",
+    )
+
+    with open(log_path, encoding="utf-8") as f:
+        records = [json.loads(line) for line in f if line.strip()]
+    assert records[0]["site"] == "review_agent"
 
 
 def test_confidence_at_or_above_threshold_auto_confirms():

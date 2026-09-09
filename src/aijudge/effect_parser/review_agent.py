@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from aijudge.call_log import call_site
 from aijudge.llm.client import LLMClient
 
 DEFAULT_CONFIDENCE_THRESHOLD = 0.75
@@ -40,7 +41,8 @@ def review_parsed_effect(
             "the same card. Verify the restriction's scope is consistent across all "
             "of them. Other effects on this card:\n" + numbered
         )
-    response = llm_client.complete(prompt)
+    with call_site("review_agent"):
+        response = llm_client.complete(prompt)
     confidence = float(response)
     if not 0.0 <= confidence <= 1.0:
         raise ValueError(f"confidence must be between 0.0 and 1.0, got {confidence!r} (raw response: {response!r})")

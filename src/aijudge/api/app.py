@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
+from aijudge.call_log import CallLogger, call_site
 from aijudge.embeddings.client import EmbeddingClient
 from aijudge.llm.client import LLMClient
 from aijudge.orchestration.card_effect_pipeline import PipelineResolution, resolve_card_effect_question
@@ -69,6 +70,7 @@ def create_app(
     build_grounded_result_fn: Callable[[dict], dict] | None = None,
     resolve_card_effect_question_fn: Callable[..., PipelineResolution] | None = None,
     online_ingest_enabled: bool = True,
+    call_logger: CallLogger | None = None,
 ) -> FastAPI:
     app = FastAPI()
     find_matched_cards_fn = find_matched_cards_fn if find_matched_cards_fn is not None else find_matched_cards
@@ -124,10 +126,11 @@ def create_app(
             )
 
         if matches:
-            clarify_response = llm_client.complete(
-                build_clarification_prompt(question, known_facts_context=preflight_context),
-                system=build_system_prompt(),
-            )
+            with call_site("clarify"):
+                clarify_response = llm_client.complete(
+                    build_clarification_prompt(question, known_facts_context=preflight_context),
+                    system=build_system_prompt(),
+                )
             items = disambiguation_items + parse_clarification_response(clarify_response)
         else:
             items = disambiguation_items
@@ -158,6 +161,7 @@ def create_app(
             clarification_context=preflight_context,
             grounded_cards=grounded_cards,
             system_prompt=build_answering_system_prompt(),
+            call_logger=call_logger,
         )
         return _result_response(result)
 
@@ -202,6 +206,7 @@ def create_app(
             clarification_context=context,
             grounded_cards=grounded_cards,
             system_prompt=build_answering_system_prompt(),
+            call_logger=call_logger,
         )
         return _result_response(result)
 

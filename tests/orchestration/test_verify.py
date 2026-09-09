@@ -1,3 +1,6 @@
+import json
+
+from aijudge.call_log import CallLogger, LoggingLLMClient
 from aijudge.llm.client import MockLLMClient
 from aijudge.orchestration.confidence import SignalState
 from aijudge.orchestration.verify import (
@@ -134,6 +137,22 @@ def test_verify_structured_grounding_passes_on_yes():
 
     assert result.ok is True
     assert result.mismatches == []
+
+
+def test_verify_structured_grounding_tags_its_llm_call_with_verify_site(tmp_path):
+    log_path = tmp_path / "aijudge.jsonl"
+    call_logger = CallLogger(str(log_path))
+    inner = MockLLMClient()
+    inner.queue_response("YES")
+    wrapped = LoggingLLMClient(inner, call_logger)
+    state = SignalState()
+    state.structured_effects["card:abc"] = [{"effect": "Target 1 Effect Monster; negate its effects."}]
+
+    verify_structured_grounding("It negates a targeted Effect Monster.", {"card:abc"}, state, wrapped)
+
+    with open(log_path, encoding="utf-8") as f:
+        records = [json.loads(line) for line in f if line.strip()]
+    assert records[0]["site"] == "verify"
 
 
 def test_verify_structured_grounding_flags_mismatch_on_no():

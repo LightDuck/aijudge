@@ -3,6 +3,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import Callable
 
+from aijudge.call_log import CallLogger, call_site, log_event
 from aijudge.llm.client import LLMClient
 from aijudge.rules_engine.resolve import UnsupportedScenarioError
 
@@ -54,6 +55,7 @@ def run_loop(
     threshold: float = DEFAULT_CONFIDENCE_THRESHOLD,
     grounded_cards: list[dict] | None = None,
     system_prompt: str | None = None,
+    call_logger: CallLogger | None = None,
 ) -> LoopResult:
     system_prompt = system_prompt if system_prompt is not None else build_system_prompt()
     conversation = "Question: " + question
@@ -79,7 +81,8 @@ def run_loop(
     flagged_mismatches: list[dict] = []
 
     while True:
-        response = llm_client.complete(conversation, system=system_prompt)
+        with call_site("loop"):
+            response = llm_client.complete(conversation, system=system_prompt)
         logger.debug("LLM raw response (turn tool_calls=%d malformed=%d): %r", tool_call_count, malformed_count, response)
 
         try:
@@ -87,14 +90,17 @@ def run_loop(
         except ProtocolError as error:
             malformed_count += 1
             logger.debug("ProtocolError parsing LLM response (malformed_count=%d): %s", malformed_count, error)
+            log_event(call_logger, site="loop", event="malformed_response", reason=str(error), malformed_count=malformed_count)
             if malformed_count > MAX_MALFORMED_RETRIES:
                 logger.debug("malformed retry budget exceeded -> not_supported")
+                log_event(call_logger, site="loop", event="not_supported", reason="malformed retry budget exceeded")
                 return LoopResult(kind="not_supported", text=NOT_SUPPORTED_MESSAGE)
             conversation += f"\n\nERROR: {error}"
             continue
 
         if isinstance(parsed, Refusal):
             logger.debug("LLM refused (off_topic): %s", parsed.text)
+            log_event(call_logger, site="loop", event="off_topic", reason=parsed.text)
             return LoopResult(kind="off_topic", text=parsed.text)
 
         if isinstance(parsed, ToolCall):
@@ -102,18 +108,25 @@ def run_loop(
             logger.debug("ToolCall #%d: %s(%r)", tool_call_count, parsed.name, parsed.args)
             if tool_call_count > MAX_TOOL_CALLS:
                 logger.debug("tool call budget exceeded -> not_supported")
+                log_event(call_logger, site="loop", event="not_supported", reason="tool call budget exceeded", tool_call_count=tool_call_count)
                 return LoopResult(kind="not_supported", text=NOT_SUPPORTED_MESSAGE)
             try:
                 tool = tools[parsed.name]
                 result = tool(parsed.args)
-            except UnsupportedScenarioError:
+            except UnsupportedScenarioError as error:
                 logger.debug("UnsupportedScenarioError from tool %s -> not_supported", parsed.name)
+                log_event(call_logger, site="loop", event="not_supported", reason=str(error), tool=parsed.name)
                 return LoopResult(kind="not_supported", text=NOT_SUPPORTED_MESSAGE)
             except (KeyError, ValueError, TypeError) as error:
                 malformed_count += 1
                 logger.debug("tool %s raised %s: %s (malformed_count=%d)", parsed.name, type(error).__name__, error, malformed_count)
+                log_event(
+                    call_logger, site="loop", event="tool_error", reason=str(error),
+                    tool=parsed.name, error_type=type(error).__name__, malformed_count=malformed_count,
+                )
                 if malformed_count > MAX_MALFORMED_RETRIES:
                     logger.debug("malformed retry budget exceeded -> not_supported")
+                    log_event(call_logger, site="loop", event="not_supported", reason="malformed retry budget exceeded")
                     return LoopResult(kind="not_supported", text=NOT_SUPPORTED_MESSAGE)
                 conversation += f"\n\nERROR: {error}"
                 continue
@@ -129,6 +142,10 @@ def run_loop(
             parsed.cited_ids, state.known_ids, state.retrieval_gap, state.missing_structured_effect, score, threshold,
         )
         if score < threshold:
+            log_event(
+                call_logger, site="loop", event="escalate", reason="confidence below threshold",
+                score=score, threshold=threshold,
+            )
             return LoopResult(kind="escalate", text=ESCALATE_MESSAGE)
 
         verification = verify_structured_grounding(parsed.text, parsed.cited_ids, state, llm_client)
@@ -155,8 +172,18 @@ def run_loop(
                 "structured grounding verification failed (retry_count=%d): %s",
                 verification_retry_count, verification.mismatches,
             )
+            log_event(
+                call_logger, site="loop", event="verification_failed",
+                reason="drafted answer doesn't match stored effect breakdown",
+                retry_count=verification_retry_count,
+                mismatches=[m["card_id"] for m in verification.mismatches],
+            )
             if verification_retry_count > MAX_VERIFICATION_RETRIES:
                 logger.debug("verification retry budget exceeded -> escalate")
+                log_event(
+                    call_logger, site="loop", event="escalate",
+                    reason="verification retry budget exceeded", retry_count=verification_retry_count,
+                )
                 return LoopResult(kind="escalate", text=ESCALATE_MESSAGE)
             mismatch_lines = "\n".join(_describe_mismatch(m, state) for m in verification.mismatches)
             conversation += (
@@ -168,4 +195,5 @@ def run_loop(
             continue
 
         citations = [state.citation_index[cid] for cid in sorted(parsed.cited_ids)]
+        log_event(call_logger, site="loop", event="answered", score=score, cited_ids=sorted(parsed.cited_ids))
         return LoopResult(kind="answer", text=parsed.text, citations=citations)

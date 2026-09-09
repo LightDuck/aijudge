@@ -203,6 +203,25 @@ spec:
   defensively, since `run_loop`'s protocol parses an exact `TOOL:`/`FINAL:` text format that a reasoning
   preamble would break. Claude remains the eventual production target per the original spec, not yet wired in.
 
+- **`call_log.py`** — cross-cutting LLM call logging, kept separate from `logging`/stdlib debug output so calls
+  and their failure reasons stay queryable after the fact. `CallLogger` appends one JSON object per line to a
+  file (`AIJUDGE_LOG_FILE` env var, default `logs/aijudge.jsonl`; parent dirs created on first write, path
+  gitignored), stamping each record with a UTC timestamp. `LoggingLLMClient` wraps any `LLMClient` and logs every
+  `complete()` call's full prompt/system/response (or, on exception, the exception type/message) plus duration,
+  then returns/re-raises exactly what the wrapped client did — so callers that catch specific exceptions (e.g.
+  `api/app.py`'s `requests.exceptions.ConnectionError` → 503 mapping) are unaffected. `call_site(name)` is a
+  `contextvars`-backed context manager that tags whatever `LoggingLLMClient` calls happen inside it (`"loop"`,
+  `"verify"`, `"clarify"`, `"extraction"`, `"review_agent"`) without changing the `LLMClient` protocol or any
+  `complete()` call's arguments — every real call site (`orchestration/loop.py`, `verify.py`, `extraction.py`,
+  `effect_parser/review_agent.py`, and the clarification calls in `cli.py`/`api/app.py`) wraps its own
+  `llm_client.complete(...)` in one. `log_event(call_logger, *, site, event, reason=None, **context)` is the
+  sibling for orchestration-level *why* (not a raw LLM call): `run_loop` calls it at each of its existing
+  decision branches (`malformed_response`, `tool_error`, `verification_failed`, `escalate`, `not_supported`,
+  `off_topic`, `answered`), alongside its pre-existing `logger.debug` calls rather than replacing them. No-ops
+  silently when `call_logger` is `None`, which every caller (`run_loop`, `run_cli`, `create_app`) defaults it to,
+  so logging stays fully opt-in. `__main__.py`, `entrypoint.py`, and `api/__main__.py` are the only places that
+  construct a real `CallLogger` and wrap the real LLM client in `LoggingLLMClient`, once, at startup.
+
 - **`orchestration/`** — the agentic tool-use loop that turns a user question into an answer, escalation, or
   "not supported":
   - `protocol.py` — `build_system_prompt()` describes the `TOOL: <name> {json}` / `FINAL: <text>||CITES:

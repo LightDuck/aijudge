@@ -1,6 +1,7 @@
 import re
 from dataclasses import dataclass, field
 
+from aijudge.call_log import call_site
 from aijudge.llm.client import LLMClient
 
 from .confidence import SignalState
@@ -117,6 +118,7 @@ def verify_structured_grounding(
             for m in matched
         ],
     )
-    response = llm_client.complete(prompt, system=VERIFIER_SYSTEM_PROMPT)
+    with call_site("verify"):
+        response = llm_client.complete(prompt, system=VERIFIER_SYSTEM_PROMPT)
     ok = parse_verification_response(response)
     return VerificationResult(ok=ok, mismatches=[] if ok else matched)

@@ -1,3 +1,6 @@
+import json
+
+from aijudge.call_log import CallLogger, LoggingLLMClient
 from aijudge.cli import run_cli
 from aijudge.embeddings.client import MockEmbeddingClient
 from aijudge.llm.client import MockLLMClient
@@ -73,6 +76,38 @@ def test_run_cli_answers_a_question_with_no_clarification_needed():
     )
 
     assert "It does X." in printed
+
+
+def test_run_cli_tags_clarification_call_with_clarify_site_and_logs_loop_events(tmp_path):
+    log_path = tmp_path / "aijudge.jsonl"
+    call_logger = CallLogger(str(log_path))
+    printed = []
+    inputs = iter(["What does Card X do?", "quit"])
+
+    inner = MockLLMClient()
+    inner.queue_response("PROCEED")
+    inner.queue_response("FINAL: It does X. ||CITES: card:1||")
+    llm = LoggingLLMClient(inner, call_logger)
+
+    card = {"id": "1", "name": "Card X", "card_type": "Effect Monster"}
+
+    run_cli(
+        llm,
+        MockEmbeddingClient(),
+        input_fn=lambda _: next(inputs),
+        print_fn=printed.append,
+        find_matched_cards_fn=lambda question: [card],
+        build_known_facts_context_fn=lambda c: "",
+        build_grounded_result_fn=lambda c: {"found": True, "id": c["id"], "name": c["name"], "confirmed_effects": []},
+        call_logger=call_logger,
+    )
+
+    with open(log_path, encoding="utf-8") as f:
+        records = [json.loads(line) for line in f if line.strip()]
+    llm_calls = [r for r in records if r["type"] == "llm_call"]
+    assert llm_calls[0]["site"] == "clarify"
+    assert llm_calls[1]["site"] == "loop"
+    assert any(r["type"] == "loop_event" and r["event"] == "answered" for r in records)
 
 
 def test_run_cli_passes_the_system_prompt_to_the_clarification_call():

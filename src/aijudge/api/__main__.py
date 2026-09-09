@@ -4,6 +4,7 @@ from typing import Callable
 
 import uvicorn
 
+from aijudge.call_log import CallLogger, LoggingLLMClient
 from aijudge.embeddings.client import EmbeddingClient
 from aijudge.embeddings.ollama_client import OllamaEmbeddingClient
 from aijudge.llm.client import LLMClient, OllamaLLMClient
@@ -40,11 +41,13 @@ def main(
     run_fn: Callable = uvicorn.run,
 ) -> None:
     _configure_logging_from_env()
+    call_logger = CallLogger()
     app = create_app(
-        llm_client or OllamaLLMClient(),
+        LoggingLLMClient(llm_client or OllamaLLMClient(), call_logger),
         embedding_client or OllamaEmbeddingClient(),
         cors_origins=_cors_origins_from_env(),
         online_ingest_enabled=_online_ingest_enabled_from_env(),
+        call_logger=call_logger,
     )
     host = os.environ.get("AIJUDGE_API_HOST", DEFAULT_HOST)
     port = int(os.environ.get("AIJUDGE_API_PORT", DEFAULT_PORT))
