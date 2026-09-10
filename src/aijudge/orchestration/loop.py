@@ -7,7 +7,7 @@ from aijudge.call_log import CallLogger, call_site, log_event
 from aijudge.llm.client import LLMClient
 from aijudge.rules_engine.resolve import UnsupportedScenarioError
 
-from .confidence import DEFAULT_CONFIDENCE_THRESHOLD, SignalState, compute_confidence, update_signals
+from .confidence import DEFAULT_CONFIDENCE_THRESHOLD, SignalState, compute_confidence, normalize_cited_ids, update_signals
 from .protocol import FinalAnswer, ProtocolError, Refusal, ToolCall, build_system_prompt, parse_response
 from .verify import VerificationResult, verify_structured_grounding
 
@@ -136,10 +136,11 @@ def run_loop(
             continue
 
         assert isinstance(parsed, FinalAnswer)
-        score = compute_confidence(parsed.cited_ids, state)
+        cited_ids = normalize_cited_ids(parsed.cited_ids, state)
+        score = compute_confidence(cited_ids, state)
         logger.debug(
             "FinalAnswer cited_ids=%s known_ids=%s retrieval_gap=%s missing_structured_effect=%s score=%.2f threshold=%.2f",
-            parsed.cited_ids, state.known_ids, state.retrieval_gap, state.missing_structured_effect, score, threshold,
+            cited_ids, state.known_ids, state.retrieval_gap, state.missing_structured_effect, score, threshold,
         )
         if score < threshold:
             log_event(
@@ -148,8 +149,8 @@ def run_loop(
             )
             return LoopResult(kind="escalate", text=ESCALATE_MESSAGE)
 
-        verification = verify_structured_grounding(parsed.text, parsed.cited_ids, state, llm_client)
-        if verification.ok and flagged_card_ids and not (flagged_card_ids & parsed.cited_ids):
+        verification = verify_structured_grounding(parsed.text, cited_ids, state, llm_client)
+        if verification.ok and flagged_card_ids and not (flagged_card_ids & cited_ids):
             # The prior turn's answer failed verification for these card(s);
             # this redraft cites none of them, so verify_structured_grounding
             # correctly found nothing to check -- but that's exactly the
@@ -194,6 +195,6 @@ def run_loop(
             )
             continue
 
-        citations = [state.citation_index[cid] for cid in sorted(parsed.cited_ids)]
-        log_event(call_logger, site="loop", event="answered", score=score, cited_ids=sorted(parsed.cited_ids))
+        citations = [state.citation_index[cid] for cid in sorted(cited_ids)]
+        log_event(call_logger, site="loop", event="answered", score=score, cited_ids=sorted(cited_ids))
         return LoopResult(kind="answer", text=parsed.text, citations=citations)

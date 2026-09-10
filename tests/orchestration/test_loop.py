@@ -283,6 +283,35 @@ def test_grounded_cards_defaults_to_no_preseeding():
     assert result.kind == "escalate"
 
 
+def test_grounded_card_cited_without_card_prefix_still_answers():
+    # Reproduces a real false-positive escalation seen with Qwen3-8B via
+    # Ollama: the KNOWN FACTS prompt tells the model to cite card:abc123, but
+    # its ||CITES: ...|| trailer drops the "card:" prefix and cites the bare
+    # internal id instead. compute_confidence used to treat that as an
+    # unrecognized (fabricated-looking) citation and escalate a correct,
+    # grounded answer.
+    llm = MockLLMClient()
+    llm.queue_response("FINAL: It negates the effect. ||CITES: abc123||")
+    llm.queue_response("YES")
+
+    grounded = [
+        {
+            "found": True,
+            "id": "abc123",
+            "name": "Ash Blossom & Joyous Spring",
+            "card_text": "You can discard this card...",
+            "confirmed_effects": [{"effect": "..."}],
+        }
+    ]
+
+    result = run_loop("What does Ash Blossom do?", llm_client=llm, tools={}, grounded_cards=grounded)
+
+    assert result.kind == "answer"
+    assert result.citations == [
+        {"label": "Ash Blossom & Joyous Spring", "text": "You can discard this card..."}
+    ]
+
+
 def test_run_loop_passes_the_system_prompt_on_every_llm_call():
     llm = MockLLMClient()
     llm.queue_response('TOOL: lookup_card {"name": "Ash Blossom & Joyous Spring"}')
