@@ -72,6 +72,27 @@ def test_build_verification_prompt_includes_activation_condition_and_cost_when_p
     assert "You can banish this card from your GY" in prompt
 
 
+def test_build_verification_prompt_includes_usage_limit_text_when_present():
+    # A card's "You can only activate 1 ... per turn." restriction is real,
+    # DB-backed ground truth (extract_usage_limit_text/usage_limit_text), but
+    # lived outside the activation_condition/cost/targeting/effect breakdown.
+    # A drafted answer that correctly states it must have that fact available
+    # to the verifier, or the verifier has no way to confirm it wasn't invented.
+    prompt = build_verification_prompt(
+        "Some answer.",
+        [
+            {
+                "activation_condition": None,
+                "cost": "Banish 10 cards from the top of your Deck, face-down",
+                "targeting": None,
+                "effect": "draw 2 cards.",
+                "usage_limit_text": 'You can only activate 1 "Pot of Desires" per turn.',
+            }
+        ],
+    )
+    assert 'You can only activate 1 "Pot of Desires" per turn.' in prompt
+
+
 def test_build_verification_prompt_fences_the_drafted_answer():
     # Finding 8: the answer text (this project's own LLM output, but
     # downstream of a user-controlled question) must be clearly delimited
@@ -171,8 +192,44 @@ def test_verify_structured_grounding_flags_mismatch_on_no():
             "cost": None,
             "targeting": None,
             "effect_text": "Target 1 Effect Monster; negate its effects.",
+            "usage_limit_text": None,
         }
     ]
+
+
+def test_verify_structured_grounding_threads_usage_limit_text_into_the_prompt():
+    # Regression test: Pot of Desires' correct "You can only activate 1 ...
+    # per turn." restriction was previously invisible to the verifier (only
+    # activation_condition/cost/targeting/effect were threaded through),
+    # causing a true statement to be flagged as an invented mismatch on
+    # every retry and burning the whole verification budget.
+    llm = _CapturingLLMClient(["YES"])
+    state = SignalState()
+    state.structured_effects["card:abc"] = [
+        {
+            "activation_condition": None,
+            "cost": "Banish 10 cards from the top of your Deck, face-down",
+            "targeting": None,
+            "effect": "draw 2 cards.",
+            "usage_limit_text": 'You can only activate 1 "Pot of Desires" per turn.',
+        }
+    ]
+
+    result = verify_structured_grounding(
+        "You banish 10 cards from the top of your Deck, face-down, then draw 2 cards. "
+        'You can only activate 1 "Pot of Desires" per turn.',
+        {"card:abc"},
+        state,
+        llm,
+    )
+
+    # Must appear in the STORED EFFECT TEXT (ground truth) section specifically,
+    # not merely echoed back via the drafted answer -- otherwise this assertion
+    # would trivially pass regardless of whether the fix actually threads
+    # usage_limit_text into the ground-truth breakdown.
+    stored_section = llm.prompts[0].split("--- BEGIN DRAFTED ANSWER")[0]
+    assert 'You can only activate 1 "Pot of Desires" per turn.' in stored_section
+    assert result.ok is True
 
 
 def test_verify_structured_grounding_threads_targeting_field_into_the_prompt():
