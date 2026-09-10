@@ -34,5 +34,8 @@ class OpenRouterLLMClient:
             timeout=30,
         )
         response.raise_for_status()
-        content = response.json()["choices"][0]["message"]["content"]
+        payload = response.json()
+        if "error" in payload:
+            raise RuntimeError(f"OpenRouter error: {payload['error'].get('message', payload['error'])}")
+        content = payload["choices"][0]["message"]["content"]
         return content or ""
