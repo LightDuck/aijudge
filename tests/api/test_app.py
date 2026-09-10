@@ -1,3 +1,4 @@
+import json
 import logging
 import traceback
 
@@ -6,8 +7,10 @@ import requests
 from fastapi.testclient import TestClient
 
 from aijudge.api.app import create_app
+from aijudge.call_log import CallLogger, LoggingLLMClient
 from aijudge.embeddings.client import MockEmbeddingClient
 from aijudge.llm.client import MockLLMClient
+from aijudge.orchestration.card_effect_pipeline import PipelineResolution
 from aijudge.orchestration.protocol import build_system_prompt
 
 
@@ -17,6 +20,10 @@ def _client(llm: MockLLMClient, **kwargs) -> TestClient:
     # DB via the real find_matched_cards. Tests that want to exercise
     # preflight override find_matched_cards_fn explicitly.
     kwargs.setdefault("find_matched_cards_fn", lambda question: [])
+    kwargs.setdefault(
+        "resolve_card_effect_question_fn",
+        lambda question, **kw: PipelineResolution(supported=True),
+    )
     app = create_app(llm, MockEmbeddingClient(), **kwargs)
     return TestClient(app)
 
@@ -35,10 +42,36 @@ class _CapturingLLMClient:
         return self._queue.pop(0)
 
 
+def test_post_questions_tags_clarification_call_with_clarify_site_and_logs_loop_events(tmp_path):
+    log_path = tmp_path / "aijudge.jsonl"
+    call_logger = CallLogger(str(log_path))
+    inner = MockLLMClient()
+    inner.queue_response("PROCEED")
+    inner.queue_response("FINAL: Ash Blossom negates that effect. ||CITES: card:1||")
+    llm = LoggingLLMClient(inner, call_logger)
+
+    card = {"id": "1", "name": "Ash Blossom & Joyous Spring", "card_type": "Effect Monster"}
+    response = _client(
+        llm,
+        find_matched_cards_fn=lambda question: [card],
+        build_known_facts_context_fn=lambda c: "",
+        build_grounded_result_fn=lambda c: {"found": True, "id": c["id"], "name": c["name"], "confirmed_effects": []},
+        call_logger=call_logger,
+    ).post("/questions", json={"question": "What does Ash Blossom do?"})
+
+    assert response.status_code == 200
+    with open(log_path, encoding="utf-8") as f:
+        records = [json.loads(line) for line in f if line.strip()]
+    llm_calls = [r for r in records if r["type"] == "llm_call"]
+    assert llm_calls[0]["site"] == "clarify"
+    assert llm_calls[1]["site"] == "loop"
+    assert any(r["type"] == "loop_event" and r["event"] == "answered" for r in records)
+
+
 def test_post_questions_returns_answer_when_no_clarification_needed():
     llm = MockLLMClient()
     llm.queue_response("PROCEED")
-    llm.queue_response("FINAL: Ash Blossom negates that effect. ||CITES: ||")
+    llm.queue_response("FINAL: Ash Blossom negates that effect. ||CITES: card:1||")
 
     card = {"id": "1", "name": "Ash Blossom & Joyous Spring", "card_type": "Effect Monster"}
     response = _client(
@@ -49,7 +82,11 @@ def test_post_questions_returns_answer_when_no_clarification_needed():
     ).post("/questions", json={"question": "What does Ash Blossom do?"})
 
     assert response.status_code == 200
-    assert response.json() == {"status": "answer", "text": "Ash Blossom negates that effect.", "citations": []}
+    assert response.json() == {
+        "status": "answer",
+        "text": "Ash Blossom negates that effect.",
+        "citations": [{"label": "Ash Blossom & Joyous Spring", "text": ""}],
+    }
 
 
 def test_post_questions_returns_needs_clarification_when_llm_asks():
@@ -87,7 +124,7 @@ def test_post_questions_skips_the_clarification_call_when_no_card_matches():
 def test_post_questions_passes_the_system_prompt_to_the_clarification_call():
     llm = MockLLMClient()
     llm.queue_response("PROCEED")
-    llm.queue_response("FINAL: ok. ||CITES: ||")
+    llm.queue_response("FINAL: ok. ||CITES: card:1||")
 
     card = {"id": "1", "name": "Some Card", "card_type": "Effect Monster"}
     _client(
@@ -110,27 +147,30 @@ def test_post_questions_rejects_empty_question():
 
 
 def test_post_questions_serializes_citation_content_without_leaking_raw_ids():
-    # Mirrors tests/orchestration/test_loop.py's
-    # test_tool_call_then_final_answer_includes_citation_text, but driven
-    # through the actual HTTP/JSON response body -- proving citation
-    # {label, text} pairs serialize correctly over the wire and that no
-    # raw internal id (card:<uuid>, etc.) ever appears in the response.
+    # Grounding now comes from the mandatory card-effect pipeline (no local
+    # match -- resolve_card_effect_question_fn stands in for extraction +
+    # lookup), not a TOOL: lookup_card call: tools are no longer available
+    # to the LLM's answering turn at all.
     llm = MockLLMClient()
-    llm.queue_response('TOOL: lookup_card {"name": "Ash Blossom & Joyous Spring"}')
     llm.queue_response("FINAL: It negates the effect. ||CITES: card:abc123||")
     llm.queue_response("YES")
 
-    stub_tools = {
-        "lookup_card": lambda args: {
-            "found": True,
-            "id": "abc123",
-            "name": "Ash Blossom & Joyous Spring",
-            "card_text": "You can discard this card...",
-            "confirmed_effects": [{"effect": "..."}],
-        }
-    }
+    def fake_resolve(question, **kwargs):
+        return PipelineResolution(
+            supported=True,
+            context="KNOWN FACTS: Ash Blossom & Joyous Spring (cite as card:abc123)",
+            grounded_cards=[
+                {
+                    "found": True,
+                    "id": "abc123",
+                    "name": "Ash Blossom & Joyous Spring",
+                    "card_text": "You can discard this card...",
+                    "confirmed_effects": [{"effect": "..."}],
+                }
+            ],
+        )
 
-    response = _client(llm, tools=stub_tools).post(
+    response = _client(llm, resolve_card_effect_question_fn=fake_resolve).post(
         "/questions", json={"question": "What does Ash Blossom do?"}
     )
 
@@ -207,7 +247,7 @@ def test_post_questions_cors_allows_configured_origin():
 
 
 def test_post_questions_folds_known_facts_for_a_single_matched_card_into_the_llm_prompt():
-    llm = _CapturingLLMClient(["PROCEED", "FINAL: Yes. ||CITES: ||"])
+    llm = _CapturingLLMClient(["PROCEED", "FINAL: Yes. ||CITES: card:1||"])
 
     app = create_app(
         llm,
@@ -234,7 +274,7 @@ def test_post_questions_folds_known_facts_for_a_single_matched_card_into_the_llm
 
 
 def test_post_questions_passes_known_facts_to_the_clarification_call_for_a_single_match():
-    llm = _CapturingLLMClient(["PROCEED", "FINAL: Yes. ||CITES: ||"])
+    llm = _CapturingLLMClient(["PROCEED", "FINAL: Yes. ||CITES: card:1||"])
 
     app = create_app(
         llm,
@@ -368,7 +408,7 @@ def test_post_questions_returns_disambiguate_card_item_when_multiple_cards_match
 
 
 def test_post_questions_answer_resolves_disambiguation_answer_to_known_facts():
-    llm = _CapturingLLMClient(["FINAL: Yes. ||CITES: ||"])
+    llm = _CapturingLLMClient(["FINAL: Yes. ||CITES: card:1||"])
 
     app = create_app(
         llm,
@@ -406,7 +446,7 @@ def test_post_questions_answer_resolves_disambiguation_answer_to_known_facts():
 
 
 def test_post_questions_answer_resolves_disambiguation_answer_case_insensitive_fuzzy():
-    llm = _CapturingLLMClient(["FINAL: Yes. ||CITES: ||"])
+    llm = _CapturingLLMClient(["FINAL: Yes. ||CITES: card:1||"])
 
     app = create_app(
         llm,
@@ -442,8 +482,14 @@ def test_post_questions_answer_resolves_disambiguation_answer_case_insensitive_f
     assert any("KNOWN FACTS: Effect Veiler" in p for p in llm.prompts)
 
 
-def test_post_questions_answer_proceeds_without_known_facts_when_disambiguation_answer_matches_nothing():
-    llm = _CapturingLLMClient(["FINAL: Yes. ||CITES: ||"])
+def test_post_questions_answer_falls_back_to_pipeline_when_disambiguation_answer_matches_nothing_and_pipeline_unsupported():
+    # A disambiguation-miss (matches > 1 but the answer didn't fuzzy-resolve)
+    # must NOT fall through to run_loop ungrounded -- that reproduces the
+    # exact bug shape this branch exists to close (an uncited answer scoring
+    # confidence 1.0). It must fall back to the same mandatory pipeline as a
+    # 0-local-matches question. Here the pipeline reports unsupported, so
+    # not_supported is returned and run_loop is never reached.
+    llm = _CapturingLLMClient([])
 
     app = create_app(
         llm,
@@ -453,6 +499,55 @@ def test_post_questions_answer_proceeds_without_known_facts_when_disambiguation_
             {"id": "2", "name": "Effector", "card_type": "Effect Monster"},
         ],
         build_known_facts_context_fn=lambda card: f"KNOWN FACTS: {card['name']}",
+        resolve_card_effect_question_fn=lambda question, **kw: PipelineResolution(supported=False),
+    )
+
+    response = TestClient(app).post(
+        "/questions/answer",
+        json={
+            "question": "Can I chain Effect Veiler or Effector here?",
+            "items": [
+                {
+                    "kind": "disambiguate_card",
+                    "text": "Multiple cards match your question: Effect Veiler, Effector. Which one do you mean?",
+                }
+            ],
+            "answers": ["I have no idea what you mean"],
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "not_supported"
+    assert not any("KNOWN FACTS" in p for p in llm.prompts)
+
+
+def test_post_questions_answer_falls_back_to_pipeline_when_disambiguation_answer_matches_nothing_and_pipeline_supported():
+    # Same disambiguation-miss, but the fallback pipeline DOES resolve a
+    # card -- its context/grounded_cards must reach run_loop so the final
+    # answer is grounded, instead of the LLM answering ungrounded.
+    llm = _CapturingLLMClient(["FINAL: It does the thing. ||CITES: card:99||", "YES"])
+
+    app = create_app(
+        llm,
+        MockEmbeddingClient(),
+        find_matched_cards_fn=lambda question: [
+            {"id": "1", "name": "Effect Veiler", "card_type": "Effect Monster"},
+            {"id": "2", "name": "Effector", "card_type": "Effect Monster"},
+        ],
+        build_known_facts_context_fn=lambda card: f"KNOWN FACTS: {card['name']}",
+        resolve_card_effect_question_fn=lambda question, **kw: PipelineResolution(
+            supported=True,
+            context="KNOWN FACTS: Some New Card (cite as card:99)",
+            grounded_cards=[
+                {
+                    "found": True,
+                    "id": "99",
+                    "name": "Some New Card",
+                    "card_text": "...",
+                    "confirmed_effects": [{"effect": "..."}],
+                }
+            ],
+        ),
     )
 
     response = TestClient(app).post(
@@ -471,7 +566,8 @@ def test_post_questions_answer_proceeds_without_known_facts_when_disambiguation_
 
     assert response.status_code == 200
     assert response.json()["status"] == "answer"
-    assert not any("KNOWN FACTS" in p for p in llm.prompts)
+    assert response.json()["text"] == "It does the thing."
+    assert any("KNOWN FACTS: Some New Card" in p for p in llm.prompts)
 
 
 def test_post_questions_answer_returns_final_result():
@@ -511,7 +607,12 @@ def test_post_questions_answer_threads_clarification_context_into_llm_prompt():
     llm = _RecordingLLMClient("FINAL: Yes, it does that. ||CITES: ||")
 
     response = TestClient(
-        create_app(llm, MockEmbeddingClient(), find_matched_cards_fn=lambda question: [])
+        create_app(
+            llm,
+            MockEmbeddingClient(),
+            find_matched_cards_fn=lambda question: [],
+            resolve_card_effect_question_fn=lambda question, **kw: PipelineResolution(supported=True),
+        )
     ).post(
         "/questions/answer",
         json={
@@ -637,40 +738,38 @@ def test_post_questions_500_logs_the_actual_exception_traceback(caplog):
     assert "something internal broke" in formatted
 
 
-def test_create_app_defaults_online_ingest_enabled_to_true(monkeypatch):
-    import aijudge.api.app as app_module
-
+def test_create_app_defaults_online_ingest_enabled_to_true():
     captured = {}
 
-    def fake_build_tool_dispatch(llm_client, embedding_client, *, online_ingest_enabled=True, on_ingest_start=None):
+    def fake_resolve(question, *, llm_client, online_ingest_enabled, on_ingest_start):
         captured["online_ingest_enabled"] = online_ingest_enabled
-        captured["on_ingest_start"] = on_ingest_start
-        return {}
+        return PipelineResolution(supported=False)
 
-    monkeypatch.setattr(app_module, "build_tool_dispatch", fake_build_tool_dispatch)
-
-    create_app(MockLLMClient(), MockEmbeddingClient(), find_matched_cards_fn=lambda question: [])
+    app = create_app(
+        MockLLMClient(),
+        MockEmbeddingClient(),
+        find_matched_cards_fn=lambda question: [],
+        resolve_card_effect_question_fn=fake_resolve,
+    )
+    TestClient(app).post("/questions", json={"question": "What does Some New Card do?"})
 
     assert captured["online_ingest_enabled"] is True
-    assert captured["on_ingest_start"] is None
 
 
-def test_create_app_passes_online_ingest_enabled_false_through(monkeypatch):
-    import aijudge.api.app as app_module
-
+def test_create_app_passes_online_ingest_enabled_false_through():
     captured = {}
 
-    def fake_build_tool_dispatch(llm_client, embedding_client, *, online_ingest_enabled=True, on_ingest_start=None):
+    def fake_resolve(question, *, llm_client, online_ingest_enabled, on_ingest_start):
         captured["online_ingest_enabled"] = online_ingest_enabled
-        return {}
+        return PipelineResolution(supported=False)
 
-    monkeypatch.setattr(app_module, "build_tool_dispatch", fake_build_tool_dispatch)
-
-    create_app(
+    app = create_app(
         MockLLMClient(),
         MockEmbeddingClient(),
         online_ingest_enabled=False,
         find_matched_cards_fn=lambda question: [],
+        resolve_card_effect_question_fn=fake_resolve,
     )
+    TestClient(app).post("/questions", json={"question": "What does Some New Card do?"})
 
     assert captured["online_ingest_enabled"] is False

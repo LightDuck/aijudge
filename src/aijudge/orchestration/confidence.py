@@ -65,8 +65,27 @@ def update_signals(state: SignalState, tool_name: str, result: dict) -> None:
             }
 
 
+def normalize_cited_ids(cited_ids: set[str], state: SignalState) -> set[str]:
+    """A local model sometimes drops the internal id's "card:" prefix in its
+    ||CITES: ...|| trailer while still meaning the exact card lookup_card (or
+    grounded_cards preseeding) already surfaced -- e.g. citing bare "abc123"
+    instead of "card:abc123". Treat that bare id as an alias for its prefixed
+    form, the same already-known source rather than a fabricated one,
+    mirroring the passcode-alias handling in update_signals above."""
+    normalized = set()
+    for cited_id in cited_ids:
+        prefixed = f"card:{cited_id}"
+        if cited_id not in state.known_ids and prefixed in state.known_ids:
+            normalized.add(prefixed)
+        else:
+            normalized.add(cited_id)
+    return normalized
+
+
 def compute_confidence(cited_ids: set[str], state: SignalState) -> float:
     if cited_ids - state.known_ids:
+        return 0.0
+    if state.known_ids and not cited_ids:
         return 0.0
 
     score = 1.0

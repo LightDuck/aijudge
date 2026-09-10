@@ -1,8 +1,17 @@
+import json
+
+from aijudge.call_log import CallLogger
 from aijudge.llm.client import MockLLMClient
 from aijudge.orchestration.loop import MAX_VERIFICATION_RETRIES, run_loop
 from aijudge.orchestration.protocol import build_system_prompt
 from aijudge.orchestration.verify import VERIFIER_SYSTEM_PROMPT
 from aijudge.rules_engine.resolve import UnsupportedScenarioError
+
+
+def _read_loop_events(path):
+    with open(path, encoding="utf-8") as f:
+        records = [json.loads(line) for line in f if line.strip()]
+    return [r for r in records if r["type"] == "loop_event"]
 
 
 class _CapturingLLMClient:
@@ -138,6 +147,22 @@ def test_malformed_tool_arguments_exhausted_surfaces_not_supported():
     assert result.kind == "not_supported"
 
 
+def test_tool_call_against_empty_tool_dispatch_degrades_to_not_supported_not_a_crash():
+    # tools={} is the restricted answering pathway used by cli.py/api/app.py
+    # now. parse_response validates a TOOL: line's name against the static
+    # TOOL_NAMES set, not against whatever `tools` dict was actually passed
+    # to run_loop -- so an LLM emitting a TOOL: line here must not raise an
+    # uncaught KeyError out of run_loop; it should be treated like any other
+    # malformed/tool-arg-error retry and eventually degrade to not_supported.
+    llm = MockLLMClient()
+    for _ in range(5):
+        llm.queue_response('TOOL: lookup_card {"name": "Ash Blossom & Joyous Spring"}')
+
+    result = run_loop("What does Ash Blossom do?", llm_client=llm, tools={})
+
+    assert result.kind == "not_supported"
+
+
 def test_tool_call_then_final_answer_includes_citation_text():
     llm = MockLLMClient()
     llm.queue_response('TOOL: lookup_card {"name": "Ash Blossom & Joyous Spring"}')
@@ -258,6 +283,35 @@ def test_grounded_cards_defaults_to_no_preseeding():
     assert result.kind == "escalate"
 
 
+def test_grounded_card_cited_without_card_prefix_still_answers():
+    # Reproduces a real false-positive escalation seen with Qwen3-8B via
+    # Ollama: the KNOWN FACTS prompt tells the model to cite card:abc123, but
+    # its ||CITES: ...|| trailer drops the "card:" prefix and cites the bare
+    # internal id instead. compute_confidence used to treat that as an
+    # unrecognized (fabricated-looking) citation and escalate a correct,
+    # grounded answer.
+    llm = MockLLMClient()
+    llm.queue_response("FINAL: It negates the effect. ||CITES: abc123||")
+    llm.queue_response("YES")
+
+    grounded = [
+        {
+            "found": True,
+            "id": "abc123",
+            "name": "Ash Blossom & Joyous Spring",
+            "card_text": "You can discard this card...",
+            "confirmed_effects": [{"effect": "..."}],
+        }
+    ]
+
+    result = run_loop("What does Ash Blossom do?", llm_client=llm, tools={}, grounded_cards=grounded)
+
+    assert result.kind == "answer"
+    assert result.citations == [
+        {"label": "Ash Blossom & Joyous Spring", "text": "You can discard this card..."}
+    ]
+
+
 def test_run_loop_passes_the_system_prompt_on_every_llm_call():
     llm = MockLLMClient()
     llm.queue_response('TOOL: lookup_card {"name": "Ash Blossom & Joyous Spring"}')
@@ -354,20 +408,23 @@ def test_verification_failed_feedback_includes_card_name_effect_text_and_prior_d
     assert "It negates the effect of the target spell or trap card." in feedback_prompt
 
 
-def test_redraft_dropping_flagged_citation_is_treated_as_another_verification_failure_then_recovers():
-    # Finding 3: a redraft that responds with no citations at all (or drops
-    # the specific card(s) that just failed verification) must not silently
-    # bypass the gate. verify_structured_grounding alone would find nothing
-    # to check for an empty CITES and return ok=True -- this reproduces that
-    # bypass and confirms the fix treats it as another failed verification
-    # attempt under the same retry budget, which can still recover.
+def test_redraft_dropping_citation_entirely_after_verification_failure_escalates_immediately():
+    # Behavior change from the hardened compute_confidence rule (Task 5):
+    # previously a redraft that dropped the flagged citation entirely
+    # (||CITES: ||) got one more chance via the verify_structured_grounding
+    # bypass-detection path below (it trivially "passes" verification when
+    # there's nothing cited to check, and the loop used to treat that as
+    # another correctable verification failure). Now that compute_confidence
+    # hard-fails any answer citing nothing while known_ids is populated
+    # (closing the "cite nothing to dodge grounding checks" gap for good),
+    # that citation-drop is caught earlier, at the confidence gate itself --
+    # before verification, and its bypass-detection recovery, ever runs
+    # again.
     llm = MockLLMClient()
     llm.queue_response('TOOL: lookup_card {"name": "Tearlaments Sulliek"}')
     llm.queue_response("FINAL: It negates the effect of the target spell or trap card. ||CITES: card:abc123||")
     llm.queue_response("NO")
     llm.queue_response("FINAL: It negates something, not sure what. ||CITES: ||")
-    llm.queue_response("FINAL: It negates the effects of the targeted Effect Monster. ||CITES: card:abc123||")
-    llm.queue_response("YES")
 
     tools = {
         "lookup_card": lambda args: {
@@ -383,15 +440,15 @@ def test_redraft_dropping_flagged_citation_is_treated_as_another_verification_fa
 
     result = run_loop("What does Tearlaments Sulliek's first effect do?", llm_client=llm, tools=tools)
 
-    assert result.kind == "answer"
-    assert result.text == "It negates the effects of the targeted Effect Monster."
+    assert result.kind == "escalate"
 
 
 def test_redraft_dropping_flagged_citation_repeatedly_exhausts_budget_and_escalates():
-    # Companion to the above: if the redraft keeps dropping the flagged
-    # citation rather than ever re-citing it, the bypass-detection must
-    # still respect MAX_VERIFICATION_RETRIES and escalate rather than loop
-    # forever or silently return an ungrounded answer.
+    # Companion to the above: repeatedly dropping the citation still ends
+    # in escalate -- now via the hardened compute_confidence rule firing on
+    # the very first empty-citation redraft (Task 5), rather than via
+    # MAX_VERIFICATION_RETRIES exhaustion as before. The assertion is
+    # unchanged; only *why* it escalates changed.
     llm = MockLLMClient()
     llm.queue_response('TOOL: lookup_card {"name": "Tearlaments Sulliek"}')
     llm.queue_response("FINAL: It negates the effect of the target spell or trap card. ||CITES: card:abc123||")
@@ -414,3 +471,170 @@ def test_redraft_dropping_flagged_citation_repeatedly_exhausts_budget_and_escala
     result = run_loop("What does Tearlaments Sulliek's first effect do?", llm_client=llm, tools=tools)
 
     assert result.kind == "escalate"
+
+
+def test_run_loop_uses_default_system_prompt_when_none_given():
+    llm = MockLLMClient()
+    llm.queue_response("FINAL: ok. ||CITES: ||")
+
+    run_loop("A question", llm_client=llm, tools={})
+
+    assert llm.system_prompts == [build_system_prompt()]
+
+
+def test_run_loop_uses_provided_system_prompt_override():
+    llm = MockLLMClient()
+    llm.queue_response("FINAL: ok. ||CITES: ||")
+
+    run_loop("A question", llm_client=llm, tools={}, system_prompt="CUSTOM PROMPT")
+
+    assert llm.system_prompts == ["CUSTOM PROMPT"]
+
+
+def test_run_loop_without_call_logger_does_not_crash():
+    # call_logger defaults to None -- every existing caller (and test above)
+    # relies on this staying a no-op rather than requiring the parameter.
+    llm = MockLLMClient()
+    llm.queue_response("FINAL: ok. ||CITES: ||")
+
+    result = run_loop("A question", llm_client=llm, tools={})
+
+    assert result.kind == "answer"
+
+
+def test_run_loop_logs_answered_event(tmp_path):
+    log_path = tmp_path / "aijudge.jsonl"
+    call_logger = CallLogger(str(log_path))
+    llm = MockLLMClient()
+    llm.queue_response("FINAL: ok. ||CITES: ||")
+
+    run_loop("A question", llm_client=llm, tools={}, call_logger=call_logger)
+
+    events = _read_loop_events(log_path)
+    assert events[-1]["event"] == "answered"
+    assert events[-1]["site"] == "loop"
+
+
+def test_run_loop_logs_malformed_response_event(tmp_path):
+    log_path = tmp_path / "aijudge.jsonl"
+    call_logger = CallLogger(str(log_path))
+    llm = MockLLMClient()
+    llm.queue_response("I am not following the protocol.")
+    llm.queue_response("FINAL: ok. ||CITES: ||")
+
+    run_loop("A question", llm_client=llm, tools={}, call_logger=call_logger)
+
+    events = _read_loop_events(log_path)
+    assert any(e["event"] == "malformed_response" for e in events)
+
+
+def test_run_loop_logs_not_supported_event_on_malformed_retry_budget_exceeded(tmp_path):
+    log_path = tmp_path / "aijudge.jsonl"
+    call_logger = CallLogger(str(log_path))
+    llm = MockLLMClient()
+    for _ in range(4):
+        llm.queue_response("I am not following the protocol.")
+
+    run_loop("A confusing question", llm_client=llm, tools={}, call_logger=call_logger)
+
+    events = _read_loop_events(log_path)
+    assert events[-1]["event"] == "not_supported"
+    assert events[-1]["reason"]
+
+
+def test_run_loop_logs_tool_error_event(tmp_path):
+    log_path = tmp_path / "aijudge.jsonl"
+    call_logger = CallLogger(str(log_path))
+    llm = MockLLMClient()
+    llm.queue_response("TOOL: lookup_card {}")
+    llm.queue_response('TOOL: lookup_card {"name": "Ash Blossom & Joyous Spring"}')
+    llm.queue_response("FINAL: It negates the effect. ||CITES: card:abc123||")
+    llm.queue_response("YES")
+
+    def _lookup(args):
+        return {"found": True, "id": "abc123", "confirmed_effects": [{"effect": "..."}], "name": args["name"]}
+
+    run_loop("What does Ash Blossom do?", llm_client=llm, tools={"lookup_card": _lookup}, call_logger=call_logger)
+
+    events = _read_loop_events(log_path)
+    assert any(e["event"] == "tool_error" for e in events)
+
+
+def test_run_loop_logs_off_topic_event(tmp_path):
+    log_path = tmp_path / "aijudge.jsonl"
+    call_logger = CallLogger(str(log_path))
+    llm = MockLLMClient()
+    llm.queue_response("REFUSE: This assistant only answers Yu-Gi-Oh! TCG rules questions.")
+
+    run_loop("What's the capital of France?", llm_client=llm, tools={}, call_logger=call_logger)
+
+    events = _read_loop_events(log_path)
+    assert events[-1]["event"] == "off_topic"
+
+
+def test_run_loop_logs_escalate_event_with_score_and_threshold(tmp_path):
+    log_path = tmp_path / "aijudge.jsonl"
+    call_logger = CallLogger(str(log_path))
+    llm = MockLLMClient()
+    llm.queue_response('TOOL: search_rulebook {"query": "obscure ruling"}')
+    llm.queue_response("FINAL: I could not find a direct source. ||CITES: ||")
+
+    tools = {"search_rulebook": lambda args: {"chunks": []}}
+
+    run_loop("An obscure ruling question", llm_client=llm, tools=tools, threshold=0.95, call_logger=call_logger)
+
+    events = _read_loop_events(log_path)
+    escalate_events = [e for e in events if e["event"] == "escalate"]
+    assert len(escalate_events) == 1
+    assert "score" in escalate_events[0]
+    assert "threshold" in escalate_events[0]
+
+
+def test_run_loop_logs_verification_failed_event(tmp_path):
+    log_path = tmp_path / "aijudge.jsonl"
+    call_logger = CallLogger(str(log_path))
+    llm = MockLLMClient()
+    llm.queue_response('TOOL: lookup_card {"name": "Tearlaments Sulliek"}')
+    llm.queue_response("FINAL: It negates the effect of the target spell or trap card. ||CITES: card:abc123||")
+    llm.queue_response("NO")
+    llm.queue_response("FINAL: It negates the effects of the targeted Effect Monster. ||CITES: card:abc123||")
+    llm.queue_response("YES")
+
+    tools = {
+        "lookup_card": lambda args: {
+            "found": True,
+            "id": "abc123",
+            "name": "Tearlaments Sulliek",
+            "card_text": "...",
+            "confirmed_effects": [
+                {"effect": "Target 1 Effect Monster your opponent controls; negate its effects."}
+            ],
+        }
+    }
+
+    run_loop(
+        "What does Tearlaments Sulliek's first effect do?",
+        llm_client=llm,
+        tools=tools,
+        call_logger=call_logger,
+    )
+
+    events = _read_loop_events(log_path)
+    assert any(e["event"] == "verification_failed" for e in events)
+
+
+def test_run_loop_wraps_its_own_llm_calls_in_the_loop_call_site(tmp_path):
+    log_path = tmp_path / "aijudge.jsonl"
+    call_logger = CallLogger(str(log_path))
+    from aijudge.call_log import LoggingLLMClient
+
+    inner = MockLLMClient()
+    inner.queue_response("FINAL: ok. ||CITES: ||")
+    wrapped = LoggingLLMClient(inner, call_logger)
+
+    run_loop("A question", llm_client=wrapped, tools={}, call_logger=call_logger)
+
+    with open(log_path, encoding="utf-8") as f:
+        records = [json.loads(line) for line in f if line.strip()]
+    llm_calls = [r for r in records if r["type"] == "llm_call"]
+    assert llm_calls and all(r["site"] == "loop" for r in llm_calls)

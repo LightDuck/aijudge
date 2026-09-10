@@ -1,6 +1,7 @@
 import re
 from dataclasses import dataclass, field
 
+from aijudge.call_log import call_site
 from aijudge.llm.client import LLMClient
 
 from .confidence import SignalState
@@ -17,8 +18,12 @@ VERIFIER_SYSTEM_PROMPT = (
 
 # The stored-effect breakdown fields to render, in the same order
 # `card_effects_structured`/`get_confirmed_effects` present them (activation
-# condition, then cost, then targeting, then the resolution effect itself).
-_BREAKDOWN_FIELDS = ("activation_condition", "cost", "targeting", "effect")
+# condition, then cost, then targeting, then the resolution effect itself),
+# plus usage_limit_text: a separate column (see db/ in CLAUDE.md), but still
+# real ground truth a drafted answer may correctly state -- omitting it here
+# left the verifier unable to tell a true "You can only activate 1 ... per
+# turn." restriction from an invented one, flagging correct answers as NO.
+_BREAKDOWN_FIELDS = ("activation_condition", "cost", "targeting", "effect", "usage_limit_text")
 
 _LEADING_TOKEN_RE = re.compile(r"[A-Za-z]+")
 
@@ -100,6 +105,7 @@ def verify_structured_grounding(
                 "cost": effect.get("cost"),
                 "targeting": effect.get("targeting"),
                 "effect_text": effect.get("effect"),
+                "usage_limit_text": effect.get("usage_limit_text"),
             })
 
     if not matched:
@@ -113,10 +119,12 @@ def verify_structured_grounding(
                 "cost": m["cost"],
                 "targeting": m["targeting"],
                 "effect": m["effect_text"],
+                "usage_limit_text": m["usage_limit_text"],
             }
             for m in matched
         ],
     )
-    response = llm_client.complete(prompt, system=VERIFIER_SYSTEM_PROMPT)
+    with call_site("verify"):
+        response = llm_client.complete(prompt, system=VERIFIER_SYSTEM_PROMPT)
     ok = parse_verification_response(response)
     return VerificationResult(ok=ok, mismatches=[] if ok else matched)

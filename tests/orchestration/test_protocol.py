@@ -5,6 +5,7 @@ from aijudge.orchestration.protocol import (
     ProtocolError,
     Refusal,
     ToolCall,
+    build_answering_system_prompt,
     build_system_prompt,
     parse_response,
 )
@@ -110,3 +111,22 @@ def test_build_system_prompt_instructs_passcode_terminology_for_the_id_field():
 def test_build_system_prompt_instructs_ambiguous_result_handling():
     prompt = build_system_prompt()
     assert "ambiguous" in prompt.lower()
+
+
+def test_build_answering_system_prompt_forbids_tool_calls():
+    prompt = build_answering_system_prompt()
+    assert "TOOL" in prompt
+    assert "no tools" in prompt.lower() or "do not attempt" in prompt.lower()
+
+
+def test_build_answering_system_prompt_forbids_describing_unresolved_cards_from_memory():
+    prompt = build_answering_system_prompt()
+    assert "memory" in prompt.lower()
+    assert "LOOKUP FAILURES" in prompt
+
+
+def test_build_answering_system_prompt_still_documents_final_and_refuse():
+    prompt = build_answering_system_prompt()
+    assert "FINAL:" in prompt
+    assert "REFUSE:" in prompt
+    assert "||CITES:" in prompt

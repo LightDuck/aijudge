@@ -1,20 +1,26 @@
+import json
+
+from aijudge.call_log import CallLogger, LoggingLLMClient
 from aijudge.cli import run_cli
 from aijudge.embeddings.client import MockEmbeddingClient
 from aijudge.llm.client import MockLLMClient
-from aijudge.orchestration.protocol import build_system_prompt
+from aijudge.orchestration.card_effect_pipeline import PipelineResolution
+from aijudge.orchestration.loop import NOT_SUPPORTED_MESSAGE
+from aijudge.orchestration.protocol import build_answering_system_prompt, build_system_prompt
 
 
 class _CapturingLLMClient:
-    """A FIFO-response fake that also records every prompt it receives, so
-    tests can assert on what actually reached the LLM (MockLLMClient only
-    records `system_prompts`, not the `prompt` argument itself)."""
+    """A FIFO-response fake that also records every prompt (and system prompt)
+    it receives, so tests can assert on what actually reached the LLM."""
 
     def __init__(self, responses):
         self._queue = list(responses)
         self.prompts = []
+        self.system_prompts = []
 
     def complete(self, prompt, *, system=None):
         self.prompts.append(prompt)
+        self.system_prompts.append(system)
         return self._queue.pop(0)
 
 
@@ -55,7 +61,7 @@ def test_run_cli_answers_a_question_with_no_clarification_needed():
 
     llm = MockLLMClient()
     llm.queue_response("PROCEED")
-    llm.queue_response("FINAL: It does X. ||CITES: ||")
+    llm.queue_response("FINAL: It does X. ||CITES: card:1||")
 
     card = {"id": "1", "name": "Card X", "card_type": "Effect Monster"}
 
@@ -72,13 +78,45 @@ def test_run_cli_answers_a_question_with_no_clarification_needed():
     assert "It does X." in printed
 
 
+def test_run_cli_tags_clarification_call_with_clarify_site_and_logs_loop_events(tmp_path):
+    log_path = tmp_path / "aijudge.jsonl"
+    call_logger = CallLogger(str(log_path))
+    printed = []
+    inputs = iter(["What does Card X do?", "quit"])
+
+    inner = MockLLMClient()
+    inner.queue_response("PROCEED")
+    inner.queue_response("FINAL: It does X. ||CITES: card:1||")
+    llm = LoggingLLMClient(inner, call_logger)
+
+    card = {"id": "1", "name": "Card X", "card_type": "Effect Monster"}
+
+    run_cli(
+        llm,
+        MockEmbeddingClient(),
+        input_fn=lambda _: next(inputs),
+        print_fn=printed.append,
+        find_matched_cards_fn=lambda question: [card],
+        build_known_facts_context_fn=lambda c: "",
+        build_grounded_result_fn=lambda c: {"found": True, "id": c["id"], "name": c["name"], "confirmed_effects": []},
+        call_logger=call_logger,
+    )
+
+    with open(log_path, encoding="utf-8") as f:
+        records = [json.loads(line) for line in f if line.strip()]
+    llm_calls = [r for r in records if r["type"] == "llm_call"]
+    assert llm_calls[0]["site"] == "clarify"
+    assert llm_calls[1]["site"] == "loop"
+    assert any(r["type"] == "loop_event" and r["event"] == "answered" for r in records)
+
+
 def test_run_cli_passes_the_system_prompt_to_the_clarification_call():
     printed = []
     inputs = iter(["What does Card X do?", "quit"])
 
     llm = MockLLMClient()
     llm.queue_response("PROCEED")
-    llm.queue_response("FINAL: It does X. ||CITES: ||")
+    llm.queue_response("FINAL: It does X. ||CITES: card:1||")
 
     card = {"id": "1", "name": "Card X", "card_type": "Effect Monster"}
 
@@ -101,7 +139,7 @@ def test_run_cli_asks_clarification_questions_before_answering():
 
     llm = MockLLMClient()
     llm.queue_response("CLARIFY: Which monster do you control?")
-    llm.queue_response("FINAL: Yes, you can respond. ||CITES: ||")
+    llm.queue_response("FINAL: Yes, you can respond. ||CITES: card:1||")
 
     card = {"id": "1", "name": "Effect Veiler", "card_type": "Effect Monster"}
 
@@ -134,16 +172,86 @@ def test_run_cli_skips_the_clarification_call_when_no_card_matches():
         input_fn=lambda _: next(inputs),
         print_fn=printed.append,
         find_matched_cards_fn=lambda question: [],
+        resolve_card_effect_question_fn=lambda question, **kwargs: PipelineResolution(supported=True),
     )
 
     assert "It negates a Spell/Trap Card." in printed
+
+
+def test_run_cli_prints_not_supported_when_pipeline_finds_no_cards():
+    printed = []
+    inputs = iter(["what is the SEGOC rule?", "quit"])
+
+    run_cli(
+        MockLLMClient(),
+        MockEmbeddingClient(),
+        input_fn=lambda _: next(inputs),
+        print_fn=printed.append,
+        find_matched_cards_fn=lambda question: [],
+        resolve_card_effect_question_fn=lambda question, **kwargs: PipelineResolution(supported=False),
+    )
+
+    assert NOT_SUPPORTED_MESSAGE in printed
+
+
+def test_run_cli_uses_pipeline_context_and_grounded_cards_when_no_local_match():
+    printed = []
+    inputs = iter(["What does Some New Card do?", "quit"])
+
+    llm = _CapturingLLMClient(["FINAL: It does the thing. ||CITES: card:99||", "YES"])
+
+    def fake_resolve(question, **kwargs):
+        return PipelineResolution(
+            supported=True,
+            context="KNOWN FACTS: Some New Card (cite as card:99)",
+            grounded_cards=[
+                {
+                    "found": True,
+                    "id": "99",
+                    "name": "Some New Card",
+                    "card_text": "...",
+                    "confirmed_effects": [{"effect": "..."}],
+                }
+            ],
+        )
+
+    run_cli(
+        llm,
+        MockEmbeddingClient(),
+        input_fn=lambda _: next(inputs),
+        print_fn=printed.append,
+        find_matched_cards_fn=lambda question: [],
+        resolve_card_effect_question_fn=fake_resolve,
+    )
+
+    assert "It does the thing." in printed
+    assert "KNOWN FACTS: Some New Card" in llm.prompts[0]
+
+
+def test_run_cli_uses_answering_system_prompt_for_the_final_turn():
+    inputs = iter(["What does Card X do?", "quit"])
+    llm = _CapturingLLMClient(["PROCEED", "FINAL: It does X. ||CITES: card:1||"])
+    card = {"id": "1", "name": "Card X", "card_type": "Effect Monster"}
+
+    run_cli(
+        llm,
+        MockEmbeddingClient(),
+        input_fn=lambda _: next(inputs),
+        print_fn=lambda _: None,
+        find_matched_cards_fn=lambda question: [card],
+        build_known_facts_context_fn=lambda c: "",
+        build_grounded_result_fn=lambda c: {"found": True, "id": c["id"], "name": c["name"], "confirmed_effects": []},
+    )
+
+    assert llm.system_prompts[0] == build_system_prompt()
+    assert llm.system_prompts[1] == build_answering_system_prompt()
 
 
 def test_run_cli_disambiguates_when_multiple_cards_match():
     printed = []
     inputs = iter(["Can I chain Effect Veiler or Effector here?", "Effect Veiler", "quit"])
 
-    llm = _CapturingLLMClient(["PROCEED", "FINAL: Yes. ||CITES: ||"])
+    llm = _CapturingLLMClient(["PROCEED", "FINAL: Yes. ||CITES: card:1||"])
 
     matches = [
         {"id": "1", "name": "Effect Veiler", "card_type": "Effect Monster"},
@@ -173,7 +281,7 @@ def test_run_cli_disambiguates_with_case_insensitive_fuzzy_match():
     printed = []
     inputs = iter(["Can I chain Effect Veiler or Effector here?", "effect veiler", "quit"])
 
-    llm = _CapturingLLMClient(["PROCEED", "FINAL: Yes. ||CITES: ||"])
+    llm = _CapturingLLMClient(["PROCEED", "FINAL: Yes. ||CITES: card:1||"])
 
     matches = [
         {"id": "1", "name": "Effect Veiler", "card_type": "Effect Monster"},
@@ -203,7 +311,7 @@ def test_run_cli_passes_known_facts_to_the_clarification_call_for_a_single_match
     printed = []
     inputs = iter(["Is Baronne de Fleur's effect usable in the Damage Step?", "quit"])
 
-    llm = _CapturingLLMClient(["PROCEED", "FINAL: Yes. ||CITES: ||"])
+    llm = _CapturingLLMClient(["PROCEED", "FINAL: Yes. ||CITES: card:1||"])
 
     card = {"id": "1", "name": "Baronne de Fleur", "card_type": "Synchro Monster"}
 
@@ -225,10 +333,17 @@ def test_run_cli_passes_known_facts_to_the_clarification_call_for_a_single_match
 
 
 def test_run_cli_prints_a_notice_when_disambiguation_answer_matches_nothing():
+    # A disambiguation-miss (matches > 1 but nothing resolved) must NOT fall
+    # through to run_loop ungrounded -- that reproduces the exact bug shape
+    # this branch exists to close (an uncited answer scoring confidence 1.0).
+    # It must fall back to the same mandatory pipeline as a 0-local-matches
+    # question. Here the pipeline reports unsupported, so NOT_SUPPORTED_MESSAGE
+    # is printed and run_loop is never reached (only the clarify call
+    # consumes an LLM response).
     printed = []
     inputs = iter(["Can I chain Effect Veiler or Effector here?", "I have no idea what you mean", "quit"])
 
-    llm = _CapturingLLMClient(["PROCEED", "FINAL: Yes. ||CITES: ||"])
+    llm = _CapturingLLMClient(["PROCEED"])
 
     matches = [
         {"id": "1", "name": "Effect Veiler", "card_type": "Effect Monster"},
@@ -242,18 +357,63 @@ def test_run_cli_prints_a_notice_when_disambiguation_answer_matches_nothing():
         print_fn=printed.append,
         find_matched_cards_fn=lambda question: matches,
         build_known_facts_context_fn=lambda card: f"KNOWN FACTS: {card['name']}",
+        resolve_card_effect_question_fn=lambda question, **kwargs: PipelineResolution(supported=False),
     )
 
-    assert "Yes." in printed
     assert any("Couldn't match your answer" in p for p in printed)
+    assert NOT_SUPPORTED_MESSAGE in printed
     assert not any("KNOWN FACTS" in p for p in llm.prompts)
+
+
+def test_run_cli_disambiguation_answer_matches_nothing_falls_back_to_pipeline_when_supported():
+    # Same disambiguation-miss as above, but the fallback pipeline DOES
+    # resolve a card -- its context/grounded_cards must reach run_loop so
+    # the final answer is grounded, instead of the LLM answering ungrounded.
+    printed = []
+    inputs = iter(["Can I chain Effect Veiler or Effector here?", "I have no idea what you mean", "quit"])
+
+    llm = _CapturingLLMClient(["PROCEED", "FINAL: It does the thing. ||CITES: card:99||", "YES"])
+
+    matches = [
+        {"id": "1", "name": "Effect Veiler", "card_type": "Effect Monster"},
+        {"id": "2", "name": "Effector", "card_type": "Effect Monster"},
+    ]
+
+    def fake_resolve(question, **kwargs):
+        return PipelineResolution(
+            supported=True,
+            context="KNOWN FACTS: Some New Card (cite as card:99)",
+            grounded_cards=[
+                {
+                    "found": True,
+                    "id": "99",
+                    "name": "Some New Card",
+                    "card_text": "...",
+                    "confirmed_effects": [{"effect": "..."}],
+                }
+            ],
+        )
+
+    run_cli(
+        llm,
+        MockEmbeddingClient(),
+        input_fn=lambda _: next(inputs),
+        print_fn=printed.append,
+        find_matched_cards_fn=lambda question: matches,
+        build_known_facts_context_fn=lambda card: f"KNOWN FACTS: {card['name']}",
+        resolve_card_effect_question_fn=fake_resolve,
+    )
+
+    assert "It does the thing." in printed
+    assert any("Couldn't match your answer" in p for p in printed)
+    assert any("KNOWN FACTS: Some New Card" in p for p in llm.prompts)
 
 
 def test_run_cli_folds_preflight_facts_in_for_a_single_match():
     printed = []
     inputs = iter(["Can I activate Effect Veiler here?", "quit"])
 
-    llm = _CapturingLLMClient(["PROCEED", "FINAL: Yes. ||CITES: ||"])
+    llm = _CapturingLLMClient(["PROCEED", "FINAL: Yes. ||CITES: card:1||"])
 
     card = {"id": "1", "name": "Effect Veiler", "card_type": "Effect Monster"}
 
@@ -302,44 +462,44 @@ def test_run_cli_direct_final_answer_citing_the_grounded_id_does_not_escalate():
     assert "It negates that activation." in printed
 
 
-def test_run_cli_wires_on_ingest_start_callback_to_print_fn(monkeypatch):
-    import aijudge.cli as cli_module
-
+def test_run_cli_wires_on_ingest_start_callback_and_online_ingest_enabled_to_the_pipeline():
+    printed = []
+    inputs = iter(["What does Some New Card do?", "quit"])
     captured = {}
 
-    def fake_build_tool_dispatch(llm_client, embedding_client, *, online_ingest_enabled=True, on_ingest_start=None):
-        captured["on_ingest_start"] = on_ingest_start
+    def fake_resolve(question, *, llm_client, online_ingest_enabled, on_ingest_start):
         captured["online_ingest_enabled"] = online_ingest_enabled
-        return {}
+        on_ingest_start("Some New Card")
+        return PipelineResolution(supported=False)
 
-    monkeypatch.setattr(cli_module, "build_tool_dispatch", fake_build_tool_dispatch)
-
-    printed = []
-    inputs = iter(["quit"])
-    run_cli(MockLLMClient(), MockEmbeddingClient(), input_fn=lambda _: next(inputs), print_fn=printed.append)
+    run_cli(
+        MockLLMClient(),
+        MockEmbeddingClient(),
+        input_fn=lambda _: next(inputs),
+        print_fn=printed.append,
+        find_matched_cards_fn=lambda question: [],
+        resolve_card_effect_question_fn=fake_resolve,
+    )
 
     assert captured["online_ingest_enabled"] is True
-    captured["on_ingest_start"]("Some New Card")
     assert any("Some New Card" in line for line in printed)
 
 
-def test_run_cli_passes_online_ingest_enabled_through_to_tool_dispatch(monkeypatch):
-    import aijudge.cli as cli_module
-
+def test_run_cli_passes_online_ingest_enabled_false_through_to_the_pipeline():
+    inputs = iter(["What does Some New Card do?", "quit"])
     captured = {}
 
-    def fake_build_tool_dispatch(llm_client, embedding_client, *, online_ingest_enabled=True, on_ingest_start=None):
+    def fake_resolve(question, *, llm_client, online_ingest_enabled, on_ingest_start):
         captured["online_ingest_enabled"] = online_ingest_enabled
-        return {}
+        return PipelineResolution(supported=False)
 
-    monkeypatch.setattr(cli_module, "build_tool_dispatch", fake_build_tool_dispatch)
-
-    inputs = iter(["quit"])
     run_cli(
         MockLLMClient(),
         MockEmbeddingClient(),
         input_fn=lambda _: next(inputs),
         print_fn=lambda _: None,
+        find_matched_cards_fn=lambda question: [],
+        resolve_card_effect_question_fn=fake_resolve,
         online_ingest_enabled=False,
     )
 

@@ -5,6 +5,7 @@ from aijudge.orchestration.confidence import (
     RETRIEVAL_GAP_PENALTY,
     SignalState,
     compute_confidence,
+    normalize_cited_ids,
     update_signals,
 )
 
@@ -183,3 +184,33 @@ def test_compute_confidence_accepts_passcode_citation_alongside_internal_id():
         {"found": True, "id": "abc", "ygoprodeck_id": "32896829", "confirmed_effects": [{"effect": "..."}]},
     )
     assert compute_confidence({"card:abc", "card:32896829"}, state) == 1.0
+
+
+def test_compute_confidence_zero_when_known_ids_populated_but_nothing_cited():
+    state = SignalState(known_ids={"card:abc"})
+    assert compute_confidence(set(), state) == 0.0
+
+
+def test_compute_confidence_unaffected_when_known_ids_empty_and_nothing_cited():
+    state = SignalState()
+    assert compute_confidence(set(), state) == 1.0
+
+
+def test_normalize_cited_ids_adds_card_prefix_to_bare_known_id():
+    # Reproduces a real false-positive escalation: the LLM was told to cite
+    # card:abc but its ||CITES: ...|| trailer dropped the "card:" prefix,
+    # citing the bare internal id instead. That's the exact same
+    # already-known card, not a fabricated source, so it must resolve to the
+    # prefixed known id rather than being left as an unrecognized citation.
+    state = SignalState(known_ids={"card:abc"})
+    assert normalize_cited_ids({"abc"}, state) == {"card:abc"}
+
+
+def test_normalize_cited_ids_leaves_unknown_bare_id_unchanged():
+    state = SignalState(known_ids={"card:abc"})
+    assert normalize_cited_ids({"xyz"}, state) == {"xyz"}
+
+
+def test_normalize_cited_ids_leaves_already_prefixed_id_unchanged():
+    state = SignalState(known_ids={"card:abc"})
+    assert normalize_cited_ids({"card:abc"}, state) == {"card:abc"}

@@ -1,5 +1,6 @@
 import aijudge.__main__ as main_module
 from aijudge.__main__ import main
+from aijudge.call_log import CallLogger, LoggingLLMClient
 
 
 def test_main_exits_immediately_on_quit():
@@ -84,3 +85,24 @@ def test_main_defaults_to_a_real_ollama_backed_embedding_client(monkeypatch):
     main(input_fn=lambda _: "quit", print_fn=lambda _: None)
 
     assert constructed.get("built") is True
+
+
+def test_main_wraps_the_llm_client_for_logging_and_passes_a_call_logger(monkeypatch):
+    captured = {}
+
+    def fake_run_cli(llm_client, embedding_client, **kwargs):
+        captured["llm_client"] = llm_client
+        captured.update(kwargs)
+
+    monkeypatch.setattr(main_module, "run_cli", fake_run_cli)
+
+    class InjectedLLMClient:
+        def complete(self, prompt: str, *, system: str | None = None) -> str:
+            raise AssertionError("should not be called")
+
+    injected = InjectedLLMClient()
+    main(llm_client=injected)
+
+    assert isinstance(captured["llm_client"], LoggingLLMClient)
+    assert captured["llm_client"].inner is injected
+    assert isinstance(captured["call_logger"], CallLogger)

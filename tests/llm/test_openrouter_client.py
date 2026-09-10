@@ -86,3 +86,18 @@ def test_complete_raises_on_http_error():
         assert False, "expected an error"
     except RuntimeError:
         pass
+
+
+def test_complete_raises_clear_error_on_200_response_with_error_envelope():
+    def fake_post(url, *, headers, json, timeout):
+        return FakeResponse(
+            200,
+            {"error": {"message": "Upstream error from Nvidia: Service temporarily overloaded", "code": 502}},
+        )
+
+    client = OpenRouterLLMClient("test-key", http_post=fake_post)
+    try:
+        client.complete("question")
+        assert False, "expected an error"
+    except RuntimeError as exc:
+        assert "Upstream error from Nvidia: Service temporarily overloaded" in str(exc)

@@ -1,6 +1,7 @@
 import pytest
 
 from aijudge import entrypoint
+from aijudge.call_log import CallLogger, LoggingLLMClient
 from aijudge.embeddings.openai_client import OpenAIEmbeddingClient
 from aijudge.llm.openrouter_client import OpenRouterLLMClient
 
@@ -50,8 +51,24 @@ def test_main_builds_real_clients_and_runs_cli(monkeypatch):
 
     entrypoint.main()
 
-    assert isinstance(captured["llm_client"], OpenRouterLLMClient)
+    assert isinstance(captured["llm_client"], LoggingLLMClient)
+    assert isinstance(captured["llm_client"].inner, OpenRouterLLMClient)
     assert isinstance(captured["embedding_client"], OpenAIEmbeddingClient)
+
+
+def test_main_passes_a_call_logger_to_run_cli(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "or-key")
+    monkeypatch.setenv("OPENAI_API_KEY", "oa-key")
+    captured = {}
+
+    def fake_run_cli(llm_client, embedding_client, **kwargs):
+        captured.update(kwargs)
+
+    monkeypatch.setattr(entrypoint, "run_cli", fake_run_cli)
+
+    entrypoint.main()
+
+    assert isinstance(captured["call_logger"], CallLogger)
 
 
 def test_online_ingest_enabled_defaults_to_true(monkeypatch):

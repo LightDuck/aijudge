@@ -1,5 +1,6 @@
 import aijudge.api.__main__ as main_module
 from aijudge.api.__main__ import main
+from aijudge.call_log import CallLogger, LoggingLLMClient
 
 
 class _StubLLMClient:
@@ -101,6 +102,25 @@ def test_main_passes_online_ingest_toggle_from_env(monkeypatch):
     )
 
     assert captured["online_ingest_enabled"] is False
+
+
+def test_main_wraps_the_llm_client_for_logging_and_passes_a_call_logger(monkeypatch):
+    captured = {}
+
+    monkeypatch.setattr(
+        main_module,
+        "create_app",
+        lambda llm, emb, **kwargs: captured.update({"llm_client": llm, **kwargs}),
+    )
+
+    main(
+        llm_client=_StubLLMClient(),
+        embedding_client=_StubEmbeddingClient(),
+        run_fn=lambda app, **kwargs: None,
+    )
+
+    assert isinstance(captured["llm_client"], LoggingLLMClient)
+    assert isinstance(captured["call_logger"], CallLogger)
 
 
 def test_main_defaults_online_ingest_toggle_to_true(monkeypatch):

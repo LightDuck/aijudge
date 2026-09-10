@@ -2,6 +2,7 @@ import os
 
 from dotenv import load_dotenv
 
+from .call_log import CallLogger, LoggingLLMClient
 from .cli import run_cli
 from .embeddings.client import EmbeddingClient
 from .embeddings.openai_client import OpenAIEmbeddingClient
@@ -30,7 +31,13 @@ def _online_ingest_enabled() -> bool:
 
 def main() -> None:
     load_dotenv()
-    run_cli(build_llm_client(), build_embedding_client(), online_ingest_enabled=_online_ingest_enabled())
+    call_logger = CallLogger()
+    run_cli(
+        LoggingLLMClient(build_llm_client(), call_logger),
+        build_embedding_client(),
+        online_ingest_enabled=_online_ingest_enabled(),
+        call_logger=call_logger,
+    )
 
 
 if __name__ == "__main__":

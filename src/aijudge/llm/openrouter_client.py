@@ -3,7 +3,7 @@ from typing import Callable
 import requests
 
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
-DEFAULT_MODEL = "meta-llama/llama-3.3-70b-instruct:free"
+DEFAULT_MODEL = "nvidia/nemotron-3-ultra-550b-a55b:free"
 
 
 class OpenRouterLLMClient:
@@ -34,5 +34,8 @@ class OpenRouterLLMClient:
             timeout=30,
         )
         response.raise_for_status()
-        content = response.json()["choices"][0]["message"]["content"]
+        payload = response.json()
+        if "error" in payload:
+            raise RuntimeError(f"OpenRouter error: {payload['error'].get('message', payload['error'])}")
+        content = payload["choices"][0]["message"]["content"]
         return content or ""

@@ -169,6 +169,39 @@ def test_build_known_facts_context_includes_a_citable_id_for_the_card():
     assert f"card:{card['id']}" in context
 
 
+def test_build_known_facts_context_includes_card_type_and_card_text():
+    # Before this branch, the LLM could get card_type/card_text by calling
+    # the lookup_card tool; the restricted answering turn (tools={}) removed
+    # that access and put nothing in its place, which was confirmed to cause
+    # a real fabrication in manual testing (a Tuner Monster described as a
+    # "Quick-Effect spell card"). KNOWN FACTS must carry both fields itself.
+    from aijudge.db.cards_repo import get_card_by_name, insert_card
+    from aijudge.db.effects_repo import confirm_effect, insert_pending_effect
+    from aijudge.orchestration.preflight import build_known_facts_context
+
+    card_id = insert_card(
+        name="Effect Veiler",
+        card_text=_EFFECT_VEILER_TEXT,
+        card_type="Effect Monster",
+        source="ygoprodeck",
+        fetched_at=date(2026, 8, 18),
+        ygoprodeck_id="95440946",
+        deterministic_parse_eligible=True,
+    )
+    effect_id = insert_pending_effect(
+        card_id=card_id,
+        effect_type="quick",
+        effect="negate the effects of 1 Effect Monster your opponent controls, also its ATK becomes 0.",
+    )
+    confirm_effect(effect_id)
+
+    context = build_known_facts_context(get_card_by_name("Effect Veiler"))
+
+    assert "Effect Monster" in context
+    assert _EFFECT_VEILER_TEXT in context
+    assert "without calling lookup_card" not in context
+
+
 def test_build_grounded_result_returns_a_lookup_card_shaped_dict():
     from aijudge.db.cards_repo import get_card_by_name, insert_card
     from aijudge.db.effects_repo import confirm_effect, insert_pending_effect

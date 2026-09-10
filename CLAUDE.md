@@ -203,6 +203,25 @@ spec:
   defensively, since `run_loop`'s protocol parses an exact `TOOL:`/`FINAL:` text format that a reasoning
   preamble would break. Claude remains the eventual production target per the original spec, not yet wired in.
 
+- **`call_log.py`** — cross-cutting LLM call logging, kept separate from `logging`/stdlib debug output so calls
+  and their failure reasons stay queryable after the fact. `CallLogger` appends one JSON object per line to a
+  file (`AIJUDGE_LOG_FILE` env var, default `logs/aijudge.jsonl`; parent dirs created on first write, path
+  gitignored), stamping each record with a UTC timestamp. `LoggingLLMClient` wraps any `LLMClient` and logs every
+  `complete()` call's full prompt/system/response (or, on exception, the exception type/message) plus duration,
+  then returns/re-raises exactly what the wrapped client did — so callers that catch specific exceptions (e.g.
+  `api/app.py`'s `requests.exceptions.ConnectionError` → 503 mapping) are unaffected. `call_site(name)` is a
+  `contextvars`-backed context manager that tags whatever `LoggingLLMClient` calls happen inside it (`"loop"`,
+  `"verify"`, `"clarify"`, `"extraction"`, `"review_agent"`) without changing the `LLMClient` protocol or any
+  `complete()` call's arguments — every real call site (`orchestration/loop.py`, `verify.py`, `extraction.py`,
+  `effect_parser/review_agent.py`, and the clarification calls in `cli.py`/`api/app.py`) wraps its own
+  `llm_client.complete(...)` in one. `log_event(call_logger, *, site, event, reason=None, **context)` is the
+  sibling for orchestration-level *why* (not a raw LLM call): `run_loop` calls it at each of its existing
+  decision branches (`malformed_response`, `tool_error`, `verification_failed`, `escalate`, `not_supported`,
+  `off_topic`, `answered`), alongside its pre-existing `logger.debug` calls rather than replacing them. No-ops
+  silently when `call_logger` is `None`, which every caller (`run_loop`, `run_cli`, `create_app`) defaults it to,
+  so logging stays fully opt-in. `__main__.py`, `entrypoint.py`, and `api/__main__.py` are the only places that
+  construct a real `CallLogger` and wrap the real LLM client in `LoggingLLMClient`, once, at startup.
+
 - **`orchestration/`** — the agentic tool-use loop that turns a user question into an answer, escalation, or
   "not supported":
   - `protocol.py` — `build_system_prompt()` describes the `TOOL: <name> {json}` / `FINAL: <text>||CITES:
@@ -212,6 +231,16 @@ spec:
     `FinalAnswer`, or `Refusal`, raising `ProtocolError` on anything else (missing prefix, bad JSON, unknown tool,
     malformed or missing `||CITES: ...||` trailer). This system prompt is also passed to the `clarify.py`
     pre-loop LLM call (see below) so the scope pin holds from the very first LLM turn, not just inside `run_loop`.
+    `build_answering_system_prompt()` is a second, narrower system prompt used only for the final answering turn
+    (both `cli.py` and `api/app.py` call `run_loop` with `tools={}` and this prompt uniformly, never
+    `build_system_prompt()`/a real tool dispatch, for that turn): it tells the model it has already been given
+    complete, verified KNOWN FACTS and has **no tools** this turn, explicitly forbids attempting a `TOOL:` line,
+    instructs it to report (never guess) a card listed under `card_effect_pipeline.py`'s LOOKUP FAILURES block,
+    and to treat its own memory of a card's effect as unreliable and never state it as fact. This is the mechanism
+    behind the branch's core fix: previously the LLM could optionally skip `lookup_card` and answer from memory,
+    ungrounded and uncited, scoring a perfect confidence of `1.0`; now the final turn is deterministically grounded
+    (via `preflight.py`/`card_effect_pipeline.py`'s KNOWN FACTS injected into `clarification_context`) or has no
+    tool available to fabricate a citation with in the first place.
   - `tools.py` — `build_tool_dispatch()` wires the DB/embedding-backed tool implementations
     (`lookup_card`, `get_rulings`, `search_rulebook`, `resolve_chain`) into the `{name: callable}` dict the loop
     dispatches against. `resolve_chain` delegates to `rules_engine.resolve.resolve_chain`, which raises
@@ -287,44 +316,95 @@ spec:
     and when non-`None`, activation condition, damage step category, usage limit text, and damage-step legality
     (computed via `rules_engine.models.is_activatable()` and `rules_engine.priority.can_activate_during_damage_step()`,
     reused unchanged) — returns `""` if the card has no confirmed effects, so callers fall back to unaided LLM reasoning.
+    The block's header also states the card's `card_type` and full `card_text` verbatim (not just per-effect
+    facts), since the restricted answering turn (see `protocol.build_answering_system_prompt()` below) has no
+    `lookup_card` tool to fall back on for that -- omitting them was a confirmed source of fabrication (a real
+    Tuner Monster described as a "Quick-Effect spell card") caught in manual testing.
+  - `extraction.py` — `extract_card_names(question, *, llm_client)` asks the LLM (via the narrow
+    `EXTRACTION_SYSTEM_PROMPT`, deliberately not `protocol.build_system_prompt()`) to list every card name a
+    question references, one per line, or the literal `NONE`. `parse_extraction_response()` strips bullet/number
+    prefixes and quoting per line and returns `[]` for `NONE` or blank input. This is the entry point for the
+    mandatory pipeline below: a question naming a card with 0 local `preflight` matches (e.g. one of the ~13,000+
+    real cards outside the hand-picked seed list) still gets a shot at deterministic grounding instead of silently
+    falling through to unaided LLM reasoning.
+  - `card_resolution.py` — `resolve_named_cards(names, *, llm_client, online_ingest_enabled=True,
+    on_ingest_start=None)` takes `extraction.py`'s extracted names and, for each, calls `tools.lookup_card`
+    directly (not through `tools.build_tool_dispatch`, which nothing in the restricted answering pathway uses any
+    more) and classifies the result into a `CardResolution(name, status, card=None)`: `"ambiguous"` when
+    `lookup_card` reports more than one match, `"not_found"` when it reports none, or `"resolved"` with the full
+    raw row (re-fetched via `get_card_by_id` -- not `lookup_card`'s own trimmed shape, since
+    `build_known_facts_context` needs fields like `race` that only the raw row carries) when exactly one match is
+    found. Guards a narrow race where the row backing a just-reported `found: True` id is gone by the time it's
+    re-fetched: rather than ever return `status="resolved"` with `card=None` (which would later crash
+    `build_known_facts_context`/`build_grounded_result` with an unguarded `TypeError`), it downgrades that case to
+    `"not_found"`, which every caller already handles.
+  - `card_effect_pipeline.py` — composes the two modules above into the mandatory fallback used whenever
+    `preflight.find_matched_cards` finds nothing locally (or a multi-match disambiguation answer doesn't resolve
+    to any candidate -- see `cli.py`/`api/` below). `build_pipeline_context(resolutions)` renders one
+    `build_known_facts_context` block per resolved `CardResolution` plus, when any name failed to resolve, a
+    "LOOKUP FAILURES (deterministic -- report these to the user, do not guess their effects)" block listing each
+    by name and status -- so the LLM is told explicitly to report a lookup miss rather than fabricate an answer
+    for it. `resolve_card_effect_question(question, *, llm_client, online_ingest_enabled=True,
+    on_ingest_start=None)` ties it together into a `PipelineResolution(supported, context="", grounded_cards=[])`:
+    `supported=False` (with no context/grounded_cards) if `extraction.py` finds no card names at all, otherwise
+    `supported=True` with the rendered context and a `build_grounded_result`-shaped entry per resolved card, ready
+    to hand straight to `run_loop(..., clarification_context=resolution.context,
+    grounded_cards=resolution.grounded_cards)`.
 
-- **`cli.py`** — `run_cli()`: a REPL (`input_fn`/`print_fn`, plus `find_matched_cards_fn`/`build_known_facts_context_fn`
-  defaulting to `preflight.find_matched_cards`/`preflight.build_known_facts_context`, are all injectable for
-  testing) that, per question, first runs `find_matched_cards_fn` -- if more than one card plausibly matches, it
-  adds a `"disambiguate_card"` clarification item asking the user which one they mean -- then runs the
-  clarification pass, prompts for answers to any `CLARIFY`/`CONTINUOUS_CHECK`/`disambiguate_card` items, resolves
-  the disambiguation answer back to a candidate card via `preflight.find_mentioned_card_names` (fuzzy,
-  case-insensitive -- not a bare `==`, so "effect veiler" still resolves to "Effect Veiler"; an unresolvable
-  answer prints a one-line notice via `print_fn` rather than silently dropping the card's KNOWN FACTS), folds the
-  resulting `build_known_facts_context_fn` block ahead of the clarification context, then calls `run_loop` and
-  prints the result. Wired to a real entrypoint by both `__main__.py` (Ollama, default) and `entrypoint.py`
-  (OpenRouter/OpenAI, alternate).
+- **`cli.py`** — `run_cli()`: a REPL (`input_fn`/`print_fn`, plus `find_matched_cards_fn`/`build_known_facts_context_fn`/
+  `build_grounded_result_fn`/`resolve_card_effect_question_fn`, defaulting to `preflight.find_matched_cards`/
+  `preflight.build_known_facts_context`/`preflight.build_grounded_result`/`card_effect_pipeline.resolve_card_effect_question`,
+  are all injectable for testing) that, per question, first runs `find_matched_cards_fn` -- if more than one card
+  plausibly matches, it adds a `"disambiguate_card"` clarification item asking the user which one they mean --
+  then runs the clarification pass, prompts for answers to any `CLARIFY`/`CONTINUOUS_CHECK`/`disambiguate_card`
+  items, resolves the disambiguation answer back to a candidate card via `preflight.find_mentioned_card_names`
+  (fuzzy, case-insensitive -- not a bare `==`, so "effect veiler" still resolves to "Effect Veiler"; an
+  unresolvable answer prints a one-line notice via `print_fn`). If there were 0 local matches at all, *or* a
+  disambiguation answer failed to resolve to any candidate (leaving `grounded_cards` empty -- a gap that used to
+  fall through to an ungrounded answer, fixed in the final-review fix wave), it falls back to the mandatory
+  `resolve_card_effect_question_fn` pipeline (`card_effect_pipeline.py`, below) instead of proceeding ungrounded;
+  an unsupported pipeline result (no card names extracted at all) prints `NOT_SUPPORTED_MESSAGE` and skips the
+  question entirely rather than calling `run_loop`. Either way, the resulting `KNOWN FACTS`
+  context/`grounded_cards` are folded in ahead of the clarification context, then `run_loop` is called with
+  `tools={}` and `system_prompt=protocol.build_answering_system_prompt()` -- never a real tool dispatch --
+  and the result is printed. Wired to a real entrypoint by both `__main__.py` (Ollama, default) and
+  `entrypoint.py` (OpenRouter/OpenAI, alternate).
 
-- **`api/`** — `create_app(llm_client, embedding_client, *, cors_origins=None, tools=None,
-  find_matched_cards_fn=None, build_known_facts_context_fn=None) -> FastAPI` wires the same orchestration
-  functions the CLI uses behind two stateless REST endpoints (no server-side session store): `POST /questions`
-  runs preflight card-matching and the clarification pass, and either returns `{"status":
-  "needs_clarification", ...}` or, if no clarification is needed, runs `run_loop` directly; `POST
-  /questions/answer` takes the client's echoed-back question/items/answers, rebuilds `ClarificationItem`s, and
-  runs `run_loop` with the resulting context. Preflight mirrors `cli.py`'s logic (`find_matched_cards`,
-  `build_known_facts_context`, both from `orchestration/preflight.py`, injectable the same way `tools` is) but
-  is re-run from scratch on *every* call via the module-private `_resolve_preflight_context()` helper, since the
-  API has no in-process session to carry a resolved card across the two endpoints the way the CLI's single
-  request-handling loop does: a single card match folds its `KNOWN FACTS` context in immediately; more than one
-  match adds a `"disambiguate_card"` item to the `needs_clarification` response (alongside any LLM-raised
+- **`api/`** — `create_app(llm_client, embedding_client, *, cors_origins=None, find_matched_cards_fn=None,
+  build_known_facts_context_fn=None, build_grounded_result_fn=None, resolve_card_effect_question_fn=None,
+  online_ingest_enabled=True) -> FastAPI` wires the same orchestration functions the CLI uses (`preflight.py`
+  and, as of this branch, `card_effect_pipeline.resolve_card_effect_question` -- there is no `tools` parameter
+  any more; both endpoints call `run_loop` with `tools={}` and `system_prompt=protocol.build_answering_system_prompt()`
+  uniformly, and `tools.build_tool_dispatch` is no longer called by this module at all) behind two stateless REST
+  endpoints (no server-side session store): `POST /questions` runs preflight card-matching and the clarification
+  pass, and either returns `{"status": "needs_clarification", ...}` or, if no clarification is needed, resolves
+  `KNOWN FACTS` (falling back to `resolve_card_effect_question_fn` when there were 0 local matches) and runs
+  `run_loop` directly; `POST /questions/answer` takes the client's echoed-back question/items/answers, rebuilds
+  `ClarificationItem`s, resolves the disambiguation answer (if any) via the module-private
+  `_resolve_preflight_card()` helper, and runs `run_loop` with the resulting context. Preflight mirrors `cli.py`'s
+  logic (`find_matched_cards`, `build_known_facts_context`, both from `orchestration/preflight.py`, injectable the
+  same way the other functions are) but is re-run from scratch on *every* call, since the API has no in-process
+  session to carry a resolved card across the two endpoints the way the CLI's single request-handling loop does: a
+  single card match folds its `KNOWN FACTS` context in immediately; more than one match adds a
+  `"disambiguate_card"` item to the `needs_clarification` response (alongside any LLM-raised
   `CLARIFY`/`CONTINUOUS_CHECK` items) and only resolves to `KNOWN FACTS` once `/questions/answer` sees that
-  item's answer echoed back, fuzzy-matched via `find_mentioned_card_names` (same case-insensitive, misspelling-
-  tolerant matching the CLI uses); an unresolvable disambiguation answer just proceeds without `KNOWN FACTS`
-  (no `print_fn` equivalent exists over HTTP to surface a notice). Both
-  return a `ResultResponse`/`NeedsClarificationResponse` (Pydantic models in `schemas.py`) — `citations` are
-  always `{"label", "text"}` pairs; the internal `card:<id>`/`ruling:<id>`/`chunk:<id>` ids `LoopResult.citations`
-  carries (see `orchestration/` below) never reach the response body. Backend connection errors
-  (`requests.exceptions.ConnectionError`, `psycopg.OperationalError`) become a generic `503`, any other unhandled
-  exception a generic `500` — both log the real exception server-side via `logger.exception(..., exc_info=exc)`
-  (exception handlers run in Starlette's threadpool, where bare `logger.exception()` without `exc_info=exc` logs
-  nothing) but never leak exception text to the client. `__main__.py` wires real `OllamaLLMClient`/
-  `OllamaEmbeddingClient` and runs `uvicorn` (`AIJUDGE_API_HOST`/`AIJUDGE_API_PORT`/`AIJUDGE_API_CORS_ORIGINS` env
-  vars). See `docs/superpowers/specs/2026-08-27-api-layer-design.md`.
+  item's answer echoed back, fuzzy-matched via `find_mentioned_card_names` (same case-insensitive,
+  misspelling-tolerant matching the CLI uses). If there were 0 local matches, *or* (in `post_answer`) a
+  disambiguation answer failed to resolve to any candidate (leaving `grounded_cards` empty), `post_answer` falls
+  back to the mandatory `resolve_card_effect_question_fn` pipeline instead of proceeding ungrounded -- the same
+  fix as `cli.py`'s, since the API has no `print_fn` equivalent to surface a notice and would otherwise ship an
+  unlabeled, unverified answer straight through. An unsupported pipeline result there returns `{"status":
+  "not_supported", ...}`. Both endpoints return a `ResultResponse`/`NeedsClarificationResponse` (Pydantic models
+  in `schemas.py`) — `citations` are always `{"label", "text"}` pairs; the internal
+  `card:<id>`/`ruling:<id>`/`chunk:<id>` ids `LoopResult.citations` carries (see `orchestration/` below) never
+  reach the response body. Backend connection errors (`requests.exceptions.ConnectionError`,
+  `psycopg.OperationalError`) become a generic `503`, any other unhandled exception a generic `500` — both log the
+  real exception server-side via `logger.exception(..., exc_info=exc)` (exception handlers run in Starlette's
+  threadpool, where bare `logger.exception()` without `exc_info=exc` logs nothing) but never leak exception text
+  to the client. `__main__.py` wires real `OllamaLLMClient`/`OllamaEmbeddingClient` and runs `uvicorn`
+  (`AIJUDGE_API_HOST`/`AIJUDGE_API_PORT`/`AIJUDGE_API_CORS_ORIGINS` env vars). See
+  `docs/superpowers/specs/2026-08-27-api-layer-design.md` for the original design (predates the
+  `resolve_card_effect_question_fn` fallback and the `tools`-parameter removal, both from this branch).
 
 - **`ingestion/`** — `ygoprodeck_client.fetch_card()` and `ygoresources_client.fetch_rulings()` pull only the
   fields this project uses (not a full API mirror). `seed.py` ties it together: `seed_card()` fetches card +

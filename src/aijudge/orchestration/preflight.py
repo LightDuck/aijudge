@@ -62,8 +62,9 @@ def build_known_facts_context(card: dict) -> str:
     if not confirmed_effects:
         return ""
     lines = [
-        f"KNOWN FACTS (deterministic -- do not contradict) -- if you answer using only "
-        f"these facts without calling lookup_card, cite {card['name']} as card:{card['id']}:"
+        f"KNOWN FACTS (deterministic -- do not contradict) -- {card['name']} is a "
+        f"{card['card_type']}. Printed text: \"{card['card_text']}\". If you answer "
+        f"using only these facts, cite {card['name']} as card:{card['id']}:"
     ]
     for index, confirmed in enumerate(confirmed_effects, start=1):
         effect_type = EffectType(confirmed["effect_type"])
