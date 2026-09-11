@@ -3,7 +3,16 @@ from typing import Callable
 import requests
 
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
-DEFAULT_MODEL = "nvidia/nemotron-3-ultra-550b-a55b:free"
+# OpenRouter's free-tier lineup rotates and contends for shared capacity --
+# reliability is moment-to-moment shared-pool luck, not a stable property of
+# any specific model id (a live check on 2026-09-11 found this one serving
+# while nvidia/nemotron-3-ultra-550b-a55b:free and the google/gemma-4 free
+# tier were both rate-limited, and vice versa on other days -- see
+# docs/superpowers/specs/2026-08-20-openrouter-llm-client-design.md and the
+# real_e2e_test_gotchas project memory). Re-check
+# https://openrouter.ai/api/v1/models (filter id.endswith(":free")) if this
+# one stops being served.
+DEFAULT_MODEL = "nex-agi/nex-n2.5-pro:free"
 
 
 class OpenRouterLLMClient:
