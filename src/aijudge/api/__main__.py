@@ -3,11 +3,12 @@ import os
 from typing import Callable
 
 import uvicorn
+from dotenv import load_dotenv
 
 from aijudge.call_log import CallLogger, LoggingLLMClient
 from aijudge.embeddings.client import EmbeddingClient
-from aijudge.embeddings.ollama_client import OllamaEmbeddingClient
-from aijudge.llm.client import LLMClient, OllamaLLMClient
+from aijudge.entrypoint import build_embedding_client, build_llm_client
+from aijudge.llm.client import LLMClient
 
 from .app import create_app
 
@@ -40,11 +41,12 @@ def main(
     embedding_client: EmbeddingClient | None = None,
     run_fn: Callable = uvicorn.run,
 ) -> None:
+    load_dotenv()
     _configure_logging_from_env()
     call_logger = CallLogger()
     app = create_app(
-        LoggingLLMClient(llm_client or OllamaLLMClient(), call_logger),
-        embedding_client or OllamaEmbeddingClient(),
+        LoggingLLMClient(llm_client or build_llm_client(), call_logger),
+        embedding_client or build_embedding_client(),
         cors_origins=_cors_origins_from_env(),
         online_ingest_enabled=_online_ingest_enabled_from_env(),
         call_logger=call_logger,
