@@ -61,3 +61,19 @@ explaining results, AIJudge aims to be trustworthy rather than just plausible-so
 Every piece of logic is also built "test-first" — meaning a test describing the correct behavior is written
 *before* the code that implements it. This matters a lot here: a bug in this project doesn't just crash a
 program, it could mean giving someone the wrong ruling in a real game.
+
+## Running the frontend
+
+The React chat UI lives in `frontend/` and talks to the API service (`python -m aijudge.api`) over HTTP.
+
+1. Start the backend: `python -m aijudge.api` (defaults to `http://localhost:8000`).
+2. In a separate terminal:
+   ```
+   cd frontend
+   npm install
+   cp .env.example .env   # first time only; override VITE_AIJUDGE_API_URL if the backend isn't on the default host/port
+   npm run dev
+   ```
+3. Open the URL Vite prints (default `http://localhost:5173`).
+
+Run the frontend's test suite with `npm test` from `frontend/`.
