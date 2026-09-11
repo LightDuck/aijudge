@@ -1,6 +1,8 @@
 import aijudge.api.__main__ as main_module
 from aijudge.api.__main__ import main
 from aijudge.call_log import CallLogger, LoggingLLMClient
+from aijudge.embeddings.openai_client import OpenAIEmbeddingClient
+from aijudge.llm.openrouter_client import OpenRouterLLMClient
 
 
 class _StubLLMClient:
@@ -16,14 +18,11 @@ class _StubEmbeddingClient:
 def test_main_uses_injected_llm_client_instead_of_constructing_one(monkeypatch):
     constructed = {}
 
-    class SpyOllamaLLMClient:
-        def __init__(self):
-            constructed["built"] = True
+    def spy_build_llm_client():
+        constructed["built"] = True
+        return _StubLLMClient()
 
-        def complete(self, prompt: str) -> str:
-            raise AssertionError("should not be called during startup")
-
-    monkeypatch.setattr(main_module, "OllamaLLMClient", SpyOllamaLLMClient)
+    monkeypatch.setattr(main_module, "build_llm_client", spy_build_llm_client)
 
     main(
         llm_client=_StubLLMClient(),
@@ -34,22 +33,22 @@ def test_main_uses_injected_llm_client_instead_of_constructing_one(monkeypatch):
     assert "built" not in constructed
 
 
-def test_main_defaults_to_a_real_ollama_backed_llm_client(monkeypatch):
-    constructed = {}
+def test_main_defaults_to_real_openrouter_and_openai_backed_clients(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "or-key")
+    monkeypatch.setenv("OPENAI_API_KEY", "oa-key")
+    captured = {}
 
-    class SpyOllamaLLMClient:
-        def __init__(self):
-            constructed["built"] = True
-
-        def complete(self, prompt: str) -> str:
-            raise AssertionError("should not be called during startup")
-
-    monkeypatch.setattr(main_module, "OllamaLLMClient", SpyOllamaLLMClient)
-    monkeypatch.setattr(main_module, "OllamaEmbeddingClient", lambda: _StubEmbeddingClient())
+    monkeypatch.setattr(
+        main_module,
+        "create_app",
+        lambda llm, emb, **kwargs: captured.update({"llm_client": llm, "embedding_client": emb, **kwargs}),
+    )
 
     main(run_fn=lambda app, **kwargs: None)
 
-    assert constructed.get("built") is True
+    assert isinstance(captured["llm_client"], LoggingLLMClient)
+    assert isinstance(captured["llm_client"].inner, OpenRouterLLMClient)
+    assert isinstance(captured["embedding_client"], OpenAIEmbeddingClient)
 
 
 def test_main_passes_host_and_port_to_run_fn(monkeypatch):
