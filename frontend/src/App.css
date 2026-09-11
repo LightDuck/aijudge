@@ -58,3 +58,18 @@
 .clarification-form__item input {
   padding: 0.5rem;
 }
+
+.chat-history__turn {
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.chat-history__question {
+  font-weight: 600;
+}
+
+.chat-history__clarification-item {
+  font-size: 0.9rem;
+  color: #555;
+}
