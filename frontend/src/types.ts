@@ -10,7 +10,7 @@ export interface Citation {
   text: string;
 }
 
-export type ResultStatus = "answer" | "escalate" | "not_supported";
+export type ResultStatus = "answer" | "escalate" | "not_supported" | "off_topic";
 
 export interface ResultResponse {
   status: ResultStatus;

@@ -13,11 +13,15 @@ export default function ChatHistory({ turns }: ChatHistoryProps) {
           <p className="chat-history__question">{turn.question}</p>
           {turn.clarification && (
             <div className="chat-history__clarification">
-              {turn.clarification.items.map((item, itemIndex) => (
-                <p key={itemIndex} className="chat-history__clarification-item">
-                  <em>{item.text}</em> — {turn.clarification!.answers[itemIndex]}
-                </p>
-              ))}
+              {turn.clarification.items.map((item, itemIndex) => {
+                const answer = turn.clarification!.answers[itemIndex];
+                return (
+                  <p key={itemIndex} className="chat-history__clarification-item">
+                    <em>{item.text}</em>
+                    {answer && <span> — {answer}</span>}
+                  </p>
+                );
+              })}
             </div>
           )}
           {turn.result && <MessageBubble result={turn.result} />}

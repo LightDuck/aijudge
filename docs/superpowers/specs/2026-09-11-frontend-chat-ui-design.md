@@ -27,7 +27,7 @@ delivery of intermediate tool-call progress, clickable source URLs back to ygopr
 
 React + Vite + TypeScript. Chosen over plain JS or a no-build-step static page because TypeScript gives
 compile-time checking against the API's typed contract — in particular the `status` discriminated union
-(`"needs_clarification" | "answer" | "escalate" | "not_supported"`) and the `ClarificationItem.kind` union
+(`"needs_clarification" | "answer" | "escalate" | "not_supported" | "off_topic"`) and the `ClarificationItem.kind` union
 (`"clarify" | "continuous_check" | "disambiguate_card"`), which is exactly the kind of thing that's easy to
 mishandle with a typo if checked only at runtime. Vite over Create React App for its dev-server speed and
 because the API's existing `DEFAULT_CORS_ORIGINS` (`src/aijudge/api/app.py`) already includes Vite's default
@@ -85,7 +85,7 @@ interface Citation {
   text: string;
 }
 
-type ResultStatus = "answer" | "escalate" | "not_supported";
+type ResultStatus = "answer" | "escalate" | "not_supported" | "off_topic";
 
 interface ResultResponse {
   status: ResultStatus;
@@ -155,9 +155,11 @@ duplicated beyond this.
 - **`ChatHistory.tsx`** — maps `Turn[]` to one block per turn: the user's question, the clarification exchange
   if any (each item's text alongside the answer given), then the result via `MessageBubble`.
 - **`MessageBubble.tsx`** — renders a `ResultResponse`. `status === "answer"` renders as a plain bubble with the
-  `citations` list underneath (label + text pairs). `status === "escalate"` or `"not_supported"` renders in a
-  visually distinct banner style (amber for escalate, gray for not_supported) so it reads immediately as "not a
-  confident grounded ruling," never mixed with a normal answer's styling.
+  `citations` list underneath (label + text pairs). `status === "escalate"`, `"not_supported"`, or `"off_topic"`
+  renders in its own visually distinct banner style (amber for escalate, gray for not_supported, indigo for
+  off_topic) so it reads immediately as "not a confident grounded ruling," never mixed with a normal answer's
+  styling. The status-to-class mapping is exhaustive (a `never`-typed default case), so a future status added to
+  `ResultStatus` without a corresponding banner class fails to compile.
 - **`QuestionInput.tsx`** — controlled text input + submit button, calls `askQuestion` via a prop callback,
   disabled while a request is in flight.
 - **`ClarificationForm.tsx`** — renders one text input per pending `ClarificationItem` (in order, including a
@@ -175,7 +177,7 @@ never completed).
 ## Testing
 
 `test/api.test.ts` mocks global `fetch` and asserts, per function: the request URL/method/body shape sent, and
-correct parsing of each response shape (`needs_clarification`, all three `ResultResponse.status` values, and a
+correct parsing of each response shape (`needs_clarification`, all four `ResultResponse.status` values, and a
 non-2xx response producing a thrown `ApiError` with the right status/detail).
 
 `test/App.test.tsx` (React Testing Library) drives the full component tree with a mocked `api.ts` module through:

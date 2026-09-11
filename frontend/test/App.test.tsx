@@ -121,6 +121,70 @@ describe("App", () => {
     expect(banner).toHaveTextContent("This scenario isn't supported yet.");
   });
 
+  it("shows the in-flight question and a thinking indicator while a request is pending", async () => {
+    let resolveAsk: (value: Awaited<ReturnType<typeof askQuestion>>) => void;
+    const pending = new Promise<Awaited<ReturnType<typeof askQuestion>>>((resolve) => {
+      resolveAsk = resolve;
+    });
+    vi.mocked(askQuestion).mockReturnValue(pending);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.type(screen.getByLabelText("Question"), "Does Effect Veiler negate X?");
+    await user.click(screen.getByRole("button", { name: "Ask" }));
+
+    expect(screen.getByText("Does Effect Veiler negate X?")).toBeInTheDocument();
+    expect(screen.getByText("Thinking…")).toBeInTheDocument();
+
+    resolveAsk!({
+      status: "answer",
+      text: "Yes, it negates the activation.",
+      citations: [],
+    });
+
+    expect(await screen.findByText("Yes, it negates the activation.")).toBeInTheDocument();
+    expect(screen.queryByText("Thinking…")).not.toBeInTheDocument();
+  });
+
+  it("shows an off_topic result in its distinct banner", async () => {
+    vi.mocked(askQuestion).mockResolvedValue({
+      status: "off_topic",
+      text: "I only answer Yu-Gi-Oh! rules questions.",
+      citations: null,
+    });
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.type(screen.getByLabelText("Question"), "What's the weather today?");
+    await user.click(screen.getByRole("button", { name: "Ask" }));
+
+    const banner = await screen.findByRole("status");
+    expect(banner).toHaveClass("message-bubble--off-topic");
+    expect(banner).toHaveTextContent("I only answer Yu-Gi-Oh! rules questions.");
+  });
+
+  it("keeps the original question visible while answering a clarification exchange", async () => {
+    let resolveAsk: (value: Awaited<ReturnType<typeof askQuestion>>) => void;
+    const pending = new Promise<Awaited<ReturnType<typeof askQuestion>>>((resolve) => {
+      resolveAsk = resolve;
+    });
+    vi.mocked(askQuestion).mockReturnValue(pending);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.type(screen.getByLabelText("Question"), "Does X work during my turn?");
+    await user.click(screen.getByRole("button", { name: "Ask" }));
+
+    resolveAsk!({
+      status: "needs_clarification",
+      question: "Does X work during my turn?",
+      items: [{ kind: "clarify", text: "Whose turn is it?" }],
+    });
+
+    expect(await screen.findByLabelText("Whose turn is it?")).toBeInTheDocument();
+    expect(screen.getByText("Does X work during my turn?")).toBeInTheDocument();
+  });
+
   it("shows a dismissible error banner on a network failure and re-enables the input without adding a turn", async () => {
     vi.mocked(askQuestion).mockRejectedValue(new ApiError(0, "network error: could not reach the backend"));
     const user = userEvent.setup();

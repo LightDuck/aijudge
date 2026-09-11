@@ -1,7 +1,26 @@
-import type { ResultResponse } from "../types";
+import type { ResultResponse, ResultStatus } from "../types";
 
 interface MessageBubbleProps {
   result: ResultResponse;
+}
+
+const BANNER_CLASS_BY_STATUS: Record<Exclude<ResultStatus, "answer">, string> = {
+  escalate: "message-bubble message-bubble--escalate",
+  not_supported: "message-bubble message-bubble--not-supported",
+  off_topic: "message-bubble message-bubble--off-topic",
+};
+
+function bannerClassFor(status: Exclude<ResultStatus, "answer">): string {
+  switch (status) {
+    case "escalate":
+    case "not_supported":
+    case "off_topic":
+      return BANNER_CLASS_BY_STATUS[status];
+    default: {
+      const _exhaustive: never = status;
+      throw new Error(`Unhandled result status: ${_exhaustive}`);
+    }
+  }
 }
 
 export default function MessageBubble({ result }: MessageBubbleProps) {
@@ -22,13 +41,8 @@ export default function MessageBubble({ result }: MessageBubbleProps) {
     );
   }
 
-  const bannerClass =
-    result.status === "escalate"
-      ? "message-bubble message-bubble--escalate"
-      : "message-bubble message-bubble--not-supported";
-
   return (
-    <div className={bannerClass} role="status">
+    <div className={bannerClassFor(result.status)} role="status">
       <p>{result.text}</p>
     </div>
   );

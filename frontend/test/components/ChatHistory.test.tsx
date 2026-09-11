@@ -35,4 +35,19 @@ describe("ChatHistory", () => {
     expect(screen.getByText("— My turn")).toBeInTheDocument();
     expect(screen.getByText("Yes, on your turn it works.")).toBeInTheDocument();
   });
+
+  it("renders a needs_clarification turn's items without a dangling answer before answers are submitted", () => {
+    const turns: Turn[] = [
+      {
+        question: "Does X work during my turn?",
+        clarification: { items: [{ kind: "clarify", text: "Whose turn is it?" }], answers: [] },
+      },
+    ];
+
+    render(<ChatHistory turns={turns} />);
+
+    expect(screen.getByText("Whose turn is it?", { exact: false })).toBeInTheDocument();
+    expect(screen.queryByText("undefined", { exact: false })).not.toBeInTheDocument();
+    expect(screen.queryByText("—", { exact: false })).not.toBeInTheDocument();
+  });
 });

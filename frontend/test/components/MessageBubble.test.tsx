@@ -40,4 +40,18 @@ describe("MessageBubble", () => {
     expect(banner).toHaveClass("message-bubble--not-supported");
     expect(banner).toHaveTextContent("Not supported yet.");
   });
+
+  it("renders an off_topic result in its own distinct banner style", () => {
+    render(
+      <MessageBubble
+        result={{ status: "off_topic", text: "I only answer Yu-Gi-Oh! rules questions.", citations: null }}
+      />,
+    );
+
+    const banner = screen.getByRole("status");
+    expect(banner).toHaveClass("message-bubble--off-topic");
+    expect(banner).not.toHaveClass("message-bubble--not-supported");
+    expect(banner).not.toHaveClass("message-bubble--escalate");
+    expect(banner).toHaveTextContent("I only answer Yu-Gi-Oh! rules questions.");
+  });
 });

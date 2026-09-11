@@ -50,6 +50,7 @@ export default function App() {
   const showClarificationForm =
     state.current?.clarification !== undefined &&
     (state.phase === "needs_clarification" || state.phase === "submitting_answer");
+  const turns = state.current ? [...state.history, state.current] : state.history;
 
   return (
     <div className="app">
@@ -62,7 +63,8 @@ export default function App() {
           </button>
         </div>
       )}
-      <ChatHistory turns={state.history} />
+      <ChatHistory turns={turns} />
+      {isBusy && <p className="thinking-indicator">Thinking…</p>}
       {showClarificationForm && state.current?.clarification ? (
         <ClarificationForm
           items={state.current.clarification.items}
