@@ -30,3 +30,14 @@
   padding-left: 1.25rem;
   font-size: 0.9rem;
 }
+
+.question-input {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.question-input input {
+  flex: 1;
+  padding: 0.5rem;
+}
