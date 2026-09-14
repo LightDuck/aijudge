@@ -15,13 +15,14 @@ def build_clarification_prompt(question: str, *, known_facts_context: str = "") 
         else ""
     )
     return (
-        "A user asked a Yu-Gi-Oh! rules question. Before answering, decide "
-        "whether you need more information:\n"
+        "A user asked a Yu-Gi-Oh! ruling question (rules, card effects, or a "
+        "ruling). Before answering, decide whether you need more information:\n"
         "- If the question is ambiguous or missing details you need, "
         "respond with one or more lines: 'CLARIFY: <question to ask the user>'\n"
-        "- If the question depends on a continuous or lingering effect card "
-        "whose current on-board status you can't observe, respond with one "
-        "or more lines: 'CONTINUOUS_CHECK: <card name>'\n"
+        "- If the question depends on a continuous or lingering effect whose "
+        "current on-board/chain status you can't observe, respond with the "
+        "line: 'CONTINUOUS_CHECK: Are there lingering effects currently "
+        "applying in this chain?'\n"
         "- If neither applies, respond with exactly: 'PROCEED'\n"
         "Do not ask the user to confirm whether a card name is spelled correctly, real, or exists "
         "in the system -- the system automatically looks up (and imports, if needed) any card name "
@@ -53,8 +54,9 @@ def parse_clarification_response(response: str) -> list[ClarificationItem]:
 
 
 def clarification_prompt_text(item: ClarificationItem) -> str:
-    if item.kind == "continuous_check":
-        return f"Is {item.text}'s effect currently active?"
+    # continuous_check no longer names a specific card for the model to guess from
+    # its own (unverified) training data -- it's now a fixed, deterministic
+    # question, so every kind's text is already directly askable as-is.
     return item.text
 
 
