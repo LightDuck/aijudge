@@ -151,6 +151,9 @@ def build_tool_dispatch(
     online_ingest_enabled: bool = True,
     on_ingest_start: Callable[[str], None] | None = None,
 ) -> dict[str, Callable[[dict], dict]]:
+    # search_rulebook and resolve_chain are temporarily disabled (pipeline instability) --
+    # left out of the dispatch dict so the loop can never invoke them even if a caller
+    # passes them; the underlying implementations stay intact for re-enabling later.
     return {
         "lookup_card": lambda args: lookup_card(
             args,
@@ -159,6 +162,4 @@ def build_tool_dispatch(
             on_ingest_start=on_ingest_start,
         ),
         "get_rulings": get_rulings,
-        "search_rulebook": lambda args: _search_rulebook(args, embedding_client=embedding_client),
-        "resolve_chain": resolve_chain,
     }

@@ -1,7 +1,11 @@
 import json
 from dataclasses import dataclass
 
-TOOL_NAMES = {"lookup_card", "get_rulings", "search_rulebook", "resolve_chain"}
+# search_rulebook and resolve_chain are temporarily disabled (pipeline instability) --
+# removed from both TOOL_NAMES and TOOL_DESCRIPTIONS so the LLM is never told about
+# them and parse_response() rejects a "TOOL: search_rulebook ..."/"TOOL: resolve_chain
+# ..." line as an unrecognized tool name.
+TOOL_NAMES = {"lookup_card", "get_rulings"}
 
 TOOL_DESCRIPTIONS = {
     "lookup_card": (
@@ -14,14 +18,6 @@ TOOL_DESCRIPTIONS = {
         "it down with the exact name, a more specific partial name, or the passcode."
     ),
     "get_rulings": 'get_rulings {"card_id": "<id>"} - fetch official rulings for a card',
-    "search_rulebook": 'search_rulebook {"query": "<question>"} - semantic search over the Konami rulebook/PSCT guide',
-    "resolve_chain": (
-        'resolve_chain {"turn_player": "...", "steps": [...]} - deterministically resolve a described chain '
-        "scenario. An \"activate\" step may include an optional \"in_damage_step\": true/false (default false) "
-        "to indicate the activation is being attempted during the Damage Step; that step's \"effect\" dict may "
-        'include an optional "damage_step_category", one of "atk_def_alter" or "negates_activation" (omit if '
-        "neither applies), used only when checking Damage Step legality."
-    ),
 }
 
 

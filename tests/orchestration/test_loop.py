@@ -62,11 +62,13 @@ def test_fabricated_citation_escalates():
 
 
 def test_retrieval_gap_lowers_confidence_below_threshold():
+    # search_rulebook is temporarily disabled (pipeline instability); get_rulings
+    # exercises the same retrieval-gap-penalty mechanism in confidence.py.
     llm = MockLLMClient()
-    llm.queue_response('TOOL: search_rulebook {"query": "obscure ruling"}')
+    llm.queue_response('TOOL: get_rulings {"card_id": "abc123"}')
     llm.queue_response("FINAL: I could not find a direct source. ||CITES: ||")
 
-    tools = {"search_rulebook": lambda args: {"chunks": []}}
+    tools = {"get_rulings": lambda args: {"rulings": []}}
 
     result = run_loop("An obscure ruling question", llm_client=llm, tools=tools, threshold=0.95)
 
@@ -83,16 +85,19 @@ def test_refusal_returns_off_topic_result():
     assert result.text == "This assistant only answers Yu-Gi-Oh! TCG rules questions."
 
 
-def test_unsupported_scenario_error_from_resolve_chain_short_circuits():
+def test_unsupported_scenario_error_from_a_tool_call_short_circuits():
+    # resolve_chain is temporarily disabled (pipeline instability); lookup_card
+    # is a stand-in here to exercise run_loop's generic short-circuit on
+    # UnsupportedScenarioError from any tool call.
     llm = MockLLMClient()
     llm.queue_response(
-        'TOOL: resolve_chain {"turn_player": "player_a", "steps": [{"kind": "replay"}]}'
+        'TOOL: lookup_card {"name": "some weird replay scenario"}'
     )
 
     def _raise(args):
         raise UnsupportedScenarioError("replay steps aren't modeled yet")
 
-    result = run_loop("Resolve this weird replay scenario", llm_client=llm, tools={"resolve_chain": _raise})
+    result = run_loop("Resolve this weird replay scenario", llm_client=llm, tools={"lookup_card": _raise})
 
     assert result.kind == "not_supported"
 
@@ -575,11 +580,13 @@ def test_run_loop_logs_off_topic_event(tmp_path):
 def test_run_loop_logs_escalate_event_with_score_and_threshold(tmp_path):
     log_path = tmp_path / "aijudge.jsonl"
     call_logger = CallLogger(str(log_path))
+    # search_rulebook is temporarily disabled (pipeline instability); get_rulings
+    # exercises the same retrieval-gap-penalty mechanism in confidence.py.
     llm = MockLLMClient()
-    llm.queue_response('TOOL: search_rulebook {"query": "obscure ruling"}')
+    llm.queue_response('TOOL: get_rulings {"card_id": "abc123"}')
     llm.queue_response("FINAL: I could not find a direct source. ||CITES: ||")
 
-    tools = {"search_rulebook": lambda args: {"chunks": []}}
+    tools = {"get_rulings": lambda args: {"rulings": []}}
 
     run_loop("An obscure ruling question", llm_client=llm, tools=tools, threshold=0.95, call_logger=call_logger)
 
