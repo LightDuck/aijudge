@@ -1,4 +1,11 @@
-from aijudge.rules_engine.models import Effect, EffectType, SpellSpeed, is_activatable, spell_speed_for
+from aijudge.rules_engine.models import (
+    DamageStepCategory,
+    Effect,
+    EffectType,
+    SpellSpeed,
+    is_activatable,
+    spell_speed_for,
+)
 
 
 def test_quick_and_quick_like_effects_are_spell_speed_2():
@@ -81,6 +88,19 @@ def test_effect_accepts_damage_step_category():
 def test_effect_damage_step_category_defaults_to_none():
     effect = Effect(card_id="1", card_name="Card A", effect_type=EffectType.IGNITION, controller="player_a")
     assert effect.damage_step_category is None
+
+
+def test_damage_step_category_enum_matches_the_schema_check_constraint():
+    """`card_effects_structured.damage_step_category`'s CHECK constraint
+    (db/schema.sql) is the source of truth for the allowed values -- this
+    enum must mirror it exactly, not just whatever subset a caller happens
+    to reference."""
+    assert {member.value for member in DamageStepCategory} == {
+        "atk_def_alter",
+        "negates_activation",
+        "explicit_permission",
+        "card_moved_trigger",
+    }
 
 
 def test_card_material_is_not_activatable():

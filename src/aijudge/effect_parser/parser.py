@@ -1,7 +1,7 @@
 import re
 from dataclasses import dataclass
 
-from aijudge.rules_engine.models import EffectType
+from aijudge.rules_engine.models import DamageStepCategory, EffectType
 
 _COST_KEYWORDS = ("banish", "discard", "pay", "send", "tribute", "remove", "reveal", "shuffle")
 
@@ -239,7 +239,7 @@ def classify_damage_step_category(
     *,
     activation_condition: str | None = None,
     effect_type: EffectType | None = None,
-) -> str | None:
+) -> DamageStepCategory | None:
     """Classify which (if any) Damage-Step-legal category this effect falls
     into: `"negates_activation"` and `"atk_def_alter"` (sourced from the
     official rulebook, checked against `effect_text` -- the resolution
@@ -269,14 +269,14 @@ def classify_damage_step_category(
     if activation_condition and _DAMAGE_STEP_EXCEPTION_PATTERN.search(activation_condition):
         return None
     if _NEGATES_ACTIVATION_PATTERN.search(effect_text):
-        return "negates_activation"
+        return DamageStepCategory.NEGATES_ACTIVATION
     if _ATK_DEF_PATTERN.search(effect_text):
-        return "atk_def_alter"
+        return DamageStepCategory.ATK_DEF_ALTER
     if activation_condition and effect_type in _DAMAGE_STEP_ELIGIBLE_EFFECT_TYPES:
         if _EXPLICIT_DAMAGE_STEP_PERMISSION_PATTERN.search(activation_condition):
-            return "explicit_permission"
+            return DamageStepCategory.EXPLICIT_PERMISSION
         if _CARD_MOVED_TRIGGER_PATTERN.search(activation_condition):
-            return "card_moved_trigger"
+            return DamageStepCategory.CARD_MOVED_TRIGGER
     return None
 
 

@@ -22,6 +22,17 @@ class SpellSpeed(int, Enum):
     COUNTER = 3
 
 
+class DamageStepCategory(str, Enum):
+    """Mirrors the CHECK constraint on `card_effects_structured.damage_step_category`
+    in db/schema.sql exactly -- that constraint is the source of truth for
+    which values are valid."""
+
+    ATK_DEF_ALTER = "atk_def_alter"
+    NEGATES_ACTIVATION = "negates_activation"
+    EXPLICIT_PERMISSION = "explicit_permission"
+    CARD_MOVED_TRIGGER = "card_moved_trigger"
+
+
 _QUICK_EFFECT_TYPES = {EffectType.QUICK, EffectType.QUICK_LIKE}
 
 _NON_ACTIVATABLE_EFFECT_TYPES = {
@@ -62,7 +73,7 @@ class Effect:
     controller: str
     spell_speed: SpellSpeed = SpellSpeed.NORMAL
     prevents_response: bool = False
-    damage_step_category: str | None = None
+    damage_step_category: DamageStepCategory | None = None
 
 
 @dataclass

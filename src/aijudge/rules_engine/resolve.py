@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from .chain import Chain
-from .models import Effect, EffectType, SpellSpeed, is_activatable
+from .models import DamageStepCategory, Effect, EffectType, SpellSpeed, is_activatable
 from .priority import can_activate_during_damage_step, can_activate_now
 from .segoc import apply_segoc
 
@@ -31,6 +31,7 @@ class ResolutionResult:
 
 
 def _build_effect(data: dict) -> Effect:
+    category = data.get("damage_step_category")
     return Effect(
         card_id=data["card_name"],
         card_name=data["card_name"],
@@ -38,7 +39,7 @@ def _build_effect(data: dict) -> Effect:
         controller=data["controller"],
         spell_speed=SpellSpeed(data.get("spell_speed", SpellSpeed.NORMAL.value)),
         prevents_response=data.get("prevents_response", False),
-        damage_step_category=data.get("damage_step_category"),
+        damage_step_category=DamageStepCategory(category) if category is not None else None,
     )
 
 

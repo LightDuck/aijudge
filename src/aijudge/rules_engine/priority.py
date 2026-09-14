@@ -1,16 +1,16 @@
 from .chain import Chain
-from .models import Effect, SpellSpeed
+from .models import DamageStepCategory, Effect, SpellSpeed
 
 # Gated to Spell Speed 2: real cards in these categories are inherently
 # Quick Effects/Traps, per the official rulebook.
-_DAMAGE_STEP_SPEED_GATED_CATEGORIES = {"atk_def_alter", "negates_activation"}
+_DAMAGE_STEP_SPEED_GATED_CATEGORIES = {DamageStepCategory.ATK_DEF_ALTER, DamageStepCategory.NEGATES_ACTIVATION}
 
 # NOT gated by spell speed: a plain Trigger Effect is normally Speed 1, but
 # these two categories are Damage-Step-legal specifically despite that --
 # either the card says so directly (explicit_permission), or its trigger
 # condition is itself a Damage-Step event that couldn't be met any earlier
 # (card_moved_trigger).
-_DAMAGE_STEP_UNGATED_CATEGORIES = {"explicit_permission", "card_moved_trigger"}
+_DAMAGE_STEP_UNGATED_CATEGORIES = {DamageStepCategory.EXPLICIT_PERMISSION, DamageStepCategory.CARD_MOVED_TRIGGER}
 
 
 def can_activate_during_damage_step(effect: Effect) -> bool:

@@ -156,6 +156,7 @@ def _insert_parsed_clause(
         activation_condition=parsed.activation_condition,
         effect_type=effect_type,
     )
+    damage_step_category_value = damage_step_category.value if damage_step_category is not None else None
 
     review = review_parsed_effect(
         llm_client,
@@ -164,7 +165,7 @@ def _insert_parsed_clause(
         cost=parsed.cost,
         targeting=parsed.targeting,
         effect=parsed.effect,
-        damage_step_category=damage_step_category,
+        damage_step_category=damage_step_category_value,
         other_effects=other_effects,
     )
 
@@ -177,7 +178,7 @@ def _insert_parsed_clause(
         targeting=parsed.targeting,
         has_target=(parsed.targeting is not None),
         confidence_score=review.confidence,
-        damage_step_category=damage_step_category,
+        damage_step_category=damage_step_category_value,
         usage_limit_text=usage_limit_text,
     )
 
