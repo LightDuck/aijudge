@@ -50,8 +50,6 @@ others aren't wired up yet:
 - ✅ **Asking a question and getting an answer** — an API service wraps the rules logic and database behind
   HTTP endpoints, and a React chat interface (see "Running the frontend" below) talks to it, so the pieces
   above are now connected end-to-end from typing a question to getting a cited answer.
-- ⏳ **Not yet built**: broader card coverage — only a handful of hand-picked cards are loaded in so far,
-  not the full card pool.
 
 ## Why it's built this way
 
