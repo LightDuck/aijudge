@@ -16,7 +16,10 @@ EXTRACTION_SYSTEM_PROMPT = (
     "Question: What is the SEGOC rule?\n"
     "NONE\n\n"
     "Question: Can I activate Ash Blossom & Joyous Spring in response to a Synchro Summon?\n"
-    "Ash Blossom & Joyous Spring"
+    "Ash Blossom & Joyous Spring\n\n"
+    "Question: How would cl1 WANTED, cl2 Droll resolve?\n"
+    "WANTED: Seeker of Sinful Spoils\n"
+    "Droll & Lock Bird"
 )
 
 _BULLET_RE = re.compile(r"^[\s\-\*]*(?:\d+[.\)]\s*)?")
