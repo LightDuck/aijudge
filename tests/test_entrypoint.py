@@ -3,22 +3,21 @@ import pytest
 from aijudge import entrypoint
 from aijudge.call_log import CallLogger, LoggingLLMClient
 from aijudge.embeddings.openai_client import OpenAIEmbeddingClient
-from aijudge.llm.openrouter_client import OpenRouterLLMClient
+from aijudge.llm.anthropic_client import AnthropicLLMClient
 
 
-def test_build_llm_client_uses_openrouter_api_key(monkeypatch):
-    monkeypatch.setenv("OPENROUTER_API_KEY", "or-key")
+def test_build_llm_client_uses_anthropic_api_key(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "an-key")
 
     client = entrypoint.build_llm_client()
 
-    assert isinstance(client, OpenRouterLLMClient)
-    assert client._api_key == "or-key"
+    assert isinstance(client, AnthropicLLMClient)
 
 
 def test_build_llm_client_raises_clear_error_when_key_missing(monkeypatch):
-    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
 
-    with pytest.raises(RuntimeError, match="OPENROUTER_API_KEY"):
+    with pytest.raises(RuntimeError, match="ANTHROPIC_API_KEY"):
         entrypoint.build_llm_client()
 
 
@@ -39,7 +38,7 @@ def test_build_embedding_client_raises_clear_error_when_key_missing(monkeypatch)
 
 
 def test_main_builds_real_clients_and_runs_cli(monkeypatch):
-    monkeypatch.setenv("OPENROUTER_API_KEY", "or-key")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "an-key")
     monkeypatch.setenv("OPENAI_API_KEY", "oa-key")
     captured = {}
 
@@ -52,12 +51,12 @@ def test_main_builds_real_clients_and_runs_cli(monkeypatch):
     entrypoint.main()
 
     assert isinstance(captured["llm_client"], LoggingLLMClient)
-    assert isinstance(captured["llm_client"].inner, OpenRouterLLMClient)
+    assert isinstance(captured["llm_client"].inner, AnthropicLLMClient)
     assert isinstance(captured["embedding_client"], OpenAIEmbeddingClient)
 
 
 def test_main_passes_a_call_logger_to_run_cli(monkeypatch):
-    monkeypatch.setenv("OPENROUTER_API_KEY", "or-key")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "an-key")
     monkeypatch.setenv("OPENAI_API_KEY", "oa-key")
     captured = {}
 
@@ -87,7 +86,7 @@ def test_online_ingest_enabled_is_case_insensitive(monkeypatch):
 
 
 def test_main_passes_online_ingest_toggle_to_run_cli(monkeypatch):
-    monkeypatch.setenv("OPENROUTER_API_KEY", "or-key")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "an-key")
     monkeypatch.setenv("OPENAI_API_KEY", "oa-key")
     monkeypatch.setenv("AIJUDGE_ENABLE_ONLINE_INGEST", "false")
     captured = {}
