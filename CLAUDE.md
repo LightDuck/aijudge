@@ -11,10 +11,11 @@ deterministic lookup or algorithm, it is — that's where accuracy-critical bugs
 
 The project has completed its first "thin slice": the rules engine, DB layer, effect parser, ingestion/seed
 script, LLM orchestration (the agentic tool-use loop), and a REPL CLI all exist and are tested, and
-`python -m aijudge` runs end-to-end. `src/aijudge/__main__.py` wires the default, $0-cost path — a real
-`OllamaLLMClient` and `OllamaEmbeddingClient` (both local via Ollama, $0 cost, no API key). `src/aijudge/entrypoint.py` is an alternate wiring using `OpenRouterLLMClient` and
-`OpenAIEmbeddingClient`, reading `OPENROUTER_API_KEY` and `OPENAI_API_KEY` from the environment (`.env` via
-`python-dotenv`), for when a hosted LLM is preferred over local Ollama. See
+`python -m aijudge` runs end-to-end. `src/aijudge/__main__.py` wires the default path — a real `AnthropicLLMClient`
+(hosted, reading `ANTHROPIC_API_KEY`) for the LLM and a local `OllamaEmbeddingClient` (via Ollama, $0 cost, no API
+key) for embeddings. `src/aijudge/entrypoint.py` is an alternate, fully-hosted wiring using `AnthropicLLMClient` and
+`OpenAIEmbeddingClient`, reading `ANTHROPIC_API_KEY` and `OPENAI_API_KEY` from the environment (`.env` via
+`python-dotenv`), for when a hosted embedding provider is preferred over local Ollama. See
 `docs/superpowers/specs/2026-08-18-thin-slice-design.md` for the full design spec and
 `docs/superpowers/plans/2026-08-18-foundations.md` for the implementation plan this codebase was built from
 (both are useful for *why*, but the actual code is ground truth for *what exists now* — the plan doc is a
@@ -195,13 +196,18 @@ spec:
   defaulting to the `all-minilm` model, which natively outputs 384-dim vectors so it matches the pgvector
   schema without any truncation or migration. `llm/` has `MockLLMClient` (FIFO `queue_response()`/`complete()`,
   raises `AssertionError` on an empty queue), `OpenRouterLLMClient` (hosted, pinned to a specific free model —
-  see `docs/superpowers/specs/2026-08-20-openrouter-llm-client-design.md`), and `OllamaLLMClient` — a local
-  Qwen3-8B client via Ollama's HTTP API, $0 cost, no API key. `OllamaLLMClient` and `OllamaEmbeddingClient` are
-  the ones `python -m aijudge` / `aijudge.__main__.main()` construct by default (`OLLAMA_BASE_URL` /
-  `OLLAMA_MODEL` / `OLLAMA_EMBEDDING_MODEL` env vars, default `http://localhost:11434` / `qwen3:8b` /
-  `all-minilm`); `OllamaLLMClient` disables Qwen's thinking mode and strips any `<think>...</think>` block
-  defensively, since `run_loop`'s protocol parses an exact `TOOL:`/`FINAL:` text format that a reasoning
-  preamble would break. Claude remains the eventual production target per the original spec, not yet wired in.
+  see `docs/superpowers/specs/2026-08-20-openrouter-llm-client-design.md` — kept in the codebase but no longer
+  the default hosted wiring), `AnthropicLLMClient` — a real `claude-sonnet-5` client via the official `anthropic`
+  SDK, constructed by both `__main__.py` and `entrypoint.py` (`ANTHROPIC_API_KEY`) — and `OllamaLLMClient` — a
+  local Qwen3-8B client via Ollama's HTTP API, $0 cost, no API key, still constructed directly by real-Ollama
+  tests/scripts (`OLLAMA_MODEL` / `OLLAMA_BASE_URL` env vars) but no longer part of any default wiring.
+  `AnthropicLLMClient` and `OllamaEmbeddingClient` are the ones `python -m aijudge` / `aijudge.__main__.main()`
+  construct by default (`ANTHROPIC_API_KEY` for the former; `OLLAMA_BASE_URL` / `OLLAMA_EMBEDDING_MODEL` env vars,
+  default `http://localhost:11434` / `all-minilm`, for the latter). `OllamaLLMClient` disables Qwen's thinking mode
+  and strips any `<think>...</think>` block defensively, since `run_loop`'s protocol parses an exact
+  `TOOL:`/`FINAL:` text format that a reasoning preamble would break. `AnthropicLLMClient` doesn't need this:
+  thinking blocks arrive as separate `content` entries from the Messages API rather than inline in the text, so
+  there's nothing to strip.
 
 - **`call_log.py`** — cross-cutting LLM call logging, kept separate from `logging`/stdlib debug output so calls
   and their failure reasons stay queryable after the fact. `CallLogger` appends one JSON object per line to a
