@@ -7,6 +7,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from aijudge.call_log import CallLogger, call_site
 from aijudge.embeddings.client import EmbeddingClient
@@ -32,6 +33,40 @@ from .schemas import AnswerRequest, NeedsClarificationResponse, QuestionRequest,
 DEFAULT_CORS_ORIGINS = ["http://localhost:3000", "http://localhost:5173"]
 
 logger = logging.getLogger(__name__)
+
+
+class _UnhandledExceptionMiddleware:
+    """Turns any exception that escapes the route handlers into a generic 500.
+
+    Deliberately *not* `app.add_exception_handler(Exception, ...)`: Starlette
+    special-cases a handler registered for the bare `Exception` type to run
+    inside `ServerErrorMiddleware`, which wraps *outside* all user middleware
+    -- including `CORSMiddleware` -- so a response built there never carries
+    an `Access-Control-Allow-Origin` header. A browser sees that as a network
+    error, not a 500, hiding the real failure (e.g. a 400 from the Anthropic
+    API surfaced as "could not reach the backend"). This is plain ASGI
+    middleware instead, registered *before* `CORSMiddleware` below (Starlette's
+    add_middleware() prepends, so registering first is what ends up inside)
+    so it sits inside it and its response picks up CORS headers on the way
+    out. It sends that response itself and then re-raises so the exception still
+    reaches the ASGI server/logs exactly as before (`ServerErrorMiddleware`
+    skips sending its own response once it sees one already started).
+    """
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        try:
+            await self.app(scope, receive, send)
+        except Exception as exc:
+            logger.exception("unhandled error", exc_info=exc)
+            response = JSONResponse(status_code=500, content={"detail": "internal server error"})
+            await response(scope, receive, send)
+            raise
 
 
 def _result_response(result: LoopResult) -> dict:
@@ -90,14 +125,13 @@ def create_app(
         logger.exception("backend connection error", exc_info=exc)
         return JSONResponse(status_code=503, content={"detail": "backend unavailable"})
 
-    def _unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-        logger.exception("unhandled error", exc_info=exc)
-        return JSONResponse(status_code=500, content={"detail": "internal server error"})
-
     app.add_exception_handler(requests.exceptions.ConnectionError, _backend_unavailable_handler)
     app.add_exception_handler(psycopg.OperationalError, _backend_unavailable_handler)
-    app.add_exception_handler(Exception, _unhandled_exception_handler)
 
+    # Registered before CORSMiddleware below: Starlette's add_middleware() *prepends*
+    # to the middleware list, so the middleware added last ends up outermost -- adding
+    # this one first is what puts it inside CORSMiddleware. See the class docstring.
+    app.add_middleware(_UnhandledExceptionMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=cors_origins if cors_origins is not None else DEFAULT_CORS_ORIGINS,

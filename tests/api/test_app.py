@@ -683,6 +683,33 @@ def test_post_questions_returns_generic_500_without_leaking_exception_details():
     assert "something internal broke" not in response.text
 
 
+def test_post_questions_generic_500_response_still_carries_cors_headers():
+    # Regression test: a handler registered for the bare `Exception` type is
+    # special-cased by Starlette to run in ServerErrorMiddleware, which wraps
+    # *outside* all user middleware including CORSMiddleware -- so its
+    # response used to reach the browser with no Access-Control-Allow-Origin
+    # header at all. The browser then reports a generic network/CORS failure
+    # instead of surfacing the real 500, which is exactly what a real 400
+    # from the Anthropic API (e.g. an exhausted credit balance) looked like
+    # from the frontend: "network error: could not reach the backend".
+    app = create_app(
+        _BrokenLLMClient(),
+        MockEmbeddingClient(),
+        find_matched_cards_fn=lambda question: [],
+        cors_origins=["http://localhost:5173"],
+    )
+    client = TestClient(app, raise_server_exceptions=False)
+
+    response = client.post(
+        "/questions",
+        json={"question": "What does Ash Blossom do?"},
+        headers={"Origin": "http://localhost:5173"},
+    )
+
+    assert response.status_code == 500
+    assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
+
+
 class _OperationalErrorLLMClient:
     def complete(self, prompt: str, *, system: str | None = None) -> str:
         raise psycopg.OperationalError("could not connect to server")
