@@ -47,9 +47,11 @@ others aren't wired up yet:
 - ✅ **Reading card effects** — a way to break down a card's printed text into its condition, cost, and
   effect, with a review step to flag anything unclear.
 - ✅ **Sample data** — a handful of well-known cards are already loaded in as examples.
-- ⏳ **Not yet built**: the part that actually lets you type in a question and get an answer (there's no
-  chat interface yet), and the connection to a real AI service to do the explaining. Right now, the pieces
-  above exist and are tested individually, but they aren't yet connected end-to-end.
+- ✅ **Asking a question and getting an answer** — an API service wraps the rules logic and database behind
+  HTTP endpoints, and a React chat interface (see "Running the frontend" below) talks to it, so the pieces
+  above are now connected end-to-end from typing a question to getting a cited answer.
+- ⏳ **Not yet built**: broader card coverage — only a handful of hand-picked cards are loaded in so far,
+  not the full card pool.
 
 ## Why it's built this way
 
