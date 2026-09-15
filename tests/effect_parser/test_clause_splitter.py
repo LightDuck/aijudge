@@ -25,8 +25,9 @@ def test_resolve_effect_clauses_multi_effect_with_usage_limit_scope():
         'this Fusion Summoned card is sent to the GY by a card effect: You can Special '
         'Summon this card.'
     )
+    # score_split_confidence is temporarily disabled -- no queued response,
+    # so a call to it would raise (MockLLMClient's empty-queue AssertionError).
     llm_client = MockLLMClient()
-    llm_client.queue_response("0.95")  # score_split_confidence
 
     clauses, scopes = resolve_effect_clauses(llm_client, card_text)
 
@@ -38,16 +39,18 @@ def test_resolve_effect_clauses_multi_effect_with_usage_limit_scope():
     assert scopes[0].applies_to == [1, 2]
 
 
-def test_resolve_effect_clauses_falls_back_below_threshold():
+def test_resolve_effect_clauses_accepts_multi_clause_split_unconditionally_while_scoring_disabled():
+    # With score_split_confidence disabled, a 2+ clause deterministic split is
+    # kept as-is -- no LLM call, and no fallback to a single collapsed effect
+    # even for a split that a real confidence check might once have rejected.
     from aijudge.effect_parser.clause_splitter import resolve_effect_clauses
 
     card_text = "Clause A. Clause B."
-    llm_client = MockLLMClient()
-    llm_client.queue_response("0.1")  # below DEFAULT_CONFIDENCE_THRESHOLD
+    llm_client = MockLLMClient()  # no queued response -- must not be called
 
     clauses, scopes = resolve_effect_clauses(llm_client, card_text)
 
-    assert clauses == [card_text]
+    assert clauses == ["Clause A.", "Clause B."]
     assert scopes == []
 
 

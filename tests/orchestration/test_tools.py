@@ -38,9 +38,10 @@ def test_resolve_chain_wrapper_propagates_unsupported_scenario_error():
         resolve_chain(scenario)
 
 
-def test_build_tool_dispatch_has_all_four_tools():
+def test_build_tool_dispatch_has_only_active_tools():
+    # search_rulebook and resolve_chain are temporarily disabled (pipeline instability).
     dispatch = build_tool_dispatch(MockLLMClient(), MockEmbeddingClient())
-    assert set(dispatch.keys()) == {"lookup_card", "get_rulings", "search_rulebook", "resolve_chain"}
+    assert set(dispatch.keys()) == {"lookup_card", "get_rulings"}
 
 
 def test_build_tool_dispatch_lookup_card_skips_ingest_when_disabled(monkeypatch):

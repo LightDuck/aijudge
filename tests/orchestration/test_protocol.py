@@ -74,10 +74,16 @@ def test_rejects_missing_prefix_response_with_unclosed_cites_trailer():
         parse_response("This card negates the effect. ||CITES: card:1")
 
 
-def test_build_system_prompt_lists_all_four_tools():
+def test_build_system_prompt_lists_active_tools_and_marks_disabled_ones():
     prompt = build_system_prompt()
-    for tool_name in ("lookup_card", "get_rulings", "search_rulebook", "resolve_chain"):
+    for tool_name in ("lookup_card", "get_rulings"):
         assert tool_name in prompt
+    # search_rulebook and resolve_chain are temporarily disabled (pipeline
+    # instability) -- still documented, but each prefixed "(DISABLED)", and
+    # TOOL_NAMES excludes them so parse_response() rejects any TOOL: line
+    # naming either regardless of what the prompt says.
+    for tool_name in ("search_rulebook", "resolve_chain"):
+        assert f"(DISABLED) {tool_name}" in prompt
 
 
 def test_build_system_prompt_documents_damage_step_fields_for_resolve_chain():

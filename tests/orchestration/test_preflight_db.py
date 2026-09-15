@@ -98,6 +98,8 @@ def test_build_known_facts_context_includes_optional_fields_when_present():
         effect_type="quick",
         effect="negate the effects of 1 Effect Monster your opponent controls, also its ATK becomes 0.",
         activation_condition="During your opponent's Main Phase (Quick Effect)",
+        cost="Send this card from your hand to the GY",
+        targeting="1 Effect Monster your opponent controls",
         damage_step_category="atk_def_alter",
         usage_limit_text='You can only use this effect of "Effect Veiler" once per turn.',
     )
@@ -106,11 +108,17 @@ def test_build_known_facts_context_includes_optional_fields_when_present():
     context = build_known_facts_context(get_card_by_name("Effect Veiler"))
 
     assert "During your opponent's Main Phase (Quick Effect)" in context
+    assert "Send this card from your hand to the GY" in context
+    assert "1 Effect Monster your opponent controls" in context
     assert "atk_def_alter" in context
     assert 'You can only use this effect of "Effect Veiler" once per turn.' in context
 
 
-def test_build_known_facts_context_omits_optional_fields_when_none():
+def test_build_known_facts_context_marks_absent_optional_fields_as_none():
+    # Absent fields are shown explicitly as "none" (not the Python `None`
+    # repr, and not silently omitted) -- so the model can state e.g. "this
+    # effect has no cost" as a known fact instead of never being told the
+    # field exists at all.
     from aijudge.db.cards_repo import get_card_by_name, insert_card
     from aijudge.db.effects_repo import confirm_effect, insert_pending_effect
     from aijudge.orchestration.preflight import build_known_facts_context
@@ -134,6 +142,11 @@ def test_build_known_facts_context_omits_optional_fields_when_none():
     context = build_known_facts_context(get_card_by_name("Effect Veiler"))
 
     assert "None" not in context
+    assert "activation condition: none" in context
+    assert "cost: none" in context
+    assert "targeting: none" in context
+    assert "damage step category: none" in context
+    assert "usage limit: none" in context
 
 
 def test_build_known_facts_context_includes_a_citable_id_for_the_card():

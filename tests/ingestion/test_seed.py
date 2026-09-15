@@ -38,8 +38,8 @@ def test_seed_card_stores_card_ruling_and_confirms_a_high_confidence_effect():
     def fake_fetch_rulings(name, http_get=None):
         return [{"text": "Can target monsters banished this turn.", "date": "2021-01-01"}]
 
+    # review_parsed_effect is temporarily disabled -- no queued response for it.
     llm_client = MockLLMClient()
-    llm_client.queue_response("0.97")  # review agent confidence for the parsed effect
 
     card_id = seed_card(
         "Called by the Grave",
@@ -69,7 +69,8 @@ def test_seed_card_stores_card_ruling_and_confirms_a_high_confidence_effect():
             "SELECT confidence_score FROM card_effects_structured WHERE id = %s",
             (effects[0]["id"],),
         ).fetchone()
-    assert row[0] == pytest.approx(0.97)
+    # review_parsed_effect's disabled default confidence, not a real LLM score.
+    assert row[0] == pytest.approx(1.0)
 
 
 def test_seed_card_passes_konami_id_from_misc_info_to_fetch_rulings():
@@ -94,7 +95,6 @@ def test_seed_card_passes_konami_id_from_misc_info_to_fetch_rulings():
         return []
 
     llm_client = MockLLMClient()
-    llm_client.queue_response("0.97")  # review agent confidence for the parsed effect
 
     seed_card(
         "Called by the Grave",
@@ -129,7 +129,6 @@ def test_seed_card_continues_when_fetching_rulings_fails():
         raise requests.exceptions.HTTPError("404 Client Error: Not Found")
 
     llm_client = MockLLMClient()
-    llm_client.queue_response("0.97")  # review agent confidence for the parsed effect
 
     card_id = seed_card(
         "Called by the Grave",
@@ -144,8 +143,15 @@ def test_seed_card_continues_when_fetching_rulings_fails():
     assert len(get_confirmed_effects(card_id)) == 1
 
 
-def test_seed_card_leaves_low_confidence_effect_pending():
+def test_seed_card_auto_confirms_every_effect_while_review_parsed_effect_is_disabled():
+    # review_agent.review_parsed_effect is temporarily disabled (pipeline
+    # instability) -- seed_card always gets back a default ReviewResult
+    # (confidence=1.0, auto_confirmed=True), so even a card whose text would
+    # once have scored low now auto-confirms with a 1.0 confidence_score,
+    # not a real LLM-derived one. Restore review_agent.review_parsed_effect's
+    # body (see _review_parsed_effect_via_llm) to bring back real scoring.
     from aijudge.db.cards_repo import get_card_by_name
+    from aijudge.db.connection import get_connection
     from aijudge.db.effects_repo import get_confirmed_effects
     from aijudge.ingestion.seed import seed_card
     from aijudge.llm.client import MockLLMClient
@@ -164,8 +170,8 @@ def test_seed_card_leaves_low_confidence_effect_pending():
     def fake_fetch_rulings(name, http_get=None):
         return []
 
+    # review_parsed_effect is disabled -- no queued response for it.
     llm_client = MockLLMClient()
-    llm_client.queue_response("0.3")  # deliberately low confidence
 
     card_id = seed_card(
         "Ambiguous Trap",
@@ -176,7 +182,16 @@ def test_seed_card_leaves_low_confidence_effect_pending():
     )
 
     assert get_card_by_name("Ambiguous Trap")["id"] == card_id
-    assert get_confirmed_effects(card_id) == []
+    effects = get_confirmed_effects(card_id)
+    assert len(effects) == 1
+
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT confidence_score, status FROM card_effects_structured WHERE card_id = %s",
+            (card_id,),
+        ).fetchone()
+    assert row[0] == 1.0
+    assert row[1] == "confirmed"
 
 
 def test_seed_card_classifies_a_tuner_monster_subtype_as_a_monster_effect():
@@ -202,8 +217,8 @@ def test_seed_card_classifies_a_tuner_monster_subtype_as_a_monster_effect():
     def fake_fetch_rulings(name, http_get=None):
         return []
 
+    # review_parsed_effect is disabled -- no queued response for it.
     llm_client = MockLLMClient()
-    llm_client.queue_response("0.97")
 
     card_id = seed_card(
         "Some Tuner",
@@ -250,8 +265,8 @@ def test_seed_card_stores_damage_step_category_and_usage_limit_text():
     def fake_fetch_rulings(name, http_get=None):
         return []
 
+    # review_parsed_effect is disabled -- no queued response for it.
     llm_client = MockLLMClient()
-    llm_client.queue_response("0.97")
 
     card_id = seed_card(
         "Effect Veiler",
@@ -293,7 +308,6 @@ def test_seed_card_uses_race_field_for_a_quick_play_spell():
         return []
 
     llm_client = MockLLMClient()
-    llm_client.queue_response("0.97")  # review agent confidence
 
     card_id = seed_card(
         "Called by the Grave",
@@ -334,7 +348,6 @@ def test_seed_card_uses_race_field_for_a_counter_trap():
         return []
 
     llm_client = MockLLMClient()
-    llm_client.queue_response("0.97")  # review agent confidence
 
     seed_card(
         "Solemn Strike",
@@ -386,11 +399,8 @@ def test_seed_card_creates_one_row_per_effect_for_a_multi_effect_card():
     def fake_fetch_rulings(name, http_get=None):
         return []
 
+    # score_split_confidence is temporarily disabled -- no queued response for it.
     llm_client = MockLLMClient()
-    llm_client.queue_response("0.95")  # split-quality confidence
-    llm_client.queue_response("0.97")  # review confidence for effect 1
-    llm_client.queue_response("0.97")  # review confidence for effect 2
-    llm_client.queue_response("0.97")  # review confidence for effect 3
 
     card_id = seed_card(
         "Baronne de Fleur",
@@ -492,7 +502,6 @@ def test_seed_card_extracts_card_material_for_extra_deck_monster():
         return []
 
     llm_client = MockLLMClient()
-    llm_client.queue_response("0.97")  # review confidence for the one remaining clause
 
     card_id = seed_card(
         "Tearlaments Rulkallos",
@@ -582,11 +591,8 @@ def test_seed_card_duplicates_usage_limit_text_across_scoped_clauses():
     def fake_fetch_rulings(name, http_get=None):
         return []
 
+    # score_split_confidence is temporarily disabled -- no queued response for it.
     llm_client = MockLLMClient()
-    llm_client.queue_response("0.95")  # score_split_confidence for the 3 post-material clauses
-    llm_client.queue_response("0.97")  # review: Continuous clause
-    llm_client.queue_response("0.97")  # review: Quick clause
-    llm_client.queue_response("0.97")  # review: Trigger clause
 
     card_id = seed_card(
         "Tearlaments Rulkallos",
@@ -631,10 +637,8 @@ def test_seed_card_stores_named_card_restriction_as_usage_limit_text_on_every_cl
     def fake_fetch_rulings(name, http_get=None):
         return []
 
+    # score_split_confidence is temporarily disabled -- no queued response for it.
     llm_client = MockLLMClient()
-    llm_client.queue_response("0.95")  # score_split_confidence for the 2 non-restriction clauses
-    llm_client.queue_response("0.97")  # review confidence for effect 1
-    llm_client.queue_response("0.97")  # review confidence for effect 2
 
     card_id = seed_card(
         "Some Card",

@@ -73,22 +73,29 @@ def test_clarification_prompt_text_for_clarify_item_is_the_question_itself():
     assert clarification_prompt_text(item) == "Which monster do you control?"
 
 
-def test_clarification_prompt_text_for_continuous_check_asks_about_activity():
-    item = ClarificationItem(kind="continuous_check", text="Skill Drain")
-    assert clarification_prompt_text(item) == "Is Skill Drain's effect currently active?"
+def test_clarification_prompt_text_for_continuous_check_is_the_question_itself():
+    # continuous_check no longer names a card for the model to guess from its own
+    # (unverified) training data -- item.text is now the fixed, deterministic
+    # question itself, surfaced as-is like every other kind.
+    item = ClarificationItem(
+        kind="continuous_check", text="Are there lingering effects currently applying in this chain?"
+    )
+    assert clarification_prompt_text(item) == "Are there lingering effects currently applying in this chain?"
 
 
 def test_format_clarification_context_joins_items_and_answers():
     items = [
         ClarificationItem(kind="clarify", text="Which monster do you control?"),
-        ClarificationItem(kind="continuous_check", text="Skill Drain"),
+        ClarificationItem(
+            kind="continuous_check", text="Are there lingering effects currently applying in this chain?"
+        ),
     ]
     answers = ["Blue-Eyes White Dragon", "yes"]
 
     context = format_clarification_context(items, answers)
 
     assert "Which monster do you control?: Blue-Eyes White Dragon" in context
-    assert "Is Skill Drain's effect currently active?: yes" in context
+    assert "Are there lingering effects currently applying in this chain?: yes" in context
 
 
 def test_format_clarification_context_labels_disambiguate_card_items():

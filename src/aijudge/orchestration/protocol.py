@@ -1,7 +1,13 @@
 import json
 from dataclasses import dataclass
 
-TOOL_NAMES = {"lookup_card", "get_rulings", "search_rulebook", "resolve_chain"}
+# search_rulebook and resolve_chain are temporarily disabled (pipeline instability).
+# TOOL_NAMES excludes them, so parse_response() rejects a "TOOL: search_rulebook ..."/
+# "TOOL: resolve_chain ..." line as an unrecognized tool name regardless of what the
+# prompt text says -- but their descriptions stay in the prompt (see
+# DISABLED_TOOL_DESCRIPTIONS below), marked "(DISABLED)", so the model knows they
+# exist but must not attempt them, rather than the text silently going quiet on them.
+TOOL_NAMES = {"lookup_card", "get_rulings"}
 
 TOOL_DESCRIPTIONS = {
     "lookup_card": (
@@ -11,16 +17,23 @@ TOOL_DESCRIPTIONS = {
         '(fuzzy/partial name), "archetype", or "id" (the card\'s passcode) to search only that one way -- '
         "e.g. use field=\"id\" when the user gives you a passcode directly. If the result has "
         '"ambiguous": true, more than one card matched -- do not guess which one; ask the user to narrow '
-        "it down with the exact name, a more specific partial name, or the passcode."
+        "it down with the exact name or the passcode (the number in the lower left of the card)."
     ),
     "get_rulings": 'get_rulings {"card_id": "<id>"} - fetch official rulings for a card',
-    "search_rulebook": 'search_rulebook {"query": "<question>"} - semantic search over the Konami rulebook/PSCT guide',
+}
+
+DISABLED_TOOL_DESCRIPTIONS = {
+    "search_rulebook": (
+        '(DISABLED) search_rulebook {"query": "<question>"} - semantic search over the Konami '
+        "rulebook/PSCT guide or rulings via the ygoresources API"
+    ),
     "resolve_chain": (
-        'resolve_chain {"turn_player": "...", "steps": [...]} - deterministically resolve a described chain '
-        "scenario. An \"activate\" step may include an optional \"in_damage_step\": true/false (default false) "
-        "to indicate the activation is being attempted during the Damage Step; that step's \"effect\" dict may "
-        'include an optional "damage_step_category", one of "atk_def_alter" or "negates_activation" (omit if '
-        "neither applies), used only when checking Damage Step legality."
+        '(DISABLED) resolve_chain {"turn_player": "...", "steps": [...]} - deterministically resolve a '
+        "described chain scenario. An \"activate\" step may include an optional \"in_damage_step\": "
+        "true/false (default false) to indicate the activation is being attempted during the Damage "
+        'Step; that step\'s "effect" dict may include an optional "damage_step_category", per its enum '
+        '("atk_def_alter", "negates_activation", "explicit_permission", "card_moved_trigger"), used only '
+        "when checking Damage Step legality."
     ),
 }
 
@@ -47,21 +60,26 @@ class Refusal:
 
 
 def build_system_prompt() -> str:
-    tool_lines = "\n".join(f"- {desc}" for desc in TOOL_DESCRIPTIONS.values())
+    tool_lines = "\n".join(
+        f"- {desc}" for desc in {**TOOL_DESCRIPTIONS, **DISABLED_TOOL_DESCRIPTIONS}.values()
+    )
     return (
         "You are a Yu-Gi-Oh! TCG rules-adjudication assistant. Answer only "
-        "questions about Yu-Gi-Oh! rules and card interactions, citing your "
-        "sources. If the question is not about Yu-Gi-Oh! TCG rules or card "
-        "interactions, do not answer it -- respond with a line starting "
-        "with 'REFUSE:' followed by a brief explanation that you only "
-        "handle Yu-Gi-Oh! TCG rules questions. You may call one tool per "
-        "turn by responding with a line starting with 'TOOL:' followed by "
-        "the tool name and a JSON object of arguments. When you have a "
-        "final answer, respond with a line starting with 'FINAL:' followed "
-        "by your answer text, then '||CITES: id1, id2||' listing every "
-        "source id (card:<id>, ruling:<id>, chunk:<id>) your answer relies "
-        "on -- use '||CITES: ||' if none apply. When speaking to the user "
-        "about a card's 8-digit numeric identifier, always call it its "
+        "questions about Yu-Gi-Oh! rules (citing the rulebook or expert-provided "
+        "rulings) and card effects and their interactions with rules or other "
+        "cards, always citing your sources (the card effect or ruling found). "
+        "For each response, use natural language as much as possible so the "
+        "user can digest it easily. If the question is not about Yu-Gi-Oh! TCG "
+        "and is out of scope of the role above, do not answer it -- respond "
+        "with a line starting with 'REFUSE:' followed by a brief explanation "
+        "that you only handle Yu-Gi-Oh! TCG rulings questions. You may call "
+        "one tool per turn by responding with a line starting with 'TOOL:' "
+        "followed by the tool name and a JSON object of arguments. When you "
+        "have a final answer, respond with a line starting with 'FINAL:' "
+        "followed by your answer text, then '||CITES: id1, id2||' listing "
+        "every source id (card:<id>, ruling:<id>, chunk:<id>) your answer "
+        "relies on -- use '||CITES: ||' if none apply. When speaking to the "
+        "user about a card's 8-digit numeric identifier, always call it its "
         "'passcode' -- never 'id' or 'ygoprodeck_id', which are internal "
         "names only.\n\nAvailable tools:\n" + tool_lines
     )
