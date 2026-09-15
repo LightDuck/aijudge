@@ -136,3 +136,12 @@ def test_build_answering_system_prompt_still_documents_final_and_refuse():
     assert "FINAL:" in prompt
     assert "REFUSE:" in prompt
     assert "||CITES:" in prompt
+
+
+def test_build_answering_system_prompt_instructs_natural_breakdown_of_effect_parts():
+    prompt = build_answering_system_prompt()
+    lowered = prompt.lower()
+    assert "activation condition" in lowered
+    assert "cost" in lowered
+    assert "target" in lowered
+    assert "natural" in lowered
