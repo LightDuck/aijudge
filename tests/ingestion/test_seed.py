@@ -386,8 +386,8 @@ def test_seed_card_creates_one_row_per_effect_for_a_multi_effect_card():
     def fake_fetch_rulings(name, http_get=None):
         return []
 
+    # score_split_confidence is temporarily disabled -- no queued response for it.
     llm_client = MockLLMClient()
-    llm_client.queue_response("0.95")  # split-quality confidence
     llm_client.queue_response("0.97")  # review confidence for effect 1
     llm_client.queue_response("0.97")  # review confidence for effect 2
     llm_client.queue_response("0.97")  # review confidence for effect 3
@@ -582,8 +582,8 @@ def test_seed_card_duplicates_usage_limit_text_across_scoped_clauses():
     def fake_fetch_rulings(name, http_get=None):
         return []
 
+    # score_split_confidence is temporarily disabled -- no queued response for it.
     llm_client = MockLLMClient()
-    llm_client.queue_response("0.95")  # score_split_confidence for the 3 post-material clauses
     llm_client.queue_response("0.97")  # review: Continuous clause
     llm_client.queue_response("0.97")  # review: Quick clause
     llm_client.queue_response("0.97")  # review: Trigger clause
@@ -631,8 +631,8 @@ def test_seed_card_stores_named_card_restriction_as_usage_limit_text_on_every_cl
     def fake_fetch_rulings(name, http_get=None):
         return []
 
+    # score_split_confidence is temporarily disabled -- no queued response for it.
     llm_client = MockLLMClient()
-    llm_client.queue_response("0.95")  # score_split_confidence for the 2 non-restriction clauses
     llm_client.queue_response("0.97")  # review confidence for effect 1
     llm_client.queue_response("0.97")  # review confidence for effect 2
 

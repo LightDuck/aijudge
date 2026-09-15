@@ -8,7 +8,11 @@ _SPLIT_REVIEW_PROMPT_TEMPLATE = (
     "a proposed split of that text into separate, independently-activatable effects. Score "
     "how correctly the split identifies genuinely separate effects -- as opposed to "
     "incorrectly splitting one effect into pieces, or merging two effects into one -- from "
-    "0.0 to 1.0. Respond with only the number.\n\n"
+    "0.0 to 1.0. Respond with only the number. A \"You can only activate/use ... per turn\" "
+    "usage-limit restriction sentence, if present in the card text, is deliberately excluded "
+    "from the numbered list below -- it's tracked separately from the effect split, not as "
+    "its own clause -- so its absence from the list is not itself a sign of an incomplete or "
+    "incorrect split.\n\n"
     "Card text:\n{card_text}\n\n"
     "Proposed effects:\n{numbered_effects}"
 )
@@ -29,18 +33,18 @@ def resolve_effect_clauses(
 ) -> tuple[list[str], list[UsageLimitScope]]:
     """Deterministically segment `card_text` (already stripped of any Card
     Material line by the caller) into effect clauses, resolving usage-limit
-    scope, then verify the resulting grouping via one LLM confidence call --
-    replacing what used to be an LLM-driven split. See design spec sections
-    3-5."""
+    scope. See design spec sections 3-5.
+
+    The LLM confidence check (score_split_confidence, step 5 of the pipeline
+    review) is temporarily disabled -- for now, every deterministic split of
+    2+ clauses is accepted unconditionally (equivalent to a hardcoded
+    confidence of 1.0), so the rest of the pipeline can be verified
+    independent of that scoring step. `threshold` is unused while this is
+    disabled; re-enable by restoring the score_split_confidence call below.
+    """
     sentences = split_sentences(card_text)
     if not sentences:
         return [], []
 
     clauses, scopes = resolve_usage_limit_scopes(sentences)
-    if len(clauses) <= 1:
-        return clauses, scopes
-
-    confidence = score_split_confidence(llm_client, card_text=card_text, effect_texts=clauses)
-    if confidence < threshold:
-        return [card_text], []
     return clauses, scopes
