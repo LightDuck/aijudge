@@ -24,7 +24,7 @@ historical scaffold and has already drifted in places, e.g. `has_target`, `ygopr
 Voyage/Ollama for embeddings, the `dimensions=384` truncation to match the pgvector schema) are logged in
 `docs/superpowers/specs/2026-08-20-provider-wiring-design.md`.
 
-Still missing for a public v1.0: broader card coverage (currently 6 hand-picked cards) and the frontend itself —
+Still missing for a public v1.0: broader card coverage (currently 10 randomly-sampled cards) and the frontend itself —
 each is its own separate sub-project. The HTTP/API service layer (`src/aijudge/api/`) now exists, wrapping the
 orchestration loop and clarification flow behind two stateless REST endpoints — see
 `docs/superpowers/specs/2026-08-27-api-layer-design.md` for the design and the `api/` bullet under Architecture
@@ -418,14 +418,20 @@ spec:
   effect clauses (gated by two independent safety checks: a deterministic verbatim-reconstruction check and an
   LLM-scored split-quality check; a failed split falls back to treating the whole card as one effect), runs each
   resulting effect through the parser and review agent, inserts one `card_effects_structured` row per effect,
-  and auto-confirms if the review score clears threshold. `run_seed()` iterates the hand-picked `HAND_PICKED_CARDS`
-  list (Ash Blossom & Joyous Spring, Called by the Grave, Infinite Impermanence, Effect Veiler, Solemn Strike,
-  Baronne de Fleur, Borreload Dragon) — this is a one-off seed script, not a scheduled ingestion pipeline (out of
-  scope for this slice). Baronne de Fleur is a deliberate multi-effect stress case: unlike the other five, its card text packs
-  three separate effect clauses (an Ignition effect destroying 1 card, a Quick Effect negating activations, and a
-  Standby Phase effect returning to the Extra Deck to Special Summon) into one blob. The clause splitter now correctly decomposes such cards
-  into multiple confirmed effect rows (one per real effect), unless one of the two safety gates fails, in which case
-  it falls back to single-row behavior. `effect_parser/clause_splitter.py` exports `split_effect_clauses()`,
+  and auto-confirms if the review score clears threshold. `run_seed()` iterates `HAND_PICKED_CARDS` — despite the
+  name, this list is now a random sample (Digitron, Shafu the Wheeled Mayakashi, Cyber Angel Benten, Masked HERO
+  Anki, Crystron Quariongandrax, Super Quantal Mech Beast Magnaliger, Powercode Talker, Amazoness Call, The Prime
+  Monarch, Cynet Conflict), one card drawn at random per major card category (all 7 monster summoning mechanics,
+  Quick-Play Spell, Continuous Trap, Counter Trap) from real cards first printed 2015-01-01 through 2025-12-31 via
+  YGOPRODeck's `cardinfo.php` date-range filter, replacing an earlier hand-curated list — this is a one-off seed
+  script, not a scheduled ingestion pipeline (out of scope for this slice). The clause splitter correctly
+  decomposes real multi-effect cards into multiple confirmed effect rows (one per real effect) in most cases —
+  e.g. Cyber Angel Benten and Shafu each split cleanly — unless one of the two safety gates fails, in which case it
+  falls back to single-row behavior; this broader, randomly-sourced sample also surfaced genuine parser gaps
+  (Masked HERO Anki's entire card text misclassified as Card Material losing both real effects, an "and/or"
+  cost/targeting mis-split on Crystron Quariongandrax, and The Prime Monarch's second effect landing inside
+  `usage_limit_text` instead of its own row) that the narrower hand-picked set never exercised — none fixed yet.
+  `effect_parser/clause_splitter.py` exports `split_effect_clauses()`,
   `score_split_confidence()`, and `resolve_effect_clauses()`.
   `rulebook_seed.py` — `seed_rulebook_file(path, embedding_client=..., source=...)` chunks a rulebook text file
   (via `rulebook_loader.load_rulebook_file`) and embeds+inserts each chunk into `rulebook_chunks`. It deletes any

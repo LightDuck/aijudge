@@ -15,14 +15,25 @@ from aijudge.ingestion.ygoresources_client import fetch_rulings
 from aijudge.llm.client import LLMClient
 from aijudge.rules_engine.models import EffectType
 
+# One random card per major card category (7 monster summoning mechanics,
+# Quick-Play Spell, Continuous Trap, Counter Trap), each first printed
+# between 2015-01-01 and 2025-12-31 (YGOPRODeck cardinfo.php's
+# startdate/enddate/dateregion=tcg_date filter, then a random offset within
+# the matching total) -- chosen for maximum structural scope (every
+# summoning mechanic, both non-Normal-Trap subtypes, and a real Counter Trap
+# for spell_speed_for's race=="Counter" case) rather than hand-picked for
+# narrative familiarity like the previous list.
 HAND_PICKED_CARDS: list[str] = [
-    "Ash Blossom & Joyous Spring",
-    "Called by the Grave",
-    "Infinite Impermanence",
-    "Effect Veiler",
-    "Solemn Strike",
-    "Baronne de Fleur",
-    "Borreload Dragon",
+    "Digitron",
+    "Shafu, the Wheeled Mayakashi",
+    "Cyber Angel Benten",
+    "Masked HERO Anki",
+    "Crystron Quariongandrax",
+    "Super Quantal Mech Beast Magnaliger",
+    "Powercode Talker",
+    "Amazoness Call",
+    "The Prime Monarch",
+    "Cynet Conflict",
 ]
 
 
