@@ -85,18 +85,22 @@ def build_known_facts_context(card: dict) -> str:
             spell_speed=speed,
             damage_step_category=confirmed.get("damage_step_category"),
         )
+        # Every optional field is shown explicitly, even when absent (as "none"),
+        # rather than silently omitted -- so the model can state e.g. "this
+        # effect has no cost" as a known fact instead of never being told the
+        # field exists at all, and never has to guess whether an unlisted field
+        # is truly absent or just left out of this summary.
         line = (
             f"- {card['name']}, effect {index}: effect type {effect_type.value}, spell speed {speed.value}, "
             f"activatable: {is_activatable(effect_type)}, "
             f"damage-step legal: {can_activate_during_damage_step(effect)}, "
-            f"effect: \"{confirmed['effect']}\""
+            f"activation condition: {confirmed.get('activation_condition') or 'none'}, "
+            f"cost: {confirmed.get('cost') or 'none'}, "
+            f"targeting: {confirmed.get('targeting') or 'none'}, "
+            f"effect: \"{confirmed['effect']}\", "
+            f"damage step category: {confirmed.get('damage_step_category') or 'none'}, "
+            f"usage limit: {confirmed.get('usage_limit_text') or 'none'}"
         )
-        if confirmed.get("activation_condition") is not None:
-            line += f", activation condition: {confirmed['activation_condition']}"
-        if confirmed.get("damage_step_category") is not None:
-            line += f", damage step category: {confirmed['damage_step_category']}"
-        if confirmed.get("usage_limit_text") is not None:
-            line += f", usage limit: {confirmed['usage_limit_text']}"
         lines.append(line)
     return "\n".join(lines)
 
