@@ -145,3 +145,16 @@ def test_build_answering_system_prompt_instructs_natural_breakdown_of_effect_par
     assert "cost" in lowered
     assert "target" in lowered
     assert "natural" in lowered
+
+
+def test_build_answering_system_prompt_explains_generic_apply_wording():
+    """PSCT sometimes uses 'apply this effect'/'apply as much of the
+    effect as possible' generically, to mean 'resolve in the stated
+    order' rather than a bulleted choice among several listed effects
+    (that sense is instead surfaced deterministically via KNOWN FACTS'
+    'choose 1 or more of several listed effects at resolution' line) --
+    the model must not confuse the two."""
+    prompt = build_answering_system_prompt()
+    lowered = prompt.lower()
+    assert "apply" in lowered
+    assert "as much" in lowered

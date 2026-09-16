@@ -27,6 +27,24 @@ _ATK_DEF_PATTERN = re.compile(
 
 _USAGE_LIMIT_PATTERN = re.compile(r"You can only [^.]*\bper turn\.", re.IGNORECASE)
 
+# Real PSCT usage of "apply" splits into two senses (confirmed against the
+# full YGOPRODeck card pool: ~1.2% of all cards match this specific
+# lead-in, vs. ~2.9% containing any form of "apply" at all): (1) a literal
+# "Apply <N|the following|these|1 or more> effect(s)" lead-in that
+# introduces a bulleted list of effects the player chooses from at
+# resolution -- the deterministic, detectable sense this pattern targets;
+# and (2) a looser generic sense ("apply this effect", "apply their DEF
+# for damage calculation") that doesn't reliably signal a multi-effect
+# choice. Only checked against effect_text (the resolution clause), same
+# as damage_step_category's atk_def_alter/negates_activation checks,
+# since that's where PSCT actually places this phrasing. Requires a
+# plural/quantified lead-in word (not bare "this effect") to stay
+# precise rather than guessing on sense (2) -- same don't-guess
+# philosophy as classify_damage_step_category's card_moved_trigger scoping.
+_EFFECT_CHOICE_PATTERN = re.compile(
+    r"\bapply\s+(?:\d+|1 or more|these|the following)\b[^.:]*\beffects?\b", re.IGNORECASE
+)
+
 # Canonical, highly formulaic PSCT boilerplate for how a card may be
 # Summoned -- reused near-verbatim across thousands of cards, so precision
 # on these specific phrases is expected to be high; anything that doesn't
@@ -278,6 +296,26 @@ def classify_damage_step_category(
         if _CARD_MOVED_TRIGGER_PATTERN.search(activation_condition):
             return "card_moved_trigger"
     return None
+
+
+def classify_effect_choice(effect_text: str) -> bool:
+    """Whether this effect's resolution requires choosing 1 or more of
+    several listed effects -- the real PSCT "Apply <N|the following|these|1
+    or more> effect(s)" lead-in (e.g. "you can apply 1 of these effects. *
+    ..."), checked against `effect_text` -- the resolution clause, where
+    this phrasing is actually written (same as
+    `classify_damage_step_category`'s atk_def_alter/negates_activation
+    checks). Gated on the bare word "apply" appearing at all before running
+    the more specific pattern, so the pipeline only spends the extra regex
+    work on the ~3% of effects that could possibly match. Deliberately
+    narrow: generic "apply this effect"/"apply their DEF for damage
+    calculation" phrasing returns False rather than guessing -- only a
+    plural/quantified lead-in ("these effects", "the following effect(s)",
+    "1 of these effects") counts.
+    """
+    if not re.search(r"\bapply\w*\b", effect_text, re.IGNORECASE):
+        return False
+    return bool(_EFFECT_CHOICE_PATTERN.search(effect_text))
 
 
 def extract_usage_limit_text(card_text: str) -> str | None:

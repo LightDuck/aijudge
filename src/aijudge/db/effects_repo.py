@@ -2,7 +2,7 @@ from .connection import get_connection
 
 _EFFECT_COLUMNS = [
     "id", "effect_type", "activation_condition", "cost", "targeting", "has_target", "effect",
-    "damage_step_category", "usage_limit_text",
+    "damage_step_category", "usage_limit_text", "has_effect_choice",
 ]
 
 
@@ -18,6 +18,7 @@ def insert_pending_effect(
     confidence_score: float | None = None,
     damage_step_category: str | None = None,
     usage_limit_text: str | None = None,
+    has_effect_choice: bool = False,
 ) -> str:
     with get_connection() as conn:
         row = conn.execute(
@@ -25,13 +26,13 @@ def insert_pending_effect(
             INSERT INTO card_effects_structured (
                 card_id, effect_type, activation_condition, cost, targeting,
                 has_target, effect, status, confidence_score,
-                damage_step_category, usage_limit_text
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, 'pending', %s, %s, %s)
+                damage_step_category, usage_limit_text, has_effect_choice
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, 'pending', %s, %s, %s, %s)
             RETURNING id
             """,
             (
                 card_id, effect_type, activation_condition, cost, targeting, has_target, effect,
-                confidence_score, damage_step_category, usage_limit_text,
+                confidence_score, damage_step_category, usage_limit_text, has_effect_choice,
             ),
         ).fetchone()
         conn.commit()
@@ -54,7 +55,7 @@ def get_confirmed_effects(card_id: str) -> list[dict]:
         rows = conn.execute(
             """
             SELECT id, effect_type, activation_condition, cost, targeting, has_target, effect,
-                   damage_step_category, usage_limit_text
+                   damage_step_category, usage_limit_text, has_effect_choice
             FROM card_effects_structured
             WHERE card_id = %s AND status = 'confirmed'
             """,

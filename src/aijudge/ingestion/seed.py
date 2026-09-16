@@ -5,7 +5,12 @@ from aijudge.db.cards_repo import insert_card
 from aijudge.db.effects_repo import confirm_effect, insert_pending_effect
 from aijudge.db.rulings_repo import insert_ruling
 from aijudge.effect_parser.clause_splitter import resolve_effect_clauses
-from aijudge.effect_parser.parser import classify_damage_step_category, classify_effect_type, parse_psct
+from aijudge.effect_parser.parser import (
+    classify_damage_step_category,
+    classify_effect_choice,
+    classify_effect_type,
+    parse_psct,
+)
 from aijudge.effect_parser.review_agent import review_parsed_effect
 from aijudge.effect_parser.sentence_splitter import extract_card_material
 from aijudge.effect_parser.usage_limit import resolve_ambiguous_scope
@@ -167,6 +172,7 @@ def _insert_parsed_clause(
         activation_condition=parsed.activation_condition,
         effect_type=effect_type,
     )
+    has_effect_choice = classify_effect_choice(parsed.effect)
 
     review = review_parsed_effect(
         llm_client,
@@ -190,6 +196,7 @@ def _insert_parsed_clause(
         confidence_score=review.confidence,
         damage_step_category=damage_step_category,
         usage_limit_text=usage_limit_text,
+        has_effect_choice=has_effect_choice,
     )
 
     if review.auto_confirmed:
