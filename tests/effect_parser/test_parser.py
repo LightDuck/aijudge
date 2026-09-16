@@ -1,4 +1,10 @@
-from aijudge.effect_parser.parser import classify_damage_step_category, classify_effect_type, extract_usage_limit_text, parse_psct
+from aijudge.effect_parser.parser import (
+    classify_damage_step_category,
+    classify_effect_choice,
+    classify_effect_type,
+    extract_usage_limit_text,
+    parse_psct,
+)
 from aijudge.rules_engine.models import EffectType
 
 
@@ -452,6 +458,52 @@ def test_active_voice_special_summon_restriction_stays_continuous():
     )
 
     assert result == EffectType.CONTINUOUS
+
+
+def test_classify_effect_choice_detects_apply_n_of_these_effects():
+    """Abyss Actor - Super Producer."""
+    text = (
+        "you can apply 1 of these effects. * Place 1 \"Abyss Playhouse - "
+        "Fantastic Theater\" from your Deck, face-up in your Spell & Trap Zone."
+    )
+    assert classify_effect_choice(text) is True
+
+
+def test_classify_effect_choice_detects_apply_the_following_effect():
+    """Battlin' Boxer King Dempsey."""
+    text = (
+        "you can target 1 \"Battlin' Boxer\" monster you control, and if you "
+        "do, apply the following effect. * Your opponent cannot target "
+        "\"Battlin' Boxer\" monsters you control with card effects."
+    )
+    assert classify_effect_choice(text) is True
+
+
+def test_classify_effect_choice_detects_apply_these_effects_in_sequence():
+    """Bot Herder."""
+    text = "apply these effects in sequence. * Inflict 200 damage to your opponent."
+    assert classify_effect_choice(text) is True
+
+
+def test_classify_effect_choice_returns_false_when_apply_is_absent():
+    text = "Target 1 monster on the field; destroy it."
+    assert classify_effect_choice(text) is False
+
+
+def test_classify_effect_choice_returns_false_for_generic_apply_this_effect_phrasing():
+    """A.I. Connect: 'apply this effect' (singular, no 'these'/'the
+    following'/N lead-in) is the looser, non-bulleted-choice sense of
+    "apply" -- deliberately not flagged, same don't-guess philosophy as
+    classify_damage_step_category's card_moved_trigger scoping."""
+    text = "Reveal 1 Cyberse monster in your hand; apply this effect based on its Attribute."
+    assert classify_effect_choice(text) is False
+
+
+def test_classify_effect_choice_returns_false_for_unrelated_apply_wording():
+    """Ancient Fairy Life Dragon: 'apply' used generically, not introducing
+    an effect choice at all."""
+    text = "apply their DEF for damage calculation."
+    assert classify_effect_choice(text) is False
 
 
 def test_you_can_only_still_wins_over_default_continuous():

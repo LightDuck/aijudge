@@ -99,7 +99,8 @@ def build_known_facts_context(card: dict) -> str:
             f"targeting: {confirmed.get('targeting') or 'none'}, "
             f"effect: \"{confirmed['effect']}\", "
             f"damage step category: {confirmed.get('damage_step_category') or 'none'}, "
-            f"usage limit: {confirmed.get('usage_limit_text') or 'none'}"
+            f"usage limit: {confirmed.get('usage_limit_text') or 'none'}, "
+            f"choose 1 or more of several listed effects at resolution: {confirmed.get('has_effect_choice', False)}"
         )
         lines.append(line)
     return "\n".join(lines)

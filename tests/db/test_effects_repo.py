@@ -138,6 +138,35 @@ def test_confirmed_effects_damage_step_category_and_usage_limit_text_default_to_
     assert effects[0]["usage_limit_text"] is None
 
 
+def test_confirmed_effects_include_has_effect_choice():
+    from aijudge.db.effects_repo import confirm_effect, get_confirmed_effects, insert_pending_effect
+
+    card_id = _make_card_id()
+    effect_id = insert_pending_effect(
+        card_id=card_id,
+        effect_type="ignition",
+        effect="you can apply 1 of these effects. * Draw 1 card.",
+        has_effect_choice=True,
+    )
+
+    confirm_effect(effect_id)
+    effects = get_confirmed_effects(card_id)
+
+    assert effects[0]["has_effect_choice"] is True
+
+
+def test_confirmed_effects_has_effect_choice_defaults_to_false():
+    from aijudge.db.effects_repo import confirm_effect, get_confirmed_effects, insert_pending_effect
+
+    card_id = _make_card_id()
+    effect_id = insert_pending_effect(card_id=card_id, effect_type="ignition", effect="destroy it.")
+
+    confirm_effect(effect_id)
+    effects = get_confirmed_effects(card_id)
+
+    assert effects[0]["has_effect_choice"] is False
+
+
 def test_get_confirmed_effects_returns_every_confirmed_row_for_a_card():
     from aijudge.db.effects_repo import confirm_effect, get_confirmed_effects, insert_pending_effect
 

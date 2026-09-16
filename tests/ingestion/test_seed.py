@@ -282,6 +282,53 @@ def test_seed_card_stores_damage_step_category_and_usage_limit_text():
     assert effects[0]["usage_limit_text"] == 'You can only use this effect of "Effect Veiler" once per turn.'
 
 
+def test_seed_card_stores_has_effect_choice_when_apply_pattern_present():
+    """Abyss Actor - Super Producer's real card text: 'apply 1 of these
+    effects.' followed by a bulleted list."""
+    from aijudge.db.effects_repo import get_confirmed_effects
+    from aijudge.ingestion.seed import seed_card
+    from aijudge.llm.client import MockLLMClient
+
+    desc = (
+        '2 monsters, including a Fiend monster\r\n'
+        "During the Main Phase (Quick Effect): You can target 1 face-up card "
+        "you control; destroy it, then you can apply 1 of these effects.\r\n"
+        '● Place 1 "Abyss Playhouse - Fantastic Theater" from your Deck, '
+        "face-up in your Field Zone.\r\n"
+        '● Place 1 "Abyss Actor" Pendulum Monster from your Deck in your '
+        "Pendulum Zone.\r\n"
+        'You can only use this effect of "Abyss Actor - Super Producer" once '
+        "per turn."
+    )
+
+    def fake_fetch_card(name, http_get=None):
+        return {
+            "id": 47404795,
+            "name": name,
+            "type": "Link Monster",
+            "race": "Fiend",
+            "desc": desc,
+            "card_sets": [{"set_name": "Some Set"}],
+        }
+
+    def fake_fetch_rulings(name, http_get=None):
+        return []
+
+    llm_client = MockLLMClient()
+
+    card_id = seed_card(
+        "Abyss Actor - Super Producer",
+        llm_client=llm_client,
+        fetch_card_fn=fake_fetch_card,
+        fetch_rulings_fn=fake_fetch_rulings,
+        fetch_sets_index_fn=lambda: {"Some Set": date(2020, 1, 1)},
+    )
+
+    effects = get_confirmed_effects(card_id)
+    effect_row = next(e for e in effects if "apply 1 of these effects" in e["effect"])
+    assert effect_row["has_effect_choice"] is True
+
+
 def test_seed_card_uses_race_field_for_a_quick_play_spell():
     """Real YGOPRODeck API shape: `type` is the generic 'Spell Card', the
     Quick-Play subtype comes back in a separate `race` field. Both must be

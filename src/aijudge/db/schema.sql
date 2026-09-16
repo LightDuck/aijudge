@@ -80,9 +80,15 @@ CREATE TABLE IF NOT EXISTS card_effects_structured (
     confidence_score REAL,
     damage_step_category TEXT,
     usage_limit_text TEXT,
+    has_effect_choice BOOLEAN NOT NULL DEFAULT FALSE,
     CHECK (status IN ('pending', 'confirmed')),
     CHECK (damage_step_category IN ('atk_def_alter', 'negates_activation', 'explicit_permission', 'card_moved_trigger') OR damage_step_category IS NULL)
 );
+
+-- Same rationale as the cards.race/deterministic_parse_eligible migrations
+-- above: applied separately for pre-existing databases, since CREATE TABLE
+-- IF NOT EXISTS is a no-op once card_effects_structured already exists.
+ALTER TABLE card_effects_structured ADD COLUMN IF NOT EXISTS has_effect_choice BOOLEAN NOT NULL DEFAULT FALSE;
 
 CREATE TABLE IF NOT EXISTS rulebook_chunks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
