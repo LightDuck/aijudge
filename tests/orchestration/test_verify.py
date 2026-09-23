@@ -193,6 +193,7 @@ def test_verify_structured_grounding_flags_mismatch_on_no():
             "targeting": None,
             "effect_text": "Target 1 Effect Monster; negate its effects.",
             "usage_limit_text": None,
+            "damage_step_category": None,
         }
     ]
 
@@ -229,6 +230,42 @@ def test_verify_structured_grounding_threads_usage_limit_text_into_the_prompt():
     # usage_limit_text into the ground-truth breakdown.
     stored_section = llm.prompts[0].split("--- BEGIN DRAFTED ANSWER")[0]
     assert 'You can only activate 1 "Pot of Desires" per turn.' in stored_section
+    assert result.ok is True
+
+
+def test_verify_structured_grounding_threads_damage_step_category_into_the_prompt():
+    # Regression test: the answering LLM is told a card's Damage Step
+    # legality in its KNOWN FACTS (preflight.build_known_facts_context
+    # computes and states "damage-step legal: True/False" per effect) and is
+    # allowed to mention it, but the verifier never saw damage_step_category
+    # -- only activation_condition/cost/targeting/effect/usage_limit_text --
+    # so any true, KNOWN-FACTS-grounded mention of Damage Step legality
+    # looked like an invented claim and was flagged NO on every retry until
+    # the whole verification budget burned and the question escalated to a
+    # human judge (real case: Pot of Desires, 2026-09-16).
+    llm = _CapturingLLMClient(["YES"])
+    state = SignalState()
+    state.structured_effects["card:abc"] = [
+        {
+            "activation_condition": None,
+            "cost": "Banish 10 cards from the top of your Deck, face-down",
+            "targeting": None,
+            "effect": "draw 2 cards.",
+            "usage_limit_text": 'You can only activate 1 "Pot of Desires" per turn.',
+            "damage_step_category": None,
+        }
+    ]
+
+    result = verify_structured_grounding(
+        "You banish 10 cards from the top of your Deck, face-down, then draw 2 cards. "
+        'You can only activate 1 "Pot of Desires" per turn. It cannot be activated during the Damage Step.',
+        {"card:abc"},
+        state,
+        llm,
+    )
+
+    stored_section = llm.prompts[0].split("--- BEGIN DRAFTED ANSWER")[0]
+    assert "damage_step_category: none" in stored_section
     assert result.ok is True
 
 

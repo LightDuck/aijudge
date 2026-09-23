@@ -23,11 +23,18 @@ VERIFIER_SYSTEM_PROMPT = (
 # The stored-effect breakdown fields to render, in the same order
 # `card_effects_structured`/`get_confirmed_effects` present them (activation
 # condition, then cost, then targeting, then the resolution effect itself),
-# plus usage_limit_text: a separate column (see db/ in CLAUDE.md), but still
-# real ground truth a drafted answer may correctly state -- omitting it here
-# left the verifier unable to tell a true "You can only activate 1 ... per
-# turn." restriction from an invented one, flagging correct answers as NO.
-_BREAKDOWN_FIELDS = ("activation_condition", "cost", "targeting", "effect", "usage_limit_text")
+# plus usage_limit_text and damage_step_category: separate columns (see db/
+# in CLAUDE.md), but still real ground truth a drafted answer may correctly
+# state -- e.g. the answering LLM's KNOWN FACTS block (preflight.py) states
+# each effect's computed Damage Step legality outright, so a true mention of
+# it is expected, not invented. Omitting either column here left the
+# verifier unable to tell a true restriction/legality statement from an
+# invented one, flagging correct answers as NO (usage_limit_text: Pot of
+# Desires' "per turn" restriction; damage_step_category: same card's
+# Damage-Step-legality mention, both real cases -- see CLAUDE.md/tests).
+_BREAKDOWN_FIELDS = (
+    "activation_condition", "cost", "targeting", "effect", "usage_limit_text", "damage_step_category",
+)
 
 _LEADING_TOKEN_RE = re.compile(r"[A-Za-z]+")
 
@@ -54,8 +61,8 @@ def build_verification_prompt(answer_text: str, structured_effects: list[dict]) 
     effect_lines = "\n".join(f"- {_render_effect_breakdown(effect)}" for effect in structured_effects)
     return (
         "STORED EFFECT TEXT (verbatim, ground truth -- rendered as its "
-        "separate activation_condition/cost/targeting/effect/usage_limit_text "
-        "fields, each shown as \"none\" when the card has no such text for "
+        "separate activation_condition/cost/targeting/effect/usage_limit_text/"
+        "damage_step_category fields, each shown as \"none\" when the card has no such text for "
         "that field; a card's targeting clause is a distinct field from its "
         "effect clause, so check both):\n"
         f"{effect_lines}\n\n"
@@ -115,6 +122,7 @@ def verify_structured_grounding(
                 "targeting": effect.get("targeting"),
                 "effect_text": effect.get("effect"),
                 "usage_limit_text": effect.get("usage_limit_text"),
+                "damage_step_category": effect.get("damage_step_category"),
             })
 
     if not matched:
@@ -129,6 +137,7 @@ def verify_structured_grounding(
                 "targeting": m["targeting"],
                 "effect": m["effect_text"],
                 "usage_limit_text": m["usage_limit_text"],
+                "damage_step_category": m["damage_step_category"],
             }
             for m in matched
         ],
