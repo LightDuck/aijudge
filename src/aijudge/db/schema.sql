@@ -122,14 +122,30 @@ CREATE TABLE IF NOT EXISTS qa_test_cases (
 -- card's bulleted effect list behaves (who picks, when, how many). Rows are
 -- part of the schema, not ingested data, so they're seeded here and upserted
 -- on every run_migrations() -- edit a definition here and re-run migrations.
-CREATE TABLE IF NOT EXISTS bullet_categories (
-    code TEXT PRIMARY KEY,
+--
+-- The table was originally named `bullet_categories` with `code` as its
+-- primary key; rename it in place on pre-existing databases and move the
+-- primary key to a new `id` column, keeping `code` unique (the upsert below
+-- conflicts on it). A no-op on a fresh database.
+DO $$ BEGIN
+    IF to_regclass('public.bullet_categories') IS NOT NULL AND to_regclass('public.bullet_category') IS NULL THEN
+        ALTER TABLE bullet_categories RENAME TO bullet_category;
+        ALTER TABLE bullet_category DROP CONSTRAINT bullet_categories_pkey;
+        ALTER TABLE bullet_category ADD COLUMN id UUID NOT NULL DEFAULT gen_random_uuid();
+        ALTER TABLE bullet_category ADD CONSTRAINT bullet_category_pkey PRIMARY KEY (id);
+        ALTER TABLE bullet_category ADD CONSTRAINT bullet_category_code_key UNIQUE (code);
+    END IF;
+END $$;
+
+CREATE TABLE IF NOT EXISTS bullet_category (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    code TEXT NOT NULL UNIQUE,
     name TEXT NOT NULL,
     description TEXT NOT NULL,
     note TEXT
 );
 
-INSERT INTO bullet_categories (code, name, description, note) VALUES
+INSERT INTO bullet_category (code, name, description, note) VALUES
     ('A1', 'Condition-scope · activation',
      'The bullets are alternatives that define a qualifying test — any one of them satisfies it. The test is checked when the effect is activated.',
      NULL),

@@ -126,11 +126,13 @@ spec:
     constrained to `'atk_def_alter'`/`'negates_activation'`/`'explicit_permission'`/`'card_moved_trigger'`/`NULL`)
     and `usage_limit_text`, round out the row; `get_confirmed_effects()` (returns all confirmed effect rows for a
     card, not just one) and `insert_pending_effect()` both read/write them.
-  - `bullet_categories` is a reference table mirroring the "Bullet Category Legend" document (13 rows, `A1`
-    through `Z`: `code` PK, `name`, `description`, nullable `note`) describing how a card's bulleted effect list
-    behaves. Unlike every other table, its rows are seeded by `schema.sql` itself via `INSERT ... ON CONFLICT
-    (code) DO UPDATE`, so `run_migrations()` both creates and refreshes them — edit a definition there, not in a
-    seed script. Nothing references it yet (no FK from `card`/`card_effects_structured`).
+  - `bullet_category` is a reference table mirroring the "Bullet Category Legend" document (13 rows, `A1`
+    through `Z`: `id` UUID PK, `code` (`UNIQUE`), `name`, `description`, nullable `note`) describing how a card's
+    bulleted effect list behaves. Unlike every other table, its rows are seeded by `schema.sql` itself via
+    `INSERT ... ON CONFLICT (code) DO UPDATE`, so `run_migrations()` both creates and refreshes them — edit a
+    definition there, not in a seed script. The upsert keys on `code`, so a row's `id` stays stable across
+    re-runs. `schema.sql` migrates the older `bullet_categories` table (with `code` as PK) in place. Nothing
+    references it yet (no FK from `card`/`card_effects_structured`).
     `bullet_categories_repo.get_all_bullet_categories()` returns them `ORDER BY code` (which matches the legend's
     order); `get_bullet_category(code)` returns one or `None`.
   - Errata is never overwritten: `insert_errata_version()` adds a new `card_errata_versions` row and flips
