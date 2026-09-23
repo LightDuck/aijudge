@@ -105,3 +105,59 @@ CREATE TABLE IF NOT EXISTS qa_test_cases (
     expected_citation TEXT,
     notes TEXT
 );
+
+-- Reference table mirroring the "Bullet Category Legend" document: how a
+-- card's bulleted effect list behaves (who picks, when, how many). Rows are
+-- part of the schema, not ingested data, so they're seeded here and upserted
+-- on every run_migrations() -- edit a definition here and re-run migrations.
+CREATE TABLE IF NOT EXISTS bullet_categories (
+    code TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL,
+    note TEXT
+);
+
+INSERT INTO bullet_categories (code, name, description, note) VALUES
+    ('A1', 'Condition-scope · activation',
+     'The bullets are alternatives that define a qualifying test — any one of them satisfies it. The test is checked when the effect is activated.',
+     NULL),
+    ('A2', 'Condition-scope · resolution',
+     'Same as A1 (any one bullet qualifies), but the test is checked when the effect resolves.',
+     NULL),
+    ('B1', 'Player choice · activation',
+     'Always choose strictly 1 bullet, at activation ("activate 1 of these effects").',
+     NULL),
+    ('B2', 'Player choice · resolution',
+     'Always choose strictly 1 bullet, at resolution ("apply 1 of these effects").',
+     NULL),
+    ('C', 'Deterministic branch',
+     'No free choice is made by any player. The choice(s) are determined by criteria written on the card.',
+     NULL),
+    ('D1', 'Mandatory grant',
+     '1 or more bullets, granted as a single indivisible bundle: one binary condition on the card either grants all of them or none of them. There is no branch and no scale — the bundle is never split into a subset.',
+     'Contrast with C: a card whose criteria select a subset of bullets, or move between them as some value changes, belongs in C, not here, even if the bullets are grant-phrased.'),
+    ('D2', 'Optional grant',
+     'A player may apply or skip exactly one bullet — a [0:1] choice, made explicit by the card''s own "can apply this/the following effect" wording. The bullet usually follows a mandatory part of the effect, but that part may be absent: the optional bullet can be the effect''s entire content (e.g. Extra Net). The deciding player is not always the card''s controller (Extra Net: the opponent of the player who Summoned). The optional part is always a single effect, never a menu of several.',
+     'Contrast with D1: if nothing in the text lets the player opt out of the bullet — once the mandatory part, if any, resolves — it belongs there instead.'),
+    ('E1', 'Multi-select · activation',
+     'Choose [1:N] non mandatory effect(s) to use, at activation ("activate 1 or 2 / any / 2 of these effects"). The card tells the mechanism with which the effect(s) can be chosen (and possible resolution).',
+     NULL),
+    ('E2', 'Multi-select · resolution',
+     'Same as E1 (choose [1:N] non mandatory effect(s) by the mechanism the card tells), but the effect(s) are chosen at resolution ("apply 1 of these, or both / any of them").',
+     NULL),
+    ('F', 'Independent effects',
+     'Multiple effects with zero impact on each other (unless the card''s usage_limit_text says otherwise). The bullet list is aesthetic rather than functional. Test — both parts must hold: (1) stripping the bullet markers and reading each bullet as a plain sentence doesn''t change what the card does, and (2) if there''s a sentence right before the bullets, it must already be complete on its own — its verb can''t need the bullets to mean anything ("apply the result," "gains this effect," "based on X"). If that sentence is left dangling without the bullets, they''re functional, not aesthetic, and the card belongs wherever that sentence actually points — C, B1/B2, D1/D2, or A — not F.',
+     NULL),
+    ('G', 'Gemini Monster',
+     'Always a Monster Card carrying the Gemini stipulation (type field == Gemini Monster).',
+     NULL),
+    ('H', 'Purrely',
+     'Card name contains "Purrely". Multiple independent bullet lists that fit in two different categories.',
+     NULL),
+    ('Z', 'Unspecified (pending)',
+     'Placeholder. Category still to be defined after this list is reviewed. Also holds cards the first sort could not place.',
+     NULL)
+ON CONFLICT (code) DO UPDATE SET
+    name = EXCLUDED.name,
+    description = EXCLUDED.description,
+    note = EXCLUDED.note;
