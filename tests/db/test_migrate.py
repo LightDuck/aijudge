@@ -11,6 +11,6 @@ def test_run_migrations_creates_all_tables():
 
     run_migrations()
     with get_connection() as conn:
-        for table in ("cards", "card_errata_versions", "rulings", "card_effects_structured", "rulebook_chunks", "qa_test_cases"):
+        for table in ("card", "card_errata_versions", "rulings", "card_effects_structured", "rulebook_chunks", "qa_test_cases"):
             row = conn.execute("SELECT to_regclass(%s)", (f"public.{table}",)).fetchone()
             assert row[0] == table, f"expected table {table!r} to exist"
