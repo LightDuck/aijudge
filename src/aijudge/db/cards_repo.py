@@ -32,7 +32,7 @@ def insert_card(
     with get_connection() as conn:
         row = conn.execute(
             """
-            INSERT INTO cards (
+            INSERT INTO card (
                 name, card_text, card_type, race, attribute, monster_type,
                 level, rank, link_rating, archetype, atk, def,
                 ygoprodeck_id, ygoresources_id, source, fetched_at, deterministic_parse_eligible
@@ -55,7 +55,7 @@ def get_card_by_name(name: str) -> dict | None:
             "SELECT id, name, card_text, card_type, race, attribute, monster_type, "
             "level, rank, link_rating, archetype, atk, def, has_errata, "
             "ygoprodeck_id, ygoresources_id, deterministic_parse_eligible "
-            "FROM cards WHERE name = %s",
+            "FROM card WHERE name = %s",
             (name,),
         ).fetchone()
     if row is None:
@@ -71,7 +71,7 @@ def get_card_by_id(card_id: str) -> dict | None:
             "SELECT id, name, card_text, card_type, race, attribute, monster_type, "
             "level, rank, link_rating, archetype, atk, def, has_errata, "
             "ygoprodeck_id, ygoresources_id, deterministic_parse_eligible "
-            "FROM cards WHERE id = %s",
+            "FROM card WHERE id = %s",
             (card_id,),
         ).fetchone()
     if row is None:
@@ -87,7 +87,7 @@ def get_cards_by_fname(fname: str) -> list[dict]:
             "SELECT id, name, card_text, card_type, race, attribute, monster_type, "
             "level, rank, link_rating, archetype, atk, def, has_errata, "
             "ygoprodeck_id, ygoresources_id, deterministic_parse_eligible "
-            "FROM cards WHERE name ILIKE %s",
+            "FROM card WHERE name ILIKE %s",
             (f"%{fname}%",),
         ).fetchall()
     return [dict(zip(_CARD_COLUMNS, [str(row[0])] + list(row[1:]))) for row in rows]
@@ -99,7 +99,7 @@ def get_cards_by_archetype(archetype: str) -> list[dict]:
             "SELECT id, name, card_text, card_type, race, attribute, monster_type, "
             "level, rank, link_rating, archetype, atk, def, has_errata, "
             "ygoprodeck_id, ygoresources_id, deterministic_parse_eligible "
-            "FROM cards WHERE archetype = %s",
+            "FROM card WHERE archetype = %s",
             (archetype,),
         ).fetchall()
     return [dict(zip(_CARD_COLUMNS, [str(row[0])] + list(row[1:]))) for row in rows]
@@ -111,7 +111,7 @@ def get_card_by_ygoprodeck_id(ygoprodeck_id: str) -> dict | None:
             "SELECT id, name, card_text, card_type, race, attribute, monster_type, "
             "level, rank, link_rating, archetype, atk, def, has_errata, "
             "ygoprodeck_id, ygoresources_id, deterministic_parse_eligible "
-            "FROM cards WHERE ygoprodeck_id = %s",
+            "FROM card WHERE ygoprodeck_id = %s",
             (ygoprodeck_id,),
         ).fetchone()
     if row is None:
@@ -153,7 +153,7 @@ def get_card_by_ygoresources_id(ygoresources_id: str) -> dict | None:
             "SELECT id, name, card_text, card_type, race, attribute, monster_type, "
             "level, rank, link_rating, archetype, atk, def, has_errata, "
             "ygoprodeck_id, ygoresources_id, deterministic_parse_eligible "
-            "FROM cards WHERE ygoresources_id = %s",
+            "FROM card WHERE ygoresources_id = %s",
             (ygoresources_id,),
         ).fetchone()
     if row is None:
@@ -173,12 +173,12 @@ def insert_errata_version(*, card_id: str, errata_date: date, errata_text: str) 
             """,
             (card_id, errata_date, errata_text),
         ).fetchone()
-        conn.execute("UPDATE cards SET has_errata = TRUE WHERE id = %s", (card_id,))
+        conn.execute("UPDATE card SET has_errata = TRUE WHERE id = %s", (card_id,))
         conn.commit()
         return str(row[0])
 
 
 def list_card_names() -> list[str]:
     with get_connection() as conn:
-        rows = conn.execute("SELECT name FROM cards").fetchall()
+        rows = conn.execute("SELECT name FROM card").fetchall()
     return [row[0] for row in rows]

@@ -1,6 +1,18 @@
 CREATE EXTENSION IF NOT EXISTS vector;
 
-CREATE TABLE IF NOT EXISTS cards (
+-- The card table was originally named `cards`; rename it (and its
+-- auto-named constraints) in place on pre-existing databases so existing
+-- rows and foreign keys survive. A no-op on a fresh database.
+DO $$ BEGIN
+    IF to_regclass('public.cards') IS NOT NULL AND to_regclass('public.card') IS NULL THEN
+        ALTER TABLE cards RENAME TO card;
+        ALTER TABLE card RENAME CONSTRAINT cards_pkey TO card_pkey;
+        ALTER TABLE card RENAME CONSTRAINT cards_name_key TO card_name_key;
+        ALTER TABLE card RENAME CONSTRAINT cards_race_check TO card_race_check;
+    END IF;
+END $$;
+
+CREATE TABLE IF NOT EXISTS card (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL UNIQUE,
     card_text TEXT NOT NULL,
@@ -29,12 +41,12 @@ CREATE TABLE IF NOT EXISTS cards (
     ) OR race IS NULL)
 );
 
--- CREATE TABLE IF NOT EXISTS is a no-op on a database where `cards` already
+-- CREATE TABLE IF NOT EXISTS is a no-op on a database where `card` already
 -- exists, so this column addition is applied separately for pre-existing
 -- databases; it's already present via the CREATE TABLE above on a fresh one.
-ALTER TABLE cards ADD COLUMN IF NOT EXISTS race TEXT;
+ALTER TABLE card ADD COLUMN IF NOT EXISTS race TEXT;
 DO $$ BEGIN
-    ALTER TABLE cards ADD CONSTRAINT cards_race_check CHECK (race IN (
+    ALTER TABLE card ADD CONSTRAINT card_race_check CHECK (race IN (
         'Normal', 'Field', 'Equip', 'Continuous', 'Quick-Play', 'Ritual', 'Counter',
         'Aqua', 'Beast', 'Beast-Warrior', 'Creator God', 'Cyberse', 'Dinosaur',
         'Divine-Beast', 'Dragon', 'Fairy', 'Fiend', 'Fish', 'Illusion', 'Insect',
@@ -48,19 +60,19 @@ END $$;
 -- pre-existing databases. card_materials is dropped outright, not kept
 -- for backwards compatibility -- nothing ever populated or read it (see
 -- design spec's Data model changes section).
-ALTER TABLE cards ADD COLUMN IF NOT EXISTS deterministic_parse_eligible BOOLEAN NOT NULL DEFAULT TRUE;
-ALTER TABLE cards DROP COLUMN IF EXISTS card_materials;
+ALTER TABLE card ADD COLUMN IF NOT EXISTS deterministic_parse_eligible BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE card DROP COLUMN IF EXISTS card_materials;
 
 CREATE TABLE IF NOT EXISTS card_errata_versions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    card_id UUID NOT NULL REFERENCES cards (id),
+    card_id UUID NOT NULL REFERENCES card (id),
     errata_date DATE NOT NULL,
     errata_text TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS rulings (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    card_id UUID NOT NULL REFERENCES cards (id),
+    card_id UUID NOT NULL REFERENCES card (id),
     ruling_text TEXT NOT NULL,
     source TEXT NOT NULL,
     ruling_date DATE,
@@ -69,7 +81,7 @@ CREATE TABLE IF NOT EXISTS rulings (
 
 CREATE TABLE IF NOT EXISTS card_effects_structured (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    card_id UUID NOT NULL REFERENCES cards (id),
+    card_id UUID NOT NULL REFERENCES card (id),
     effect_type TEXT NOT NULL,
     activation_condition TEXT,
     cost TEXT,
@@ -85,7 +97,7 @@ CREATE TABLE IF NOT EXISTS card_effects_structured (
     CHECK (damage_step_category IN ('atk_def_alter', 'negates_activation', 'explicit_permission', 'card_moved_trigger') OR damage_step_category IS NULL)
 );
 
--- Same rationale as the cards.race/deterministic_parse_eligible migrations
+-- Same rationale as the card.race/deterministic_parse_eligible migrations
 -- above: applied separately for pre-existing databases, since CREATE TABLE
 -- IF NOT EXISTS is a no-op once card_effects_structured already exists.
 ALTER TABLE card_effects_structured ADD COLUMN IF NOT EXISTS has_effect_choice BOOLEAN NOT NULL DEFAULT FALSE;

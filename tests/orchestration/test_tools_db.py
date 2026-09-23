@@ -12,7 +12,7 @@ def setup_function():
 
     run_migrations()
     with get_connection() as conn:
-        conn.execute("TRUNCATE cards CASCADE")
+        conn.execute("TRUNCATE card CASCADE")
         conn.execute("TRUNCATE rulebook_chunks")
         conn.commit()
 
