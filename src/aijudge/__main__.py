@@ -1,4 +1,3 @@
-import os
 from typing import Callable
 
 from dotenv import load_dotenv
@@ -7,19 +6,11 @@ from aijudge.call_log import CallLogger, LoggingLLMClient
 from aijudge.cli import run_cli
 from aijudge.embeddings.client import EmbeddingClient
 from aijudge.embeddings.ollama_client import OllamaEmbeddingClient
-from aijudge.llm.anthropic_client import AnthropicLLMClient
-from aijudge.llm.client import LLMClient
-
-
-def _require_env(name: str) -> str:
-    value = os.environ.get(name)
-    if not value:
-        raise RuntimeError(f"{name} is not set. Add it to your .env file or environment before running AIJudge.")
-    return value
+from aijudge.llm.client import LLMClient, OllamaLLMClient
 
 
 def build_llm_client() -> LLMClient:
-    return AnthropicLLMClient(_require_env("ANTHROPIC_API_KEY"))
+    return OllamaLLMClient()
 
 
 def main(

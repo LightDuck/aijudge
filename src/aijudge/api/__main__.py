@@ -7,13 +7,17 @@ from dotenv import load_dotenv
 
 from aijudge.call_log import CallLogger, LoggingLLMClient
 from aijudge.embeddings.client import EmbeddingClient
-from aijudge.entrypoint import build_embedding_client, build_llm_client
-from aijudge.llm.client import LLMClient
+from aijudge.entrypoint import build_embedding_client
+from aijudge.llm.client import LLMClient, OllamaLLMClient
 
 from .app import create_app
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8000
+
+
+def build_llm_client() -> LLMClient:
+    return OllamaLLMClient()
 
 
 def _configure_logging_from_env() -> None:

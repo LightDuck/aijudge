@@ -2,7 +2,7 @@ import aijudge.api.__main__ as main_module
 from aijudge.api.__main__ import main
 from aijudge.call_log import CallLogger, LoggingLLMClient
 from aijudge.embeddings.openai_client import OpenAIEmbeddingClient
-from aijudge.llm.anthropic_client import AnthropicLLMClient
+from aijudge.llm.client import OllamaLLMClient
 
 
 class _StubLLMClient:
@@ -33,8 +33,7 @@ def test_main_uses_injected_llm_client_instead_of_constructing_one(monkeypatch):
     assert "built" not in constructed
 
 
-def test_main_defaults_to_real_anthropic_and_openai_backed_clients(monkeypatch):
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "an-key")
+def test_main_defaults_to_real_ollama_and_openai_backed_clients(monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "oa-key")
     captured = {}
 
@@ -47,7 +46,7 @@ def test_main_defaults_to_real_anthropic_and_openai_backed_clients(monkeypatch):
     main(run_fn=lambda app, **kwargs: None)
 
     assert isinstance(captured["llm_client"], LoggingLLMClient)
-    assert isinstance(captured["llm_client"].inner, AnthropicLLMClient)
+    assert isinstance(captured["llm_client"].inner, OllamaLLMClient)
     assert isinstance(captured["embedding_client"], OpenAIEmbeddingClient)
 
 

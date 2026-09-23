@@ -1,12 +1,9 @@
-import pytest
-
 import aijudge.__main__ as main_module
 from aijudge.__main__ import main
 from aijudge.call_log import CallLogger, LoggingLLMClient
 
 
-def test_main_exits_immediately_on_quit(monkeypatch):
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "an-key")
+def test_main_exits_immediately_on_quit():
     printed = []
 
     main(input_fn=lambda _: "quit", print_fn=printed.append)
@@ -17,14 +14,14 @@ def test_main_exits_immediately_on_quit(monkeypatch):
 def test_main_uses_injected_llm_client_instead_of_constructing_one(monkeypatch):
     constructed = {}
 
-    class SpyAnthropicLLMClient:
-        def __init__(self, api_key):
+    class SpyOllamaLLMClient:
+        def __init__(self):
             constructed["built"] = True
 
         def complete(self, prompt: str) -> str:
             raise AssertionError("should not be called before user asks a question")
 
-    monkeypatch.setattr(main_module, "AnthropicLLMClient", SpyAnthropicLLMClient)
+    monkeypatch.setattr(main_module, "OllamaLLMClient", SpyOllamaLLMClient)
 
     class InjectedLLMClient:
         def complete(self, prompt: str) -> str:
@@ -32,11 +29,10 @@ def test_main_uses_injected_llm_client_instead_of_constructing_one(monkeypatch):
 
     main(llm_client=InjectedLLMClient(), input_fn=lambda _: "quit", print_fn=lambda _: None)
 
-    assert "built" not in constructed  # the injected client must be used, not AnthropicLLMClient()
+    assert "built" not in constructed  # the injected client must be used, not OllamaLLMClient()
 
 
 def test_main_uses_injected_embedding_client_instead_of_constructing_one(monkeypatch):
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "an-key")
     constructed = {}
 
     class SpyOllamaEmbeddingClient:
@@ -57,35 +53,24 @@ def test_main_uses_injected_embedding_client_instead_of_constructing_one(monkeyp
     assert "built" not in constructed  # the injected client must be used, not OllamaEmbeddingClient()
 
 
-def test_main_defaults_to_a_real_anthropic_backed_llm_client(monkeypatch):
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "an-key")
+def test_main_defaults_to_a_real_ollama_backed_llm_client(monkeypatch):
     constructed = {}
 
-    class SpyAnthropicLLMClient:
-        def __init__(self, api_key):
+    class SpyOllamaLLMClient:
+        def __init__(self):
             constructed["built"] = True
-            constructed["api_key"] = api_key
 
         def complete(self, prompt: str) -> str:
             raise AssertionError("should not be called before user asks a question")
 
-    monkeypatch.setattr(main_module, "AnthropicLLMClient", SpyAnthropicLLMClient)
+    monkeypatch.setattr(main_module, "OllamaLLMClient", SpyOllamaLLMClient)
 
     main(input_fn=lambda _: "quit", print_fn=lambda _: None)
 
     assert constructed.get("built") is True
-    assert constructed.get("api_key") == "an-key"
-
-
-def test_main_raises_clear_error_when_anthropic_api_key_missing(monkeypatch):
-    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-
-    with pytest.raises(RuntimeError, match="ANTHROPIC_API_KEY"):
-        main_module.build_llm_client()
 
 
 def test_main_defaults_to_a_real_ollama_backed_embedding_client(monkeypatch):
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "an-key")
     constructed = {}
 
     class SpyOllamaEmbeddingClient:
