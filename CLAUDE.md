@@ -358,6 +358,12 @@ spec:
     facts), since the restricted answering turn (see `protocol.build_answering_system_prompt()` below) has no
     `lookup_card` tool to fall back on for that -- omitting them was a confirmed source of fabrication (a real
     Tuner Monster described as a "Quick-Effect spell card") caught in manual testing.
+    When the card's `ygoprodeck_id` has a `card_bulleted` row, the block ends with one more line giving its
+    bullet list category (code, name, the category's `description` and `note`) plus this card's `reason` and
+    per-card `note`, each omitted when empty. No passcode or no row means no line. The line only extends an
+    existing block: a card with no confirmed effects still gets `""`. `get_card_bulleted` is imported at module
+    level, so unit tests stub it with `monkeypatch.setattr(preflight, "get_card_bulleted", ...)`, as they do
+    `get_confirmed_effects`.
   - `extraction.py` — `extract_card_names(question, *, llm_client)` asks the LLM (via the narrow
     `EXTRACTION_SYSTEM_PROMPT`, deliberately not `protocol.build_system_prompt()`) to list every card name a
     question references, one per line, or the literal `NONE`. `parse_extraction_response()` strips bullet/number
