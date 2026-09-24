@@ -490,3 +490,62 @@ def test_insert_card_no_longer_accepts_card_materials():
             deterministic_parse_eligible=True,
             card_materials="should not be accepted",
         )
+
+
+def _insert_cynet_conflict(ygoprodeck_id: str) -> None:
+    from aijudge.db.cards_repo import insert_card
+
+    insert_card(
+        name="Cynet Conflict",
+        card_text="text",
+        card_type="Trap Card",
+        race="Counter",
+        source="ygoprodeck",
+        fetched_at=date(2026, 9, 24),
+        ygoprodeck_id=ygoprodeck_id,
+        deterministic_parse_eligible=True,
+    )
+
+
+def test_insert_card_zero_pads_a_short_passcode_to_eight_digits():
+    from aijudge.db.cards_repo import get_card_by_name
+
+    # YGOPRODeck's API returns the passcode as an int, so 07403341 arrives as 7403341.
+    _insert_cynet_conflict("7403341")
+
+    assert get_card_by_name("Cynet Conflict")["ygoprodeck_id"] == "07403341"
+
+
+@pytest.mark.parametrize("query", ["7403341", "07403341"])
+def test_get_card_by_ygoprodeck_id_matches_with_or_without_leading_zero(query):
+    from aijudge.db.cards_repo import get_card_by_ygoprodeck_id
+
+    _insert_cynet_conflict("7403341")
+
+    card = get_card_by_ygoprodeck_id(query)
+    assert card is not None
+    assert card["name"] == "Cynet Conflict"
+
+
+def test_find_card_by_priority_id_field_matches_unpadded_passcode():
+    from aijudge.db.cards_repo import find_card_by_priority
+
+    _insert_cynet_conflict("07403341")
+
+    kind, matches = find_card_by_priority("7403341", field="id")
+    assert kind == "single"
+    assert matches[0]["name"] == "Cynet Conflict"
+
+
+def test_run_migrations_zero_pads_existing_short_passcodes():
+    from aijudge.db.cards_repo import get_card_by_name
+    from aijudge.db.connection import get_connection
+    from aijudge.db.migrate import run_migrations
+
+    _insert_cynet_conflict("07403341")
+    with get_connection() as conn:
+        conn.execute("UPDATE card SET ygoprodeck_id = '7403341' WHERE name = 'Cynet Conflict'")
+
+    run_migrations()
+
+    assert get_card_by_name("Cynet Conflict")["ygoprodeck_id"] == "07403341"

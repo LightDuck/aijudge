@@ -145,7 +145,10 @@ spec:
     order); `get_bullet_category(code)` returns one or `None`.
   - Errata is never overwritten: `insert_errata_version()` adds a new `card_errata_versions` row and flips
     `card.has_errata`; the original `card_text` stays as originally ingested.
-  - `card.ygoprodeck_id` is `NOT NULL` (always available from the source API); `ygoresources_id` is nullable
+  - `card.ygoprodeck_id` is the card's passcode, always stored as the 8-digit printed form: YGOPRODeck's API returns
+    it as an int, which drops leading zeros (07403341 → 7403341). `cards_repo.normalize_passcode()` zero-pads it in
+    `insert_card` and `get_card_by_ygoprodeck_id`, so lookups match with or without the zero, and `schema.sql` re-pads
+    older rows. It's `NOT NULL` (always available from the source API); `ygoresources_id` is nullable
     since that API's shape is still unverified. `get_card_by_ygoprodeck_id` / `get_card_by_ygoresources_id` exist
     to reconcile the two id spaces once `ygoresources_id` starts being populated.
   - `card.race` is nullable TEXT, CHECK-constrained to the closed 33-value enum YGOPRODeck's API itself accepts

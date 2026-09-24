@@ -8,6 +8,17 @@ _CARD_COLUMNS = [
     "ygoprodeck_id", "ygoresources_id", "deterministic_parse_eligible",
 ]
 
+PASSCODE_DIGITS = 8
+
+
+def normalize_passcode(passcode: str) -> str:
+    """Zero-pad an all-digit passcode to 8 digits, as printed on the card.
+
+    YGOPRODeck's API returns the passcode as an int, so a card like Cynet
+    Conflict (07403341) arrives as 7403341. Anything that isn't all digits is
+    returned unchanged, so a non-passcode lookup query simply doesn't match."""
+    return passcode.zfill(PASSCODE_DIGITS) if passcode.isdigit() else passcode
+
 
 def insert_card(
     *,
@@ -42,7 +53,7 @@ def insert_card(
             (
                 name, card_text, card_type, race, attribute, monster_type,
                 level, rank, link_rating, archetype, atk, def_,
-                ygoprodeck_id, ygoresources_id, source, fetched_at, deterministic_parse_eligible,
+                normalize_passcode(ygoprodeck_id), ygoresources_id, source, fetched_at, deterministic_parse_eligible,
             ),
         ).fetchone()
         conn.commit()
@@ -112,7 +123,7 @@ def get_card_by_ygoprodeck_id(ygoprodeck_id: str) -> dict | None:
             "level, rank, link_rating, archetype, atk, def, has_errata, "
             "ygoprodeck_id, ygoresources_id, deterministic_parse_eligible "
             "FROM card WHERE ygoprodeck_id = %s",
-            (ygoprodeck_id,),
+            (normalize_passcode(ygoprodeck_id),),
         ).fetchone()
     if row is None:
         return None
