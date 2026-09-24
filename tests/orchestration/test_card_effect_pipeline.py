@@ -43,6 +43,8 @@ def mock_db_for_test_cards(monkeypatch):
         return original_get_confirmed_effects(card_id)
 
     monkeypatch.setattr(preflight, "get_confirmed_effects", mock_get_confirmed_effects)
+    # These fake cards have no card_bulleted row; never reach the DB for it.
+    monkeypatch.setattr(preflight, "get_card_bulleted", lambda passcode: None)
 
 
 def _looks_like_real_uuid(value):
