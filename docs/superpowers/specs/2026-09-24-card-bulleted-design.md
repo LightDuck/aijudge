@@ -57,8 +57,8 @@ CREATE TABLE IF NOT EXISTS card_bulleted (
   e.g. `activate exactly 1 bullet (activation): "activate 1 of these"`. It is *not* a restatement of how to read
   the category; that rule lives once, in `bullet_category.description`, so editing a definition never leaves 984
   copies out of date.
-- **`note`** (nullable) holds the user's one-off decisions about a specific card, e.g. X-Saber Souza staying in D1
-  as a deliberate exception. It's empty on import.
+- **`note`** (nullable) holds the user's one-off decisions about a specific card, e.g. why a card was moved to a
+  category its wording doesn't obviously suggest. It's empty on import.
 
 The table is created in `schema.sql` like every other table. Its rows are **data, not schema**, so unlike
 `bullet_category` they are *not* seeded in `schema.sql` (see Seeding).
