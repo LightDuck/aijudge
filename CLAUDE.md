@@ -470,6 +470,12 @@ spec:
   (via `rulebook_loader.load_rulebook_file`) and embeds+inserts each chunk into `rulebook_chunks`. It deletes any
   existing chunks for that `source` first (`rulebook_repo.delete_chunks_by_source()`), so re-running it against
   the same source re-seeds rather than duplicates — expected to be re-run whenever the live rulebook page changes.
+  `card_bulleted_seed.py` — `seed_card_bulleted(path=DEFAULT_FIXTURE_PATH)` loads
+  `ingestion/data/card_bulleted.json` (984 hand-reviewed cards: `{ygoprodeck_id, name, category_code, reason}`,
+  exported once from the "Bulleted Effects Review" artifact) into `card_bulleted` in one transaction. It checks
+  every category code first and raises `UnknownBulletCategoryError` without writing anything on a mismatch.
+  Re-running is safe (upsert on passcode, `note` never overwritten), and is how fixture corrections are applied.
+  Run `run_migrations()` first.
 
 ## Not yet built
 
