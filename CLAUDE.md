@@ -143,6 +143,16 @@ spec:
     references it yet (no FK from `card`/`card_effects_structured`).
     `bullet_categories_repo.get_all_bullet_categories()` returns them `ORDER BY code` (which matches the legend's
     order); `get_bullet_category(code)` returns one or `None`.
+  - `card_bulleted` maps a card's passcode (`ygoprodeck_id`, 8 digits, `UNIQUE`) to its `bullet_category_id`
+    (FK to `bullet_category(id)`), with nullable `reason` (this card's evidence for the category, e.g. the phrase
+    that decides it) and nullable `note` (a hand-written per-card decision). `ygoprodeck_id` is the same value as
+    `card.ygoprodeck_id` but deliberately **not** a foreign key to `card`: most reviewed cards aren't ingested,
+    and a card ingested later is covered with no backfill. How to read a category lives once, in
+    `bullet_category.description`, never copied per card. `card_bulleted_repo`: `upsert_card_bulleted()` /
+    `upsert_card_bulleted_rows()` (one transaction) never touch `note`; `get_card_bulleted(passcode)` joins the
+    category and returns `{ygoprodeck_id, code, name, description, category_note, reason, note}` or `None`;
+    `update_card_bulleted_note()` raises `LookupError` on a missing row. Every passcode goes through
+    `normalize_passcode`.
   - Errata is never overwritten: `insert_errata_version()` adds a new `card_errata_versions` row and flips
     `card.has_errata`; the original `card_text` stays as originally ingested.
   - `card.ygoprodeck_id` is the card's passcode, always stored as the 8-digit printed form: YGOPRODeck's API returns
