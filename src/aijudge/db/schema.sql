@@ -63,6 +63,11 @@ END $$;
 ALTER TABLE card ADD COLUMN IF NOT EXISTS deterministic_parse_eligible BOOLEAN NOT NULL DEFAULT TRUE;
 ALTER TABLE card DROP COLUMN IF EXISTS card_materials;
 
+-- Passcodes are 8 digits as printed on the card, but YGOPRODeck's API returns
+-- them as ints, so older rows lost any leading zero (07403341 -> 7403341).
+-- Re-pad them in place; cards_repo.normalize_passcode pads new rows.
+UPDATE card SET ygoprodeck_id = lpad(ygoprodeck_id, 8, '0') WHERE ygoprodeck_id ~ '^[0-9]{1,7}$';
+
 CREATE TABLE IF NOT EXISTS card_errata_versions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     card_id UUID NOT NULL REFERENCES card (id),
