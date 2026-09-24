@@ -23,8 +23,8 @@ the automated category and 113 were moved. That work currently lives only in the
 In scope:
 
 1. A new `card_bulleted` table linking a card's passcode to its `bullet_category`, with a per-card reason and note.
-2. A one-off export of the artifact's 984 reviewed placements into a committed JSON fixture, with passcodes
-   resolved.
+2. A one-off export of the artifact's reviewed placements into a committed JSON fixture, with passcodes
+   resolved: 980 of the 984, since the 4 Speed Duel Skill Cards are excluded (see Component 1).
 3. A seed function that loads the fixture into `card_bulleted`, idempotently.
 4. A repo module to read a card's bullet category by passcode.
 5. Adding the card's bullet category to `preflight.build_known_facts_context`'s KNOWN FACTS block.
@@ -76,7 +76,15 @@ Run once while implementing this design, not part of the app. It reads the two a
 - **Card data and first-sort reasons:** the `<script id="dataset">` JSON embedded in the page (name, type, race,
   date, text, the automated `bucket`, and its `why`).
 
-The two sources share exactly the same 984 names (verified 2026-09-24). Output: one fixture file,
+The two sources share exactly the same 984 names (verified 2026-09-24).
+
+**Speed Duel Skill Cards are excluded** (decided 2026-09-24 during implementation). 4 reviewed cards have card type
+`Skill Card` (Behold, Gate Guardian!, Forged Steel, Vampiric Aristocracy, Zombie Master (Skill Card), all kept in
+D1). Skill Cards have no printed passcode (YGOPRODeck gives them 9-digit ids) and belong to Speed Duel, not the TCG
+format AIJudge rules on, so the export skips them and every stored passcode is a real 8-digit one. Their placements
+remain only in the artifact.
+
+Output: one fixture file,
 `src/aijudge/ingestion/data/card_bulleted.json`, a list of `{ygoprodeck_id, name, category_code, reason}` sorted by
 name. `name` is kept in the fixture for human review only and isn't written to the table.
 
@@ -150,7 +158,7 @@ TDD throughout, with DB tests against `TEST_DATABASE_URL` only (they skip when i
   `note`.
 - **Seed:** loads a small test fixture; re-running doesn't duplicate rows; a hand-set `note` survives a re-seed; an
   unknown category code raises and writes nothing.
-- **Fixture integrity** (no DB): 984 entries; every passcode is 8 digits and unique; every `category_code` exists in
+- **Fixture integrity** (no DB): 980 entries; no Skill Cards; every passcode is 8 digits and unique; every `category_code` exists in
   the 13-row legend; `reason` is `null` for exactly the 113 changed cards; no reason contains
   `differs from your earlier label`.
 - **Preflight:** the line appears with its parts when a row exists; absent parts are omitted; no row means the
