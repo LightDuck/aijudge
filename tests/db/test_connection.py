@@ -3,7 +3,7 @@ import os
 import psycopg
 import pytest
 
-pytestmark = pytest.mark.skipif("DATABASE_URL" not in os.environ, reason="requires a running Postgres instance")
+pytestmark = pytest.mark.skipif("TEST_DATABASE_URL" not in os.environ, reason="requires TEST_DATABASE_URL (a dedicated test Postgres database)")
 
 
 def test_get_connection_returns_a_working_connection_against_a_real_database():

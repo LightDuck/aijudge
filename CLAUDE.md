@@ -62,12 +62,20 @@ Run migrations manually (repos call `run_migrations`-adjacent setup themselves i
 python -c "from aijudge.db.migrate import run_migrations; run_migrations()"
 ```
 
-**DB-dependent tests auto-skip when `DATABASE_URL` isn't set** (`pytestmark = pytest.mark.skipif("DATABASE_URL" not
-in os.environ, ...)` at the top of each `tests/db/*` file). This means `pytest` runs green with zero setup — the
-rules engine, embeddings, LLM, and effect-parser suites are pure-Python — but silently skips DB coverage if you
-forget to bring Docker up. Before running anything that touches Postgres, check `DATABASE_URL` and `docker ps`
-first rather than discovering the DB is down after the fact. Each DB-test module truncates its own tables in
-`setup_function`, so tests assume a running instance, not a pristine one per run.
+**DB-dependent tests run only against a separate test database, `TEST_DATABASE_URL`** (default `aijudge_test` in
+the same container), **never the app's `DATABASE_URL`**. Each DB-test module truncates its own tables in
+`setup_function` and leaves its fixture rows behind, so running it against the app database wipes real seeded data
+(this happened before the split). `tests/conftest.py` enforces this: it overwrites `DATABASE_URL` with
+`TEST_DATABASE_URL`, or with an unreachable placeholder when that's unset, and refuses to start if the two are
+equal. DB-test modules skip when `TEST_DATABASE_URL` isn't set (`pytestmark = pytest.mark.skipif(
+"TEST_DATABASE_URL" not in os.environ, ...)` in each `tests/db/*`, `tests/ingestion/test_seed.py`,
+`test_rulebook_seed.py`, `tests/orchestration/test_*_db.py`). So `pytest` runs green with zero setup — the rules
+engine, embeddings, LLM, and effect-parser suites are pure-Python — but silently skips DB coverage if you forget to
+bring Docker up. Before running anything that touches Postgres, check `TEST_DATABASE_URL` and `docker ps` first
+rather than discovering the DB is down after the fact. `docker/initdb/create-test-database.sql` creates
+`aijudge_test` only when the Postgres volume is first initialized. On an older volume, create it once with
+`docker exec aijudge-db-1 createdb -U aijudge aijudge_test`. New DB-test modules need the same `TEST_DATABASE_URL`
+skip marker.
 
 There is no lint/format command configured yet (no ruff/black/mypy config in `pyproject.toml`).
 
