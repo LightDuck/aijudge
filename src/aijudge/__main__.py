@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 
 from aijudge.call_log import CallLogger, LoggingLLMClient
 from aijudge.cli import run_cli
+from aijudge.db.migrate import run_migrations
 from aijudge.embeddings.client import EmbeddingClient
 from aijudge.embeddings.ollama_client import OllamaEmbeddingClient
 from aijudge.llm.client import LLMClient, OllamaLLMClient
@@ -21,6 +22,7 @@ def main(
     print_fn: Callable[[str], None] = print,
 ) -> None:
     load_dotenv()
+    run_migrations()
     call_logger = CallLogger()
     run_cli(
         LoggingLLMClient(llm_client or build_llm_client(), call_logger),

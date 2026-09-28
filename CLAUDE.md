@@ -57,7 +57,11 @@ pytest tests/rules_engine/test_segoc.py -v
 pytest tests/rules_engine/test_segoc.py::test_turn_player_effects_are_chained_first_and_so_resolve_last -v
 ```
 
-Run migrations manually (repos call `run_migrations`-adjacent setup themselves in tests, but for a fresh DB):
+Migrations run automatically at startup: `__main__.py`, `api/__main__.py`, and `entrypoint.py` each call
+`run_migrations()` right after `load_dotenv()`, so a DB created before a schema change is brought up to date
+before any request can query a missing table or column (`schema.sql` is idempotent, so re-running it every start
+is safe). Their tests stub it via an autouse `migrations` fixture. To run migrations by hand (e.g. before a seed
+script):
 ```
 python -c "from aijudge.db.migrate import run_migrations; run_migrations()"
 ```
@@ -360,7 +364,10 @@ spec:
     Tuner Monster described as a "Quick-Effect spell card") caught in manual testing.
     When the card's `ygoprodeck_id` has a `card_bulleted` row, the block ends with one more line giving its
     bullet list category (code, name, the category's `description` and `note`) plus this card's `reason` and
-    per-card `note`, each omitted when empty. No passcode or no row means no line. The line only extends an
+    per-card `note`, each omitted when empty. No passcode or no row means no line. The `card_bulleted` lookup
+    only happens when the card's `card_text` contains a `●` bullet marker (`BULLET_MARKER`); a card with no
+    bulleted list skips the DB query entirely. All 980 reviewed cards' real texts carry the marker, verified
+    against YGOPRODeck when this gate was added. The line only extends an
     existing block: a card with no confirmed effects still gets `""`. `get_card_bulleted` is imported at module
     level, so unit tests stub it with `monkeypatch.setattr(preflight, "get_card_bulleted", ...)`, as they do
     `get_confirmed_effects`.

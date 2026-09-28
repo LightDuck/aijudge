@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 
 from .call_log import CallLogger, LoggingLLMClient
 from .cli import run_cli
+from .db.migrate import run_migrations
 from .embeddings.client import EmbeddingClient
 from .embeddings.openai_client import OpenAIEmbeddingClient
 from .llm.anthropic_client import AnthropicLLMClient
@@ -31,6 +32,7 @@ def _online_ingest_enabled() -> bool:
 
 def main() -> None:
     load_dotenv()
+    run_migrations()
     call_logger = CallLogger()
     run_cli(
         LoggingLLMClient(build_llm_client(), call_logger),

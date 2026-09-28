@@ -51,10 +51,17 @@ def find_matched_cards(question: str) -> list[dict]:
     return [get_card_by_name(name) for name in names]
 
 
+BULLET_MARKER = "●"
+
+
 def _bullet_category_line(card: dict) -> str | None:
     """The card's hand-reviewed bullet category (how to read its bulleted list),
-    or None if it has no passcode or no card_bulleted row. Absent parts are
-    left out rather than guessed at."""
+    or None if its printed text has no bulleted list, it has no passcode, or it
+    has no card_bulleted row. Every reviewed card's text carries the marker, so
+    checking it first skips the DB lookup for the many cards with no bullets.
+    Absent parts are left out rather than guessed at."""
+    if BULLET_MARKER not in (card.get("card_text") or ""):
+        return None
     passcode = card.get("ygoprodeck_id")
     if not passcode:
         return None

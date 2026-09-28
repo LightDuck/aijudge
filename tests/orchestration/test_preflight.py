@@ -207,6 +207,33 @@ def test_card_without_a_passcode_skips_the_lookup(monkeypatch):
     assert looked_up == []
 
 
+_EFFECT_VEILER = {
+    "id": "8e0b7f2d-3c61-4a9e-b5d2-7f4a1c9e6b02",
+    "name": "Effect Veiler",
+    "card_type": "Tuner Monster",
+    "race": "Spellcaster",
+    "ygoprodeck_id": "97268402",
+    "card_text": (
+        "During your opponent's Main Phase (Quick Effect): You can send this card from your hand to the GY, then "
+        "target 1 Effect Monster your opponent controls; negate the effects of that face-up monster your "
+        "opponent controls, until the end of this turn."
+    ),
+}
+
+
+def test_card_text_without_a_bullet_marker_skips_the_lookup(monkeypatch):
+    from aijudge.orchestration.preflight import build_known_facts_context
+
+    # Even a (hypothetical) row for this passcode is never fetched: a card whose
+    # printed text has no bulleted list has no bullet category to show.
+    looked_up = _stub(monkeypatch, _EFFECT_VEILER, bullet_row=_VARIABLE_FORM_BULLETED)
+
+    context = build_known_facts_context(_EFFECT_VEILER)
+
+    assert looked_up == []
+    assert "bullet list category" not in context
+
+
 def test_card_with_no_confirmed_effects_still_returns_empty(monkeypatch):
     from aijudge.orchestration.preflight import build_known_facts_context
 

@@ -1,6 +1,24 @@
+import pytest
+
 import aijudge.__main__ as main_module
 from aijudge.__main__ import main
 from aijudge.call_log import CallLogger, LoggingLLMClient
+
+
+@pytest.fixture(autouse=True)
+def migrations(monkeypatch):
+    """main() migrates the DB at startup; record that instead of touching one."""
+    calls = []
+    monkeypatch.setattr(main_module, "run_migrations", lambda: calls.append("migrate"), raising=False)
+    return calls
+
+
+def test_main_migrates_the_db_before_starting_the_cli(monkeypatch, migrations):
+    monkeypatch.setattr(main_module, "run_cli", lambda *args, **kwargs: migrations.append("run_cli"))
+
+    main(input_fn=lambda _: "quit", print_fn=lambda _: None)
+
+    assert migrations == ["migrate", "run_cli"]
 
 
 def test_main_exits_immediately_on_quit():
