@@ -11,12 +11,14 @@ _CARD_COLUMNS = [
 PASSCODE_DIGITS = 8
 
 
-def normalize_passcode(passcode: str) -> str:
+def normalize_passcode(passcode: str | int) -> str:
     """Zero-pad an all-digit passcode to 8 digits, as printed on the card.
 
     YGOPRODeck's API returns the passcode as an int, so a card like Cynet
-    Conflict (07403341) arrives as 7403341. Anything that isn't all digits is
+    Conflict (07403341) arrives as 7403341; that int is accepted as-is, so
+    callers never need to convert it first. Anything that isn't all digits is
     returned unchanged, so a non-passcode lookup query simply doesn't match."""
+    passcode = str(passcode)
     return passcode.zfill(PASSCODE_DIGITS) if passcode.isdigit() else passcode
 
 
