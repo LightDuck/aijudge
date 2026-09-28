@@ -516,7 +516,16 @@ def test_insert_card_zero_pads_a_short_passcode_to_eight_digits():
     assert get_card_by_name("Cynet Conflict")["ygoprodeck_id"] == "07403341"
 
 
-@pytest.mark.parametrize("query", ["7403341", "07403341"])
+def test_insert_card_accepts_the_passcode_as_an_int():
+    from aijudge.db.cards_repo import get_card_by_name
+
+    # The int YGOPRODeck's API returns, passed straight through.
+    _insert_cynet_conflict(7403341)
+
+    assert get_card_by_name("Cynet Conflict")["ygoprodeck_id"] == "07403341"
+
+
+@pytest.mark.parametrize("query", ["7403341", "07403341", 7403341])
 def test_get_card_by_ygoprodeck_id_matches_with_or_without_leading_zero(query):
     from aijudge.db.cards_repo import get_card_by_ygoprodeck_id
 
