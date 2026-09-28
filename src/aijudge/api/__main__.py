@@ -6,6 +6,7 @@ import uvicorn
 from dotenv import load_dotenv
 
 from aijudge.call_log import CallLogger, LoggingLLMClient
+from aijudge.db.migrate import run_migrations
 from aijudge.embeddings.client import EmbeddingClient
 from aijudge.entrypoint import build_embedding_client
 from aijudge.llm.client import LLMClient, OllamaLLMClient
@@ -47,6 +48,7 @@ def main(
 ) -> None:
     load_dotenv()
     _configure_logging_from_env()
+    run_migrations()
     call_logger = CallLogger()
     app = create_app(
         LoggingLLMClient(llm_client or build_llm_client(), call_logger),

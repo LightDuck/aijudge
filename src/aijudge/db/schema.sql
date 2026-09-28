@@ -194,3 +194,18 @@ ON CONFLICT (code) DO UPDATE SET
     name = EXCLUDED.name,
     description = EXCLUDED.description,
     note = EXCLUDED.note;
+
+-- Which bullet_category each card's bulleted effect list belongs to, from the
+-- hand-reviewed "Bulleted Effects Review" (see docs/superpowers/specs/
+-- 2026-09-24-card-bulleted-design.md). Keyed on the 8-digit passcode, the same
+-- value as card.ygoprodeck_id but deliberately not a foreign key to `card`:
+-- most reviewed cards aren't ingested, and a card ingested later is covered
+-- with no backfill. Rows are data, loaded by ingestion.card_bulleted_seed, not
+-- seeded here.
+CREATE TABLE IF NOT EXISTS card_bulleted (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    bullet_category_id UUID NOT NULL REFERENCES bullet_category (id),
+    ygoprodeck_id TEXT NOT NULL UNIQUE,
+    reason TEXT,
+    note TEXT
+);

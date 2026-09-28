@@ -57,7 +57,11 @@ pytest tests/rules_engine/test_segoc.py -v
 pytest tests/rules_engine/test_segoc.py::test_turn_player_effects_are_chained_first_and_so_resolve_last -v
 ```
 
-Run migrations manually (repos call `run_migrations`-adjacent setup themselves in tests, but for a fresh DB):
+Migrations run automatically at startup: `__main__.py`, `api/__main__.py`, and `entrypoint.py` each call
+`run_migrations()` right after `load_dotenv()`, so a DB created before a schema change is brought up to date
+before any request can query a missing table or column (`schema.sql` is idempotent, so re-running it every start
+is safe). Their tests stub it via an autouse `migrations` fixture. To run migrations by hand (e.g. before a seed
+script):
 ```
 python -c "from aijudge.db.migrate import run_migrations; run_migrations()"
 ```
@@ -143,6 +147,16 @@ spec:
     references it yet (no FK from `card`/`card_effects_structured`).
     `bullet_categories_repo.get_all_bullet_categories()` returns them `ORDER BY code` (which matches the legend's
     order); `get_bullet_category(code)` returns one or `None`.
+  - `card_bulleted` maps a card's passcode (`ygoprodeck_id`, 8 digits, `UNIQUE`) to its `bullet_category_id`
+    (FK to `bullet_category(id)`), with nullable `reason` (this card's evidence for the category, e.g. the phrase
+    that decides it) and nullable `note` (a hand-written per-card decision). `ygoprodeck_id` is the same value as
+    `card.ygoprodeck_id` but deliberately **not** a foreign key to `card`: most reviewed cards aren't ingested,
+    and a card ingested later is covered with no backfill. How to read a category lives once, in
+    `bullet_category.description`, never copied per card. `card_bulleted_repo`: `upsert_card_bulleted()` /
+    `upsert_card_bulleted_rows()` (one transaction) never touch `note`; `get_card_bulleted(passcode)` joins the
+    category and returns `{ygoprodeck_id, code, name, description, category_note, reason, note}` or `None`;
+    `update_card_bulleted_note()` raises `LookupError` on a missing row. Every passcode goes through
+    `normalize_passcode`.
   - Errata is never overwritten: `insert_errata_version()` adds a new `card_errata_versions` row and flips
     `card.has_errata`; the original `card_text` stays as originally ingested.
   - `card.ygoprodeck_id` is the card's passcode, always stored as the 8-digit printed form: YGOPRODeck's API returns
@@ -348,6 +362,15 @@ spec:
     facts), since the restricted answering turn (see `protocol.build_answering_system_prompt()` below) has no
     `lookup_card` tool to fall back on for that -- omitting them was a confirmed source of fabrication (a real
     Tuner Monster described as a "Quick-Effect spell card") caught in manual testing.
+    When the card's `ygoprodeck_id` has a `card_bulleted` row, the block ends with one more line giving its
+    bullet list category (code, name, the category's `description` and `note`) plus this card's `reason` and
+    per-card `note`, each omitted when empty. No passcode or no row means no line. The `card_bulleted` lookup
+    only happens when the card's `card_text` contains a `●` bullet marker (`BULLET_MARKER`); a card with no
+    bulleted list skips the DB query entirely. All 980 reviewed cards' real texts carry the marker, verified
+    against YGOPRODeck when this gate was added. The line only extends an
+    existing block: a card with no confirmed effects still gets `""`. `get_card_bulleted` is imported at module
+    level, so unit tests stub it with `monkeypatch.setattr(preflight, "get_card_bulleted", ...)`, as they do
+    `get_confirmed_effects`.
   - `extraction.py` — `extract_card_names(question, *, llm_client)` asks the LLM (via the narrow
     `EXTRACTION_SYSTEM_PROMPT`, deliberately not `protocol.build_system_prompt()`) to list every card name a
     question references, one per line, or the literal `NONE`. `parse_extraction_response()` strips bullet/number
@@ -460,6 +483,15 @@ spec:
   (via `rulebook_loader.load_rulebook_file`) and embeds+inserts each chunk into `rulebook_chunks`. It deletes any
   existing chunks for that `source` first (`rulebook_repo.delete_chunks_by_source()`), so re-running it against
   the same source re-seeds rather than duplicates — expected to be re-run whenever the live rulebook page changes.
+  `card_bulleted_seed.py` — `seed_card_bulleted(path=DEFAULT_FIXTURE_PATH)` loads
+  `ingestion/data/card_bulleted.json` (980 hand-reviewed cards: `{ygoprodeck_id, name, category_code, reason}`,
+  exported once from the "Bulleted Effects Review" artifact's 984, minus its 4 Speed Duel Skill Cards, which have
+  no printed passcode and aren't the TCG format AIJudge rules on) into `card_bulleted` in one transaction.
+  `reason` is `null` for the 113 cards the user moved during review, whose first-sort reason argued for the
+  category they were moved away from. It checks
+  every category code first and raises `UnknownBulletCategoryError` without writing anything on a mismatch.
+  Re-running is safe (upsert on passcode, `note` never overwritten), and is how fixture corrections are applied.
+  Run `run_migrations()` first.
 
 ## Not yet built
 

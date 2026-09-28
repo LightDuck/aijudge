@@ -37,6 +37,7 @@ def _fuzzy_mentions_name(name: str, question: str) -> bool:
     )
 
 
+from aijudge.db.card_bulleted_repo import get_card_bulleted
 from aijudge.db.cards_repo import get_card_by_name, list_card_names
 from aijudge.db.effects_repo import get_confirmed_effects
 from aijudge.rules_engine.models import Effect, EffectType, is_activatable, spell_speed_for
@@ -48,6 +49,36 @@ def find_matched_cards(question: str) -> list[dict]:
     every card plausibly mentioned in `question`."""
     names = find_mentioned_card_names(question, list_card_names())
     return [get_card_by_name(name) for name in names]
+
+
+BULLET_MARKER = "●"
+
+
+def _bullet_category_line(card: dict) -> str | None:
+    """The card's hand-reviewed bullet category (how to read its bulleted list),
+    or None if its printed text has no bulleted list, it has no passcode, or it
+    has no card_bulleted row. Every reviewed card's text carries the marker, so
+    checking it first skips the DB lookup for the many cards with no bullets.
+    Absent parts are left out rather than guessed at."""
+    if BULLET_MARKER not in (card.get("card_text") or ""):
+        return None
+    passcode = card.get("ygoprodeck_id")
+    if not passcode:
+        return None
+    bulleted = get_card_bulleted(passcode)
+    if bulleted is None:
+        return None
+    line = (
+        f"- {card['name']}: bullet list category {bulleted['code']} ({bulleted['name']}): "
+        f"{bulleted['description']}"
+    )
+    if bulleted["category_note"]:
+        line += f" Note: {bulleted['category_note']}"
+    if bulleted["reason"]:
+        line += f" On this card: {bulleted['reason']}."
+    if bulleted["note"]:
+        line += f" Card note: {bulleted['note']}"
+    return line
 
 
 def build_known_facts_context(card: dict) -> str:
@@ -103,6 +134,9 @@ def build_known_facts_context(card: dict) -> str:
             f"choose 1 or more of several listed effects at resolution: {confirmed.get('has_effect_choice', False)}"
         )
         lines.append(line)
+    bullet_line = _bullet_category_line(card)
+    if bullet_line is not None:
+        lines.append(bullet_line)
     return "\n".join(lines)
 
 

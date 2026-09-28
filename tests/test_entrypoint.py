@@ -6,6 +6,24 @@ from aijudge.embeddings.openai_client import OpenAIEmbeddingClient
 from aijudge.llm.anthropic_client import AnthropicLLMClient
 
 
+@pytest.fixture(autouse=True)
+def migrations(monkeypatch):
+    """main() migrates the DB at startup; record that instead of touching one."""
+    calls = []
+    monkeypatch.setattr(entrypoint, "run_migrations", lambda: calls.append("migrate"), raising=False)
+    return calls
+
+
+def test_main_migrates_the_db_before_starting_the_cli(monkeypatch, migrations):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "an-key")
+    monkeypatch.setenv("OPENAI_API_KEY", "oa-key")
+    monkeypatch.setattr(entrypoint, "run_cli", lambda *args, **kwargs: migrations.append("run_cli"))
+
+    entrypoint.main()
+
+    assert migrations == ["migrate", "run_cli"]
+
+
 def test_build_llm_client_uses_anthropic_api_key(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "an-key")
 

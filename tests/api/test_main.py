@@ -1,8 +1,30 @@
+import pytest
+
 import aijudge.api.__main__ as main_module
 from aijudge.api.__main__ import main
 from aijudge.call_log import CallLogger, LoggingLLMClient
 from aijudge.embeddings.openai_client import OpenAIEmbeddingClient
 from aijudge.llm.client import OllamaLLMClient
+
+
+@pytest.fixture(autouse=True)
+def migrations(monkeypatch):
+    """main() migrates the DB at startup; record that instead of touching one."""
+    calls = []
+    monkeypatch.setattr(main_module, "run_migrations", lambda: calls.append("migrate"), raising=False)
+    return calls
+
+
+def test_main_migrates_the_db_before_building_the_app(monkeypatch, migrations):
+    monkeypatch.setattr(main_module, "create_app", lambda *args, **kwargs: migrations.append("create_app"))
+
+    main(
+        llm_client=_StubLLMClient(),
+        embedding_client=_StubEmbeddingClient(),
+        run_fn=lambda app, **kwargs: migrations.append("run"),
+    )
+
+    assert migrations == ["migrate", "create_app", "run"]
 
 
 class _StubLLMClient:

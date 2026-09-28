@@ -97,8 +97,11 @@ def test_legacy_bullet_categories_table_is_migrated_in_place():
     from aijudge.db.connection import get_connection
     from aijudge.db.migrate import run_migrations
 
-    # Recreate the pre-rename shape: plural name, code as primary key.
+    # Recreate the pre-rename shape: plural name, code as primary key. A
+    # pre-rename database has no card_bulleted either (it references
+    # bullet_category), so drop it too; run_migrations recreates both.
     with get_connection() as conn:
+        conn.execute("DROP TABLE card_bulleted")
         conn.execute("DROP TABLE bullet_category")
         conn.execute(
             "CREATE TABLE bullet_categories ("

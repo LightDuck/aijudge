@@ -1,0 +1,5882 @@
+[
+ {
+  "ygoprodeck_id": "04731783",
+  "name": "A Bao A Qu, the Lightless Shadow",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "79015062",
+  "name": "A.I. Connect",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "51779204",
+  "name": "Absolute Powerforce",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"apply these effects\""
+ },
+ {
+  "ygoprodeck_id": "71422989",
+  "name": "Absorb Fusion",
+  "category_code": "D2",
+  "reason": "mandatory part, then optional single choice: \"and, then you can apply this effect\""
+ },
+ {
+  "ygoprodeck_id": "24907044",
+  "name": "Abyss Actor - Leading Lady",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "78310590",
+  "name": "Abyss Actor - Mellow Madonna",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "47404795",
+  "name": "Abyss Actor - Super Producer",
+  "category_code": "B2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "37675907",
+  "name": "Accel Synchron",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "10796448",
+  "name": "Ace★Spades Speculation",
+  "category_code": "C",
+  "reason": "the card gains one bullet at a time, picked by criteria on the card (continuous effect that depends on a state): \"based on\""
+ },
+ {
+  "ygoprodeck_id": "76224717",
+  "name": "Advance Zone",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "02411269",
+  "name": "Agave Dragon",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "25451383",
+  "name": "Albion the Shrouded Dragon",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "47728740",
+  "name": "Alich, Malebranche of the Burning Abyss",
+  "category_code": "F",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "31322640",
+  "name": "Allure Palace",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gain this effect\""
+ },
+ {
+  "ygoprodeck_id": "77797992",
+  "name": "Alpacaribou, Mystical Beast of the Forest",
+  "category_code": "C",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "66984907",
+  "name": "Amaze Attraction Cyclo-Coaster",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "92650018",
+  "name": "Amaze Attraction Horror House",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "29867611",
+  "name": "Amaze Attraction Majestic Merry-Go-Round",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "55262310",
+  "name": "Amaze Attraction Rapid Racing",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "36591747",
+  "name": "Amaze Attraction Thrill Train",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "97182396",
+  "name": "Amaze Attraction Viking Vortex",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "93473606",
+  "name": "Amaze Attraction Wonder Wheel",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "70389815",
+  "name": "Amazing Time Ticket",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "20665527",
+  "name": "Amphibious Swarmship Amblowhale",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "80570228",
+  "name": "Anarchist Monk of the Six Samurai",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "04064925",
+  "name": "Ancient Gear Advance",
+  "category_code": "D2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "33545259",
+  "name": "Ancient Warriors - Ambitious Cao De",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "60033398",
+  "name": "Ancient Warriors - Fearsome Zhang Yuan",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "40140448",
+  "name": "Ancient Warriors - Masterful Sun Mou",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "02801664",
+  "name": "Ancient Warriors - Valiant Zhang De",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "40428851",
+  "name": "Ancient Warriors - Virtuous Liu Xuan",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "04810585",
+  "name": "Ancient Warriors Saga - Defense of Changban",
+  "category_code": "F",
+  "reason": "shared once-per-turn limit (\"only use 1 of the following effects\"): the bullets stay independent effects, the coupling belongs in usage_limit_text"
+ },
+ {
+  "ygoprodeck_id": "62528292",
+  "name": "Ancient Warriors Saga - East-by-South Winds",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gain this effect\""
+ },
+ {
+  "ygoprodeck_id": "28531163",
+  "name": "Apocavities",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "12686296",
+  "name": "Arcana Force EX - The Chaos Ruler",
+  "category_code": "C",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "03376703",
+  "name": "Arcana Force V - The Hierophant",
+  "category_code": "C",
+  "reason": "a coin toss decides which bullet applies (Heads / Tails), no player chooses"
+ },
+ {
+  "ygoprodeck_id": "39761418",
+  "name": "Arcana Force XIX - The Sun",
+  "category_code": "C",
+  "reason": "a coin toss decides which bullet applies (Heads / Tails), no player chooses"
+ },
+ {
+  "ygoprodeck_id": "59712426",
+  "name": "Arcana Force XV - The Fiend",
+  "category_code": "C",
+  "reason": "a coin toss decides which bullet applies (Heads / Tails), no player chooses"
+ },
+ {
+  "ygoprodeck_id": "11819473",
+  "name": "Arcana Reading",
+  "category_code": "C",
+  "reason": "a coin toss decides which bullet applies (Heads / Tails), but a condition on the card lets you choose the effect instead"
+ },
+ {
+  "ygoprodeck_id": "76302448",
+  "name": "Arcana Spread",
+  "category_code": "C",
+  "reason": "a coin toss decides which bullet applies (Heads / Tails), but a condition on the card lets you choose the effect instead"
+ },
+ {
+  "ygoprodeck_id": "90764871",
+  "name": "Archfiend Strategy",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "82997779",
+  "name": "Archfiend's Usurpation",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "65889305",
+  "name": "Argostars - Lightning Tydeu",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"with the following effect\""
+ },
+ {
+  "ygoprodeck_id": "38379052",
+  "name": "Argostars - Slayer Eteo",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"with the following effect\""
+ },
+ {
+  "ygoprodeck_id": "91284003",
+  "name": "Argostars - Swift Capane",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"with the following effect\""
+ },
+ {
+  "ygoprodeck_id": "75730490",
+  "name": "Ariane the Labrynth Servant",
+  "category_code": "D2",
+  "reason": "mandatory part, then optional single choice: \"then you can apply this effect\""
+ },
+ {
+  "ygoprodeck_id": "01225009",
+  "name": "Arianna the Labrynth Servant",
+  "category_code": "D2",
+  "reason": "mandatory part, then optional single choice: \"then you can apply this effect\""
+ },
+ {
+  "ygoprodeck_id": "50687050",
+  "name": "Arktos XII - Chronochasm Vaylantz",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "97091969",
+  "name": "Armed Dragon Lightning",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "58153103",
+  "name": "Armed Dragon Thunder LV10",
+  "category_code": "C",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "31817415",
+  "name": "Armed Neos",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gain the following effect\""
+ },
+ {
+  "ygoprodeck_id": "73046708",
+  "name": "Armored Xyz",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"as an Equip Spell with these effects\""
+ },
+ {
+  "ygoprodeck_id": "32549749",
+  "name": "Arms Regeneration",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of the following\""
+ },
+ {
+  "ygoprodeck_id": "40663548",
+  "name": "Aromage Marjoram",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "79656239",
+  "name": "Aromaseraphy Sweet Marjoram",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "00365213",
+  "name": "Arrive in Light",
+  "category_code": "B2",
+  "reason": "apply exactly 1 bullet (resolution): \"apply 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "69840739",
+  "name": "Artifact Durendal",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "14558127",
+  "name": "Ash Blossom & Joyous Spring",
+  "category_code": "A1",
+  "reason": "qualifier list in the activation condition: \"a card or effect is activated that includes any of these\""
+ },
+ {
+  "ygoprodeck_id": "53389254",
+  "name": "Assault Blackwing - Sohaya the Rain Storm",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "64591429",
+  "name": "Astral Kuriboh",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "66719533",
+  "name": "Asymmetaphys",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "03103067",
+  "name": "Attack Guidance Armor",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "91420202",
+  "name": "Avendread Savior",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "12877076",
+  "name": "Awakening of the Crystal Ultimates",
+  "category_code": "E1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "74426895",
+  "name": "Awakening of the Possessed - Gagigobyte",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "92652813",
+  "name": "Awakening of the Possessed - Greater Inari Fire",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "65268179",
+  "name": "Awakening of the Possessed - Nefariouser Archfiend",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "00410904",
+  "name": "Awakening of the Possessed - Rasenryu",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "53701259",
+  "name": "Awakening of the Sacred Beasts",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"gains these effects\""
+ },
+ {
+  "ygoprodeck_id": "05121528",
+  "name": "B.E.S. Derringer Core",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "83272895",
+  "name": "Bachibachibachi",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "31969219",
+  "name": "Baneshade",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "81992475",
+  "name": "Barbar, Malebranche of the Burning Abyss",
+  "category_code": "F",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "97769122",
+  "name": "Barian's Chaos Draw",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "65433790",
+  "name": "Battle Royal Mode - Joining",
+  "category_code": "D2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "74213995",
+  "name": "Battleguard Echoes",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "80949182",
+  "name": "Battlewasp - Hama the Conquering Bow",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "46804536",
+  "name": "Battlin' Boxer King Dempsey",
+  "category_code": "D1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "11522479",
+  "name": "Battlin' Boxer Uppercutter",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "19688343",
+  "name": "Battlin' Boxing Cross Counter",
+  "category_code": "D2",
+  "reason": "mandatory part, then optional single choice: \"then you can apply the following effect\""
+ },
+ {
+  "ygoprodeck_id": "36092504",
+  "name": "Bayonet Punisher",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "21984400",
+  "name": "Beast Magic Attack",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "99011763",
+  "name": "Beat Cop from the Underworld",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "06628343",
+  "name": "Beginning Knight",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"gains these effects\""
+ },
+ {
+  "ygoprodeck_id": "80088625",
+  "name": "Binary Blader",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"gains these effects\""
+ },
+ {
+  "ygoprodeck_id": "79016563",
+  "name": "Binary Sorceress",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"gains these effects\""
+ },
+ {
+  "ygoprodeck_id": "93437091",
+  "name": "Bingo Machine, Go!!!",
+  "category_code": "A2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "77498348",
+  "name": "Black Luster Soldier - Envoy of the Evening Twilight",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"appropriate effect\""
+ },
+ {
+  "ygoprodeck_id": "49202162",
+  "name": "Black Luster Soldier - Soldier of Chaos",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "17465972",
+  "name": "Blackwing - Auster the South Wind",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of the following\""
+ },
+ {
+  "ygoprodeck_id": "19462747",
+  "name": "Blackwing - Decay the Ill Wind",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "04059313",
+  "name": "Blaze Cannon",
+  "category_code": "D1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "15177750",
+  "name": "Blessed Winds",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of the following\""
+ },
+ {
+  "ygoprodeck_id": "64049762",
+  "name": "Blitzclique - Breakaway",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "71750854",
+  "name": "Bomber Place",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "36668118",
+  "name": "Boot Sector Launch",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "62753201",
+  "name": "Borrel Cooling",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "45951104",
+  "name": "Bot Herder",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"apply these effects\""
+ },
+ {
+  "ygoprodeck_id": "06763530",
+  "name": "Branded Banishment",
+  "category_code": "D2",
+  "reason": "mandatory part, then optional single choice: \"then you can apply this effect\""
+ },
+ {
+  "ygoprodeck_id": "29948294",
+  "name": "Branded in High Spirits",
+  "category_code": "D2",
+  "reason": "mandatory part, then optional single choice: \"then you can apply this effect\""
+ },
+ {
+  "ygoprodeck_id": "82738008",
+  "name": "Branded in Red",
+  "category_code": "D2",
+  "reason": "mandatory part, then optional single choice: \"and, then you can apply the following effect\""
+ },
+ {
+  "ygoprodeck_id": "69873498",
+  "name": "Break the Seal",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "69217334",
+  "name": "Breaking of the World",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "92586237",
+  "name": "Bujin Mahitotsu",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "30338466",
+  "name": "Bujin Regalia - The Sword",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "71095768",
+  "name": "Bujinki Ahashima",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "68618157",
+  "name": "Bujinki Amaterasu",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "49823708",
+  "name": "Buster Whelp of the Destruction Swordsman",
+  "category_code": "F",
+  "reason": "shared once-per-turn limit (\"only use 1 of the following effects\"): the bullets stay independent effects, the coupling belongs in usage_limit_text"
+ },
+ {
+  "ygoprodeck_id": "76419637",
+  "name": "CXyz Battleship Cherry Blossom",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "88754763",
+  "name": "CXyz Coach Lord Ultimatrainer",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "13030280",
+  "name": "CXyz Comics Hero Legend Arthur",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "23454876",
+  "name": "CXyz Dark Fairy Cheer Girl",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "41309158",
+  "name": "CXyz Mechquipped Djinn Angeneral",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "41147577",
+  "name": "CXyz Simon the Great Moral Leader",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "49202331",
+  "name": "CXyz Skypalace Babylon",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "09342162",
+  "name": "Cagna, Malebranche of the Burning Abyss",
+  "category_code": "F",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "87288189",
+  "name": "Caius the Mega Monarch",
+  "category_code": "D1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "73213494",
+  "name": "Calcab, Malebranche of the Burning Abyss",
+  "category_code": "F",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "76722334",
+  "name": "Capshell",
+  "category_code": "F",
+  "reason": "shared once-per-turn limit (\"only use 1 of the following effects\"): the bullets stay independent effects, the coupling belongs in usage_limit_text"
+ },
+ {
+  "ygoprodeck_id": "91740879",
+  "name": "Cauldron of the Old Man",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "24175232",
+  "name": "Cerulean Sacred Phoenix of Nephthys",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "46001505",
+  "name": "Champion's Pulse",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "22850702",
+  "name": "Chaos Angel",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"gains these effects\""
+ },
+ {
+  "ygoprodeck_id": "06500778",
+  "name": "Chaos Distill",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "55878038",
+  "name": "Chaos Dragon Levianeer",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "48016074",
+  "name": "Charmers of the Grand Circle",
+  "category_code": "E2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "81599449",
+  "name": "Chemicritter Carbo Crab",
+  "category_code": "G",
+  "reason": "type field is Gemini Monster"
+ },
+ {
+  "ygoprodeck_id": "55100740",
+  "name": "Chemicritter Hydron Hawk",
+  "category_code": "G",
+  "reason": "type field is Gemini Monster"
+ },
+ {
+  "ygoprodeck_id": "18993198",
+  "name": "Chemicritter Oxy Ox",
+  "category_code": "G",
+  "reason": "type field is Gemini Monster"
+ },
+ {
+  "ygoprodeck_id": "67616300",
+  "name": "Chicken Game",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "63136489",
+  "name": "Chimera Fusion",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "98076754",
+  "name": "Chosen of Zefra",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"gains these effects\""
+ },
+ {
+  "ygoprodeck_id": "54878729",
+  "name": "Chronicle Sorceress",
+  "category_code": "B1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "02089016",
+  "name": "Chronomaly Tuspa Rocket",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "57143342",
+  "name": "Cir, Malebranche of the Burning Abyss",
+  "category_code": "F",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "87468732",
+  "name": "Clock Arc",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "82159583",
+  "name": "Clown Crew Biancaviso",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "31533473",
+  "name": "Clown Crew Diabolo",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "30109445",
+  "name": "Clown Crew Dristy",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "91237821",
+  "name": "Clown Crew Fiends",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "42759961",
+  "name": "Clown Crew Flair",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "93172951",
+  "name": "Clown Crew Meteor",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "70058649",
+  "name": "Clown Crew Soiree Operations",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "12197543",
+  "name": "Commander of Swords",
+  "category_code": "B2",
+  "reason": "apply exactly 1 bullet (resolution): \"apply 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "82913020",
+  "name": "Constellar Caduceus",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "33302589",
+  "name": "Constellar Castor",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "70908596",
+  "name": "Constellar Kaus",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "78358521",
+  "name": "Constellar Sombre",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains the following effect\""
+ },
+ {
+  "ygoprodeck_id": "70219023",
+  "name": "Coordius the Triphasic Dealmon",
+  "category_code": "E1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "21123811",
+  "name": "Cosmic Blazar Dragon",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "85314178",
+  "name": "Cosmo Queen the Queen of Prayers",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"appropriate effect\""
+ },
+ {
+  "ygoprodeck_id": "50277355",
+  "name": "Cross-Sheep",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "87497553",
+  "name": "Crusadia Testament",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "01218214",
+  "name": "Cubic Dharma",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "98095162",
+  "name": "Curious, the Lightsworn Dominion",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "31434645",
+  "name": "Cursed Eldland",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "56364287",
+  "name": "Cyber Dragon Herz",
+  "category_code": "F",
+  "reason": "shared once-per-turn limit (\"only use 1 of the following effects\"): the bullets stay independent effects, the coupling belongs in usage_limit_text"
+ },
+ {
+  "ygoprodeck_id": "38265153",
+  "name": "Cyber Energy Shock",
+  "category_code": "D2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "86686671",
+  "name": "Cyber Repair Plant",
+  "category_code": "E1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "45078193",
+  "name": "Cyberdark Cannon",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "82562802",
+  "name": "Cyberdark Claw",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "01157683",
+  "name": "Cyberdark Invasion",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "89238128",
+  "name": "Cyberse Accelerator",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "06186304",
+  "name": "D - Force",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"apply the following effects\""
+ },
+ {
+  "ygoprodeck_id": "99357565",
+  "name": "D Cubed",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "93317313",
+  "name": "D/D Defense Soldier",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "12822541",
+  "name": "D/D Lilith",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "11609969",
+  "name": "D/D Savant Kepler",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "00811734",
+  "name": "D/D/D Contract Change",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "25857977",
+  "name": "D/D/D Vice King Requiem",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "32232538",
+  "name": "D/D/D Wise King Solomon",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "00581014",
+  "name": "Daigusto Emeral",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "77124096",
+  "name": "Dark Contact",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "60168186",
+  "name": "Dark Contract with the Entities",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"appropriate effect\""
+ },
+ {
+  "ygoprodeck_id": "45974017",
+  "name": "Dark Contract with the Yamimakai",
+  "category_code": "F",
+  "reason": "shared once-per-turn limit (\"only use 1 of the following effects\"): the bullets stay independent effects, the coupling belongs in usage_limit_text"
+ },
+ {
+  "ygoprodeck_id": "62002838",
+  "name": "Dark End Evaporation Dragon",
+  "category_code": "F",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "88685329",
+  "name": "Dark Eye Nightmare",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "00111280",
+  "name": "Dark Magic Expanded",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "01621413",
+  "name": "Dark Requiem Xyz Dragon",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"gains these effects\""
+ },
+ {
+  "ygoprodeck_id": "40235813",
+  "name": "Dark Time Wizard",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "50383626",
+  "name": "Darkest Diabolos, Lord of the Lair",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "57662975",
+  "name": "Darkstorm Dragon",
+  "category_code": "G",
+  "reason": "type field is Gemini Monster"
+ },
+ {
+  "ygoprodeck_id": "91336701",
+  "name": "Day-Breaker the Shining Magical Warrior",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "33062423",
+  "name": "Decode Destruction",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "50793215",
+  "name": "Deep Sea Prima Donna",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "89544521",
+  "name": "Deskbot Jet",
+  "category_code": "F",
+  "reason": "shared once-per-turn limit (\"only use 1 of the following effects\"): the bullets stay independent effects, the coupling belongs in usage_limit_text"
+ },
+ {
+  "ygoprodeck_id": "64184058",
+  "name": "Destiny HERO - Decider",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "46789706",
+  "name": "Detonating Kuriboh",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"as an Equip Spell with the following effect\""
+ },
+ {
+  "ygoprodeck_id": "88176533",
+  "name": "Devotee of Nephthys",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "11808215",
+  "name": "Dice Dungeon",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "08868767",
+  "name": "Dice It",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "93078761",
+  "name": "Diced Dice",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"appropriate effect\""
+ },
+ {
+  "ygoprodeck_id": "62893810",
+  "name": "Dicelops",
+  "category_code": "C",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "03493058",
+  "name": "Dicephoon",
+  "category_code": "C",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "68950538",
+  "name": "Digital Bug Centibit",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "32465539",
+  "name": "Digital Bug Cocoondenser",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "83048208",
+  "name": "Digital Bug LEDybug",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "19301729",
+  "name": "Digital Bug Registrider",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "94344242",
+  "name": "Digital Bug Websolder",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "90965652",
+  "name": "Dimer Synthesis",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "93854893",
+  "name": "Dingirsu, the Orcust of the Evening Star",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "63251695",
+  "name": "Dinomist Rex",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "05067884",
+  "name": "Dinomist Spinos",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "86553594",
+  "name": "Discordance of the Tistina",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "81965543",
+  "name": "Distrust Paranoia",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"with the following effect\""
+ },
+ {
+  "ygoprodeck_id": "07373632",
+  "name": "Divine Evolution",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains the following effect\""
+ },
+ {
+  "ygoprodeck_id": "85310252",
+  "name": "Dododo Driver",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "51522296",
+  "name": "Dogmatika Alba Zoa",
+  "category_code": "B2",
+  "reason": "apply exactly 1 bullet (resolution): \"apply 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "29354228",
+  "name": "Dogmatika Encounter",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "65589010",
+  "name": "Dogmatika Nation",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "68831625",
+  "name": "DoomZ Command \"D.O.O.M.D.U.R.G.\"",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"gains the following effects\""
+ },
+ {
+  "ygoprodeck_id": "80320877",
+  "name": "DoomZ Destruction",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"with the following effect\""
+ },
+ {
+  "ygoprodeck_id": "39185163",
+  "name": "Doomking Balerdroch",
+  "category_code": "B2",
+  "reason": "apply exactly 1 bullet (resolution): \"apply 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "01607603",
+  "name": "Double Dai",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "00146746",
+  "name": "Double Headed Anger Knuckle",
+  "category_code": "F",
+  "reason": "shared once-per-turn limit (\"only use 1 of the following effects\"): the bullets stay independent effects, the coupling belongs in usage_limit_text"
+ },
+ {
+  "ygoprodeck_id": "38129297",
+  "name": "Double Interlock",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "09070454",
+  "name": "Draco-Utopian Aura",
+  "category_code": "D2",
+  "reason": "mandatory part, then optional single choice: \"then, you can apply the following effect\""
+ },
+ {
+  "ygoprodeck_id": "45593826",
+  "name": "Draghig, Malebranche of the Burning Abyss",
+  "category_code": "F",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "63295720",
+  "name": "Dragon's Light and Darkness",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "45667991",
+  "name": "Dragoncaller Magician",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "77515704",
+  "name": "Dragonmaid Downtime",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "76782778",
+  "name": "Dragonmaid Ernus",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "15848542",
+  "name": "Dragonmaid Lorpar",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "49575521",
+  "name": "Dragonmaid Nudyarl",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "42055234",
+  "name": "Dragonmaid Tinkhec",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "09069157",
+  "name": "Dragonroid",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "07917970",
+  "name": "Dragunity Divine Wind",
+  "category_code": "E2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "28927782",
+  "name": "Dragunity Legion",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "81096431",
+  "name": "Drake Shark",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "61459246",
+  "name": "Dream Mirror Oneiromancy",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "16893370",
+  "name": "Dreaming Reality of Nemleria, Realized",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "26920296",
+  "name": "Dreamland",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "28798938",
+  "name": "Dual Avatar - Manifested A-Un",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"gains the following effect\""
+ },
+ {
+  "ygoprodeck_id": "49158617",
+  "name": "Dual Avatar Defeating Evil",
+  "category_code": "D2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "11759079",
+  "name": "Dual Avatar Feet - Kokoku",
+  "category_code": "D2",
+  "reason": "mandatory part, then optional single choice: \"and, then you can apply this effect\""
+ },
+ {
+  "ygoprodeck_id": "87669904",
+  "name": "Dual Avatar Invitation",
+  "category_code": "D2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "43803845",
+  "name": "Duck Dummy",
+  "category_code": "G",
+  "reason": "type field is Gemini Monster"
+ },
+ {
+  "ygoprodeck_id": "05833312",
+  "name": "Duel Academy",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"gains these effects\""
+ },
+ {
+  "ygoprodeck_id": "19162134",
+  "name": "Dueltaining",
+  "category_code": "A2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "58995660",
+  "name": "Early Palm Gets the Win",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "05267507",
+  "name": "Earthbound Immortal Red Nova",
+  "category_code": "B2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "71089030",
+  "name": "Earthbound Prison",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "08690387",
+  "name": "Earthbound Servant Geo Gremlin",
+  "category_code": "B2",
+  "reason": "apply exactly 1 bullet (resolution): \"chooses 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "16734927",
+  "name": "Ectoplasmic Fortification",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "92379223",
+  "name": "El Dorado Adelantado",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "50907446",
+  "name": "El Shaddoll Apkallone",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "92223430",
+  "name": "Elborz, the Sacred Lands of Simorgh",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "22669793",
+  "name": "Eldlixir of the Glorious Golden Land",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "22908820",
+  "name": "Elemental HERO Sunrise",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "71797713",
+  "name": "Elementsaber Lapauila Mana",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "90880453",
+  "name": "Elfnotes: A Plea for Help",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"appropriate effect\""
+ },
+ {
+  "ygoprodeck_id": "80621422",
+  "name": "Emblem of the Plunder Patroll",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"as an Equip Spell with this effect\""
+ },
+ {
+  "ygoprodeck_id": "77765207",
+  "name": "Emblema Oath",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "09409625",
+  "name": "Empty Machine",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "80015408",
+  "name": "Enneacraft Reverth",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "87532344",
+  "name": "Eternal Favorite",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "48680970",
+  "name": "Eternal Soul",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "71228611",
+  "name": "Eucalyptus Mole",
+  "category_code": "D1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "32013448",
+  "name": "Evening Twilight Knight",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"gains these effects\""
+ },
+ {
+  "ygoprodeck_id": "37042505",
+  "name": "Everlasting Alloy",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "18438874",
+  "name": "Evil Mind",
+  "category_code": "B1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "04756629",
+  "name": "Evilswarm Kerykeion",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains the following effect\""
+ },
+ {
+  "ygoprodeck_id": "38273745",
+  "name": "Evilswarm Ouroboros",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "98360333",
+  "name": "Evil★Twin Challenge",
+  "category_code": "D2",
+  "reason": "mandatory part, then optional single choice: \"then you can apply the following effect\""
+ },
+ {
+  "ygoprodeck_id": "34365442",
+  "name": "Evil★Twin GG EZ",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of the following\""
+ },
+ {
+  "ygoprodeck_id": "06636319",
+  "name": "Evil★Twin Ki-sikil Deal",
+  "category_code": "D1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "60759087",
+  "name": "Evil★Twin Present",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "16146511",
+  "name": "Evocator Eveque",
+  "category_code": "G",
+  "reason": "type field is Gemini Monster"
+ },
+ {
+  "ygoprodeck_id": "01595137",
+  "name": "Evolved Daneen",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "03160805",
+  "name": "Exchange of Night and Day",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "00197042",
+  "name": "Exosister Returnia",
+  "category_code": "B2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "07080743",
+  "name": "Express Train Trolley Olley",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "95376428",
+  "name": "Extra Net",
+  "category_code": "D2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "23617756",
+  "name": "Exxod Fires of Rage",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "23446369",
+  "name": "Eye of Illusion",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "75676192",
+  "name": "F.A. Motorhome Transport",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"gains the following effect\""
+ },
+ {
+  "ygoprodeck_id": "02144946",
+  "name": "F.A. Off-Road Grand Prix",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "57775790",
+  "name": "Fabled Realm's Revival",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "36553319",
+  "name": "Farfa, Malebranche of the Burning Abyss",
+  "category_code": "F",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "32991300",
+  "name": "Fiendsmith's Agnumday",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"as an Equip Spell with the following effects\""
+ },
+ {
+  "ygoprodeck_id": "49867899",
+  "name": "Fiendsmith's Sequence",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"as an Equip Spell with the following effect\""
+ },
+ {
+  "ygoprodeck_id": "71275181",
+  "name": "Fifty Fifty?",
+  "category_code": "B2",
+  "reason": "apply exactly 1 bullet (resolution): \"chooses 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "35697544",
+  "name": "Fighting Flame Sword",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "11654067",
+  "name": "Fire Ejection",
+  "category_code": "D2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "66750703",
+  "name": "Fire Fortress atop Liang Peak",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "57554544",
+  "name": "Fire King Island",
+  "category_code": "F",
+  "reason": "shared once-per-turn limit (\"only use 1 of the following effects\"): the bullets stay independent effects, the coupling belongs in usage_limit_text"
+ },
+ {
+  "ygoprodeck_id": "00269510",
+  "name": "Fire Prison",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"apply the following effects\""
+ },
+ {
+  "ygoprodeck_id": "17151328",
+  "name": "Firestorms Over Atlantis",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "74271714",
+  "name": "Fish and Bids",
+  "category_code": "D1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "79868386",
+  "name": "Fist of Fate",
+  "category_code": "D2",
+  "reason": "optional single bullet after a mandatory part: \" activated this card during your main phase, you can apply this effect\""
+ },
+ {
+  "ygoprodeck_id": "91152455",
+  "name": "Flame Coating Metalmorph",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"with the following effect\""
+ },
+ {
+  "ygoprodeck_id": "54399598",
+  "name": "Fleeting Flower of the Magician",
+  "category_code": "D2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "42291297",
+  "name": "Flower Cardian Lightshower",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "66765023",
+  "name": "Flying Elephant",
+  "category_code": "D1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "98829635",
+  "name": "Forbidden Crown",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"apply these effects\""
+ },
+ {
+  "ygoprodeck_id": "49033797",
+  "name": "Forbidden Trapezohedron",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "27104921",
+  "name": "Forge a New Future",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "85545073",
+  "name": "Frightfur Bear",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"as an Equip Spell Card with this effect\""
+ },
+ {
+  "ygoprodeck_id": "53503015",
+  "name": "Frozen Rose",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "39733924",
+  "name": "Full-Armored Xyz",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"as an Equip Spell with the following effects\""
+ },
+ {
+  "ygoprodeck_id": "12508268",
+  "name": "Future Drive",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"apply the following effect\""
+ },
+ {
+  "ygoprodeck_id": "70088809",
+  "name": "Fydraulis Harmonia",
+  "category_code": "D1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "75191028",
+  "name": "GMX - COMPREX",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"Gains these effects\""
+ },
+ {
+  "ygoprodeck_id": "12014404",
+  "name": "Gagaga Cowboy",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "09491461",
+  "name": "Gagaga Ganbara Knight",
+  "category_code": "B2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "03606728",
+  "name": "Gagaga Girl",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "67120578",
+  "name": "Gagaga Head",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "88917691",
+  "name": "Gagagaga Girl",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "86331741",
+  "name": "Gagagaga Magician",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "40371092",
+  "name": "Gaia, the Mid-Knight Sun",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "14882493",
+  "name": "Gaia, the Polar Knight",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "00897409",
+  "name": "Galaxy Hundred",
+  "category_code": "B2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "32530043",
+  "name": "Gallant Granite",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "02106266",
+  "name": "Galloping Gaia",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of the following\""
+ },
+ {
+  "ygoprodeck_id": "15778492",
+  "name": "Gaming Gamer GG",
+  "category_code": "D2",
+  "reason": "mandatory part, then optional single choice: \"then you can apply this effect\""
+ },
+ {
+  "ygoprodeck_id": "39475024",
+  "name": "Gashadokuro, the Skeletal Mayakashi",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "82257671",
+  "name": "Gatchiri @Ignister",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "72056560",
+  "name": "Gem-Knight Amber",
+  "category_code": "G",
+  "reason": "type field is Gemini Monster"
+ },
+ {
+  "ygoprodeck_id": "24220368",
+  "name": "Gem-Knight Dispersion",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "45662855",
+  "name": "Gem-Knight Iolite",
+  "category_code": "G",
+  "reason": "type field is Gemini Monster"
+ },
+ {
+  "ygoprodeck_id": "43114901",
+  "name": "Gem-Knight Sardonyx",
+  "category_code": "G",
+  "reason": "type field is Gemini Monster"
+ },
+ {
+  "ygoprodeck_id": "80758812",
+  "name": "Gemini Ablation",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "72305034",
+  "name": "Geminize Lord Golknight",
+  "category_code": "G",
+  "reason": "type field is Gemini Monster"
+ },
+ {
+  "ygoprodeck_id": "73642296",
+  "name": "Ghost Belle & Haunted Mansion",
+  "category_code": "A1",
+  "reason": "qualifier list in the activation condition: \"a card or effect is activated that includes any of these\""
+ },
+ {
+  "ygoprodeck_id": "15419596",
+  "name": "Ghost Bird of Bewitchment",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "60643553",
+  "name": "Ghost Sister & Spooky Dogwood",
+  "category_code": "D1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "64804316",
+  "name": "Ghostrick Siren",
+  "category_code": "D2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "37055344",
+  "name": "Ghostrick-Go-Round",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "38409239",
+  "name": "Ghoti Cosmos",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "38229962",
+  "name": "Giant Beetrooper Invincible Atlas",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "77406972",
+  "name": "Giltia the D. Knight - Soul Spear",
+  "category_code": "B2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "99229085",
+  "name": "Gimmick Puppet Cattle Scream",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "20032555",
+  "name": "Gimmick Puppet Egg Head",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "90361289",
+  "name": "Gizmek Uka, the Festive Fox of Fecundity",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "13224603",
+  "name": "Gizmek Yata, the Gleaming Vanguard",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "48958757",
+  "name": "Gladiator Beast Claudius",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "53860621",
+  "name": "Glowing Crossbow",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "40227329",
+  "name": "Go! - D/D/D Divine Zero King Rage",
+  "category_code": "B2",
+  "reason": "apply exactly 1 bullet (resolution): \"apply 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "64327901",
+  "name": "Goblin Biker Grand Bash",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "90711610",
+  "name": "Goblin Biker Grand Entrance",
+  "category_code": "D2",
+  "reason": "mandatory part, then optional single choice: \"and, then you can apply the following effect\""
+ },
+ {
+  "ygoprodeck_id": "91718579",
+  "name": "Gogogo Aristera & Dexia",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "95283172",
+  "name": "Gold Pride - The Crowd Goes Wild!",
+  "category_code": "D2",
+  "reason": "mandatory part, then optional single choice: \"and, then you can apply the following effect\""
+ },
+ {
+  "ygoprodeck_id": "07540107",
+  "name": "Gouki Guts",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "30010480",
+  "name": "Gouki Thunder Ogre",
+  "category_code": "D1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "84305651",
+  "name": "Goyo King",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "20758643",
+  "name": "Graff, Malebranche of the Burning Abyss",
+  "category_code": "F",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "15545291",
+  "name": "Granmarg the Mega Monarch",
+  "category_code": "D1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "59494222",
+  "name": "Gravekeeper's Inscription",
+  "category_code": "B2",
+  "reason": "apply exactly 1 bullet (resolution): \"apply 1 of the following\""
+ },
+ {
+  "ygoprodeck_id": "25524823",
+  "name": "Gravekeeper's Oracle",
+  "category_code": "E1",
+  "reason": "choose up to N / several bullets: \"activate any of these\""
+ },
+ {
+  "ygoprodeck_id": "98596596",
+  "name": "Graveyard of Wandering Souls",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "84442536",
+  "name": "Graydle Combat",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "80461466",
+  "name": "Great Mammoth of the Netherworld",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "07614732",
+  "name": "Greater Polymerization",
+  "category_code": "D1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "76593718",
+  "name": "Greed Jar",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"apply these effects\""
+ },
+ {
+  "ygoprodeck_id": "97462632",
+  "name": "Griffoh",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "45420955",
+  "name": "Groza, Tyrant of Thunder",
+  "category_code": "B2",
+  "reason": "apply exactly 1 bullet (resolution): \"apply 1 of the following\""
+ },
+ {
+  "ygoprodeck_id": "98301564",
+  "name": "Guiding Ariadne",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"apply these effects\""
+ },
+ {
+  "ygoprodeck_id": "04079728",
+  "name": "Gung-Ho! Springans!",
+  "category_code": "A2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "75215744",
+  "name": "Gunkan Suship Ikura-class Dreadnought",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "63748694",
+  "name": "Gunkan Suship Shari Red",
+  "category_code": "D2",
+  "reason": "mandatory part, then optional single choice: \"and, then you can apply this effect\""
+ },
+ {
+  "ygoprodeck_id": "21293424",
+  "name": "Gunkan Suship Shirauo-class Carrier",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "42377643",
+  "name": "Gunkan Suship Uni",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "94798725",
+  "name": "Gunkan Suship Uni-class Super-Dreadnought",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "62200831",
+  "name": "Gunkan Sushipyard Seaside Supper Spot",
+  "category_code": "D2",
+  "reason": "mandatory part, then optional single choice: \"then you can apply this effect\""
+ },
+ {
+  "ygoprodeck_id": "19748583",
+  "name": "Gwenhwyfar, Queen of Noble Arms",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"appropriate effect\""
+ },
+ {
+  "ygoprodeck_id": "18482473",
+  "name": "H.E.R.O. Flash!",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "54611591",
+  "name": "Hallo, the Spirit of Tricks",
+  "category_code": "B2",
+  "reason": "apply exactly 1 bullet (resolution): \"chooses 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "07473735",
+  "name": "Harmonic Synchro Fusion",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"both of the following\""
+ },
+ {
+  "ygoprodeck_id": "85696777",
+  "name": "Harpie Conductor",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "56585883",
+  "name": "Harpie Harpist",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "66386380",
+  "name": "Harpie Oracle",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "23776077",
+  "name": "Hazy Flame Basiltrice",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "08696773",
+  "name": "Hazy Flame Hydra",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "34721681",
+  "name": "Heavy Forward",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "34761062",
+  "name": "Heavy Knight of the Flame",
+  "category_code": "G",
+  "reason": "type field is Gemini Monster"
+ },
+ {
+  "ygoprodeck_id": "61728808",
+  "name": "Heavymetalfoes Amalgam",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "57809669",
+  "name": "Hecahands Tartaros",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "34143852",
+  "name": "Heroic Challenger - Extra Sword",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "23361526",
+  "name": "Hi-Speedroid Cork Shooter",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "97007933",
+  "name": "Hi-Speedroid Kendama",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "05772618",
+  "name": "Hi-Speedroid Kitedrake",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "94317736",
+  "name": "Hidden Springs of the Far East",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"apply these effects\""
+ },
+ {
+  "ygoprodeck_id": "64514622",
+  "name": "Hieratic Seal of the Dragon King",
+  "category_code": "G",
+  "reason": "type field is Gemini Monster"
+ },
+ {
+  "ygoprodeck_id": "32542011",
+  "name": "High Tide on Fire Island",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"appropriate effect\""
+ },
+ {
+  "ygoprodeck_id": "55749927",
+  "name": "Horn of Olifant",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "22200403",
+  "name": "Hypnosister",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "94677445",
+  "name": "Ib the World Chalice Justiciar",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "19362568",
+  "name": "Icy Breeze Refrain",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of the following\""
+ },
+ {
+  "ygoprodeck_id": "86778566",
+  "name": "Impenetrable Attack",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "26357901",
+  "name": "Imprudent Intrusion",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "28653611",
+  "name": "Infernal Punisher",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "82434071",
+  "name": "Infernity Pawn",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "82734805",
+  "name": "Infernoid Tierra",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "36894320",
+  "name": "Infinite Machine",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "97584719",
+  "name": "Infinitrack Earth Slicer",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "23689428",
+  "name": "Infinitrack Goliath",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "60195675",
+  "name": "Infinitrack Mountain Smasher",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "24701066",
+  "name": "Infinitrack River Stormer",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "05205146",
+  "name": "Infinitrack Road Roller",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "91592030",
+  "name": "Intimidating Ore - Summonite",
+  "category_code": "B2",
+  "reason": "apply exactly 1 bullet (resolution): \"chooses 1 of the following\""
+ },
+ {
+  "ygoprodeck_id": "97273514",
+  "name": "Inzektor Picofalena",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "01006081",
+  "name": "Junk Changer",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "26387390",
+  "name": "Junk Signal",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "78693036",
+  "name": "Juraishin, the Cursed Thunder God",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "67515699",
+  "name": "K9-66X \"Jacks\"",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "90303227",
+  "name": "K9-X \"Werewolf\"",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "91025875",
+  "name": "K9-ØØ Lupis",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "39576656",
+  "name": "Kewl Tune Crackle",
+  "category_code": "D2",
+  "reason": "mandatory part, then optional single choice: \"then you can apply this effect\""
+ },
+ {
+  "ygoprodeck_id": "40847034",
+  "name": "Kewl Tune Playlist",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"apply these effects\""
+ },
+ {
+  "ygoprodeck_id": "17209452",
+  "name": "Kewl Tune Rotary",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "63972571",
+  "name": "King Beast Barbaros",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "17269895",
+  "name": "King's Resonance",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "15767889",
+  "name": "Knight Day Grepher",
+  "category_code": "G",
+  "reason": "type field is Gemini Monster"
+ },
+ {
+  "ygoprodeck_id": "09794980",
+  "name": "Knightmare Incarnation Idlee",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "20087414",
+  "name": "Kuebiko",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"with the following effect\""
+ },
+ {
+  "ygoprodeck_id": "70914287",
+  "name": "Kuribabylon",
+  "category_code": "F",
+  "reason": "shared once-per-turn limit (\"only use 1 of the following effects\"): the bullets stay independent effects, the coupling belongs in usage_limit_text"
+ },
+ {
+  "ygoprodeck_id": "33407125",
+  "name": "Labrynth Labyrinth",
+  "category_code": "D2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "34086406",
+  "name": "Lavalval Chain",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "33113958",
+  "name": "LeVirtue Dragon",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "47840168",
+  "name": "Left-Hand Shark",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "39752820",
+  "name": "Lib the World Key Blademaster",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "62957424",
+  "name": "Libic, Malebranche of the Burning Abyss",
+  "category_code": "F",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "61399402",
+  "name": "Light Dragon @Ignister",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "30913809",
+  "name": "Light Force",
+  "category_code": "D1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "83880087",
+  "name": "Light Wing Shield",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "14532163",
+  "name": "Lightning Storm",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "70916046",
+  "name": "Linear Equation Cannon",
+  "category_code": "C",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "68957925",
+  "name": "Link Party",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "61465001",
+  "name": "Loud Cloud the Storm Serpent",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "39238953",
+  "name": "Lullaby of Obedience",
+  "category_code": "B2",
+  "reason": "apply exactly 1 bullet (resolution): \"chooses 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "11317977",
+  "name": "Lunalight Black Sheep",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "13935001",
+  "name": "Lunalight Serenade Dance",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"apply these effects\""
+ },
+ {
+  "ygoprodeck_id": "10182251",
+  "name": "Lyrilusc - Beryl Canary",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "34550857",
+  "name": "Lyrilusc - Cobalt Sparrow",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "60954556",
+  "name": "Lyrilusc - Sapphire Swallow",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "86852702",
+  "name": "Machina Redeployment",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "77848740",
+  "name": "Madolche Petingcessoeur",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "00059080",
+  "name": "Magia Magic - Thunder of Judgment",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "71791814",
+  "name": "Magical Musketeer Max",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "35191415",
+  "name": "Magician of Dark Illusion",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "97631303",
+  "name": "Magicians' Souls",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "67694706",
+  "name": "Magicolloidal Sol",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "51510279",
+  "name": "Magikey Duo",
+  "category_code": "B2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "40493210",
+  "name": "Magikey Locking",
+  "category_code": "B2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "68300121",
+  "name": "Magikey Spirit - Vepartu",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "65514302",
+  "name": "Magnet Bonding",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "84877802",
+  "name": "Magnum Shield",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "45796834",
+  "name": "Maha Vailo, Light of the Heavens",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"gains the following effect\""
+ },
+ {
+  "ygoprodeck_id": "00545781",
+  "name": "Mahaama the Fairy Dragon",
+  "category_code": "B2",
+  "reason": "apply exactly 1 bullet (resolution): \"apply 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "08445808",
+  "name": "Maiden in Love",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "63144961",
+  "name": "Majestic Absorption",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "98020526",
+  "name": "Majestic Mirage",
+  "category_code": "B2",
+  "reason": "apply exactly 1 bullet (resolution): \"apply 1 of the following\""
+ },
+ {
+  "ygoprodeck_id": "68721020",
+  "name": "Malefic Force",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"with the following effects\""
+ },
+ {
+  "ygoprodeck_id": "40680521",
+  "name": "Mamonaka the Vaylantz United",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "73104892",
+  "name": "Maple Maiden",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains the following effect\""
+ },
+ {
+  "ygoprodeck_id": "33945211",
+  "name": "Marincess Basilalima",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "57329501",
+  "name": "Marincess Dive",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of the following\""
+ },
+ {
+  "ygoprodeck_id": "57541158",
+  "name": "Marincess Sleepy Maiden",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "35606858",
+  "name": "Masterking Archfiend",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "64767757",
+  "name": "Materiactor Critical",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "24649931",
+  "name": "Materialization",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "17946349",
+  "name": "Mathmech Diameter",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains the following effect\""
+ },
+ {
+  "ygoprodeck_id": "87804365",
+  "name": "Mathmech Superfactorial",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "92650749",
+  "name": "Mature Chronicle",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "89812483",
+  "name": "Max Metalmorph",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"with the following effect\""
+ },
+ {
+  "ygoprodeck_id": "41867019",
+  "name": "Mayakashi Mayhem",
+  "category_code": "B2",
+  "reason": "apply exactly 1 bullet (resolution): \"apply 1 of the following\""
+ },
+ {
+  "ygoprodeck_id": "51225407",
+  "name": "Mayakashi Winter",
+  "category_code": "F",
+  "reason": "shared once-per-turn limit (\"only use 1 of the following effects\"): the bullets stay independent effects, the coupling belongs in usage_limit_text"
+ },
+ {
+  "ygoprodeck_id": "44097050",
+  "name": "Mecha Phantom Beast Auroradon",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "29876299",
+  "name": "Megalith Anastasis",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "69003792",
+  "name": "Megalith Unformed",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "39109382",
+  "name": "Meklord Assembly",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "76833149",
+  "name": "Melffy Mommy",
+  "category_code": "D1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "64245689",
+  "name": "Meliae of the Trees",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "30291086",
+  "name": "Mental Tuner",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "03580032",
+  "name": "Merlin",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "23545031",
+  "name": "Mermail Abyssalacia",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "75180828",
+  "name": "Mermail Abyssbalaen",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains the following effect\""
+ },
+ {
+  "ygoprodeck_id": "21767650",
+  "name": "Mermail Abyssmander",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "36898537",
+  "name": "Metaphys Horus",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"appropriate effect\""
+ },
+ {
+  "ygoprodeck_id": "17871506",
+  "name": "Meteor Dragon Red-Eyes Impact",
+  "category_code": "G",
+  "reason": "type field is Gemini Monster"
+ },
+ {
+  "ygoprodeck_id": "16310544",
+  "name": "Mikanko Kagura",
+  "category_code": "D2",
+  "reason": "mandatory part, then optional single choice: \"Then you can apply the following effect\""
+ },
+ {
+  "ygoprodeck_id": "23746827",
+  "name": "Million-Century Ice Prison",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "50415441",
+  "name": "Mimighoul Archfiend",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"apply these effects\""
+ },
+ {
+  "ygoprodeck_id": "11677278",
+  "name": "Mimighoul Armor",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"apply these effects\""
+ },
+ {
+  "ygoprodeck_id": "23920796",
+  "name": "Mimighoul Cerberus",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"apply these effects\""
+ },
+ {
+  "ygoprodeck_id": "81522098",
+  "name": "Mimighoul Dragon",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"apply these effects\""
+ },
+ {
+  "ygoprodeck_id": "43066927",
+  "name": "Mimighoul Fairy",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"apply these effects\""
+ },
+ {
+  "ygoprodeck_id": "82933935",
+  "name": "Mimighoul Flower",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"apply these effects\""
+ },
+ {
+  "ygoprodeck_id": "19338434",
+  "name": "Mimighoul Fork",
+  "category_code": "B2",
+  "reason": "apply exactly 1 bullet (resolution): \"chooses 1 of the following\""
+ },
+ {
+  "ygoprodeck_id": "80551022",
+  "name": "Mimighoul Slime",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"apply these effects\""
+ },
+ {
+  "ygoprodeck_id": "40456412",
+  "name": "Miracle of the Supreme King",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "95915457",
+  "name": "Mirror Barrier",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"as an Equip Card with this effect\""
+ },
+ {
+  "ygoprodeck_id": "95589901",
+  "name": "Mischief of the Wolves",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"apply these effects\""
+ },
+ {
+  "ygoprodeck_id": "76725398",
+  "name": "Mitsurugi Magatama",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "45171524",
+  "name": "Mitsurugi Prayers",
+  "category_code": "E2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "81560239",
+  "name": "Mitsurugi Ritual",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "23689697",
+  "name": "Mobius the Mega Monarch",
+  "category_code": "D1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "90659259",
+  "name": "Morphtronic Converter",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "01876841",
+  "name": "Morphtronic Scannen",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "15521027",
+  "name": "Morphtronic Smartfon",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "38082437",
+  "name": "Morphtronic Telefon",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "15415552",
+  "name": "Mortilux Heruvur",
+  "category_code": "D1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "42141493",
+  "name": "Mulcharmy Fuwalos",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"apply these effects\""
+ },
+ {
+  "ygoprodeck_id": "87126721",
+  "name": "Mulcharmy Meowls",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"apply these effects\""
+ },
+ {
+  "ygoprodeck_id": "84192580",
+  "name": "Mulcharmy Purulia",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"apply these effects\""
+ },
+ {
+  "ygoprodeck_id": "81263643",
+  "name": "Mystrick Hulder",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "62201847",
+  "name": "Myutant M-05",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "26561172",
+  "name": "Myutant Mutant",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "08200556",
+  "name": "Myutant ST-46",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "34813545",
+  "name": "Naturia Blessing",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "03734202",
+  "name": "Naturia Sacred Tree",
+  "category_code": "F",
+  "reason": "shared once-per-turn limit (\"only use 1 of the following effects\"): the bullets stay independent effects, the coupling belongs in usage_limit_text"
+ },
+ {
+  "ygoprodeck_id": "93860227",
+  "name": "Necroquip Princess",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "37561138",
+  "name": "Necrovalley Throne",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "39468724",
+  "name": "Nekroz of Areadbhair",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "26674724",
+  "name": "Nekroz of Brionac",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "99185129",
+  "name": "Nekroz of Clausolas",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "88240999",
+  "name": "Nekroz of Decisive Armor",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "74122412",
+  "name": "Nekroz of Gungnir",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "52068432",
+  "name": "Nekroz of Trishula",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "25857246",
+  "name": "Nekroz of Valkyrus",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "33499794",
+  "name": "Nemleria Repeter",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"appropriate effect\""
+ },
+ {
+  "ygoprodeck_id": "12632096",
+  "name": "Neo Galaxy-Eyes Cipher Dragon",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "87054946",
+  "name": "Nephthys, the Sacred Flame",
+  "category_code": "D1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "50669347",
+  "name": "Nephthys, the Sacred Preserver",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "56787189",
+  "name": "New Frontier",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "62314831",
+  "name": "New World - Amritara",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "10807219",
+  "name": "Newbee!",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"apply these effects\""
+ },
+ {
+  "ygoprodeck_id": "47120245",
+  "name": "Noble Knight Borz",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"becomes an Effect Monster with these effects\""
+ },
+ {
+  "ygoprodeck_id": "42472002",
+  "name": "Noble Knight Custennin",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "13391185",
+  "name": "Noble Knight Gwalchavad",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"becomes an Effect Monster with this effect\""
+ },
+ {
+  "ygoprodeck_id": "59057152",
+  "name": "Noble Knight Medraut",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"becomes an Effect Monster with this effect\""
+ },
+ {
+  "ygoprodeck_id": "55742055",
+  "name": "Noble Knights of the Round Table",
+  "category_code": "A1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "70333910",
+  "name": "Noctovision Dragon",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "69058960",
+  "name": "Number 13: Embodiment of Crime",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"gains these effects\""
+ },
+ {
+  "ygoprodeck_id": "32453837",
+  "name": "Number 2: Ninja Shadow Mosquito",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "95442074",
+  "name": "Number 31: Embodiment of Punishment",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"gains these effects\""
+ },
+ {
+  "ygoprodeck_id": "76504386",
+  "name": "Number 39: Utopia, Emissary of Light",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "02978414",
+  "name": "Number 46: Dragluon",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "90126061",
+  "name": "Number 5: Doom Chimera Dragon",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate one of the following\""
+ },
+ {
+  "ygoprodeck_id": "66011101",
+  "name": "Number 60: Dugares the Timeless",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of the following\""
+ },
+ {
+  "ygoprodeck_id": "89642993",
+  "name": "Number 63: Shamoji Soldier",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "82308875",
+  "name": "Number 7: Lucky Straight",
+  "category_code": "B2",
+  "reason": "apply exactly 1 bullet (resolution): \"apply 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "63504681",
+  "name": "Number 86: Heroic Champion - Rhongomyniad",
+  "category_code": "D1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "89516305",
+  "name": "Number 87: Queen of the Night",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "08165596",
+  "name": "Number 90: Galaxy-Eyes Photon Lord",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "84417082",
+  "name": "Number 91: Thunder Spark Dragon",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "67173574",
+  "name": "Number C102: Archfiend Seraph",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "49456901",
+  "name": "Number C104: Umbral Horror Masquerade",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "85121942",
+  "name": "Number C105: Battlin' Boxer Comet Cestus",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "55888045",
+  "name": "Number C106: Giant Red Hand",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "68396121",
+  "name": "Number C107: Neo Galaxy-Eyes Tachyon Dragon",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "66970002",
+  "name": "Number C39: Utopia Ray V",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "87911394",
+  "name": "Number C39: Utopia Ray Victory",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "32446630",
+  "name": "Number C43: High Manipulator of Chaos",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "48348921",
+  "name": "Number C62: Neo Galaxy-Eyes Prime Photon Dragon",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"gains these effects\""
+ },
+ {
+  "ygoprodeck_id": "49195710",
+  "name": "Number C65: King Overfiend",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "11522979",
+  "name": "Number C69: Heraldry Crest of Horror",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "06387204",
+  "name": "Number C6: Chronomaly Chaos Atlandis",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "96864105",
+  "name": "Number C73: Abyss Supra Splash",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "10300821",
+  "name": "Number C79: Battlin' Boxer General Kaiser",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "20563387",
+  "name": "Number C80: Requiem in Berserk",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "47017574",
+  "name": "Number C92: Heart-eartH Chaos Dragon",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "77205367",
+  "name": "Number C96: Dark Storm",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "32559361",
+  "name": "Number C9: Chaos Dyson Sphere",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "15862758",
+  "name": "Number iC1000: Numerounius Numerounia",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"apply the following effects\""
+ },
+ {
+  "ygoprodeck_id": "00402416",
+  "name": "Obliterate!!! Blaze",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"gains these effects\""
+ },
+ {
+  "ygoprodeck_id": "30607616",
+  "name": "Oboro-Guruma, the Wheeled Mayakashi",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "75787708",
+  "name": "Odd-Eyes Pendulum Dragon of the Four Heavenly Dragons",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"gains these effects\""
+ },
+ {
+  "ygoprodeck_id": "86238081",
+  "name": "Odd-Eyes Raging Dragon",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"gains these effects\""
+ },
+ {
+  "ygoprodeck_id": "58074177",
+  "name": "Odd-Eyes Wing Dragon",
+  "category_code": "F",
+  "reason": "shared once-per-turn limit (\"only use 1 of the following effects\"): the bullets stay independent effects, the coupling belongs in usage_limit_text"
+ },
+ {
+  "ygoprodeck_id": "23837054",
+  "name": "Ogdoadic Calling",
+  "category_code": "D2",
+  "reason": "optional single bullet after a mandatory part: \"c\" monsters with different names in your gy, you can apply this effect\""
+ },
+ {
+  "ygoprodeck_id": "75884822",
+  "name": "Ojama Pajama",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "89086647",
+  "name": "Okiku's Dish Count",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "12948099",
+  "name": "Old Entity Cthugua",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "54239282",
+  "name": "Old Mind",
+  "category_code": "B2",
+  "reason": "apply exactly 1 bullet (resolution): \"apply 1 of the following\""
+ },
+ {
+  "ygoprodeck_id": "74202664",
+  "name": "One or Eight",
+  "category_code": "B2",
+  "reason": "apply exactly 1 bullet (resolution): \"apply 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "35187185",
+  "name": "Oneiros, the Dream Mirror Erlking",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "37678339",
+  "name": "Oneiros, the Dream Mirror Tormentor",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "06595475",
+  "name": "Onomatopaira",
+  "category_code": "A2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "32354768",
+  "name": "Oracle of Zefra",
+  "category_code": "A1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "15744417",
+  "name": "Orgoth the Relentless",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"appropriate effect\""
+ },
+ {
+  "ygoprodeck_id": "00847217",
+  "name": "Orichalcos Sword of Sealing",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "71583486",
+  "name": "Outstanding Dog Mary",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "96352712",
+  "name": "Overexaggeration",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "67378935",
+  "name": "Overlay Network",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "33099732",
+  "name": "Overload Future Fusion",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "71278040",
+  "name": "Parallel eXceed",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "58720904",
+  "name": "Pendransaction",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "84274024",
+  "name": "Pendulum Dimension",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"appropriate effect\""
+ },
+ {
+  "ygoprodeck_id": "17885118",
+  "name": "Pendulum Scale",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "08778267",
+  "name": "Penetration Fusion",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "92530005",
+  "name": "Performage Ball Balancer",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "06659193",
+  "name": "Performage Trapeze High Magician",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "70417076",
+  "name": "Performage Wind Drainer",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "58092907",
+  "name": "Performapal Celestial Magician",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "17857780",
+  "name": "Performapal Cheermole",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"appropriate effect\""
+ },
+ {
+  "ygoprodeck_id": "92644052",
+  "name": "Performapal Duelist Extraordinaire",
+  "category_code": "D2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "19619755",
+  "name": "Performapal Five-Rainbow Magician",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "04836680",
+  "name": "Performapal Odd-Eyes Seer",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "00220414",
+  "name": "Performapal Turn Trooper",
+  "category_code": "C",
+  "reason": "the card gains one bullet at a time, picked by criteria on the card (continuous effect that depends on a state): \"based on\""
+ },
+ {
+  "ygoprodeck_id": "95113856",
+  "name": "Phantom Fortress Enterblathnir",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "42925441",
+  "name": "Photon Change",
+  "category_code": "E1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "43147039",
+  "name": "Photon Vanisher",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "10282757",
+  "name": "Planckton",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"apply these effects\""
+ },
+ {
+  "ygoprodeck_id": "43004235",
+  "name": "Plunder Patroll Parrrty",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"as an Equip Card with this effect\""
+ },
+ {
+  "ygoprodeck_id": "93031067",
+  "name": "Plunder Patroll Shipyarrrd",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "46485778",
+  "name": "Poissonniere de Nouvelles",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "44088292",
+  "name": "Poly-Chemicritter Dioxogre",
+  "category_code": "G",
+  "reason": "type field is Gemini Monster"
+ },
+ {
+  "ygoprodeck_id": "80476891",
+  "name": "Poly-Chemicritter Hydragon",
+  "category_code": "G",
+  "reason": "type field is Gemini Monster"
+ },
+ {
+  "ygoprodeck_id": "91501248",
+  "name": "Pot of The Forbidden",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "22404570",
+  "name": "Power Patron Shade of the Final Hour",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "44994712",
+  "name": "Predaplant Longinephila",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "79864860",
+  "name": "Predaplant Triphyoverutum",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "94997874",
+  "name": "Prediction Princess Tarotrei",
+  "category_code": "F",
+  "reason": "shared once-per-turn limit (\"only use 1 of the following effects\"): the bullets stay independent effects, the coupling belongs in usage_limit_text"
+ },
+ {
+  "ygoprodeck_id": "42932862",
+  "name": "Prediction Princess Tarotreith",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "17016131",
+  "name": "Pride of the Plunder Patroll",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "02507443",
+  "name": "Prima Light",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "85692042",
+  "name": "Primathmech Alembertian",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"appropriate effect\""
+ },
+ {
+  "ygoprodeck_id": "88021907",
+  "name": "Primathmech Laplacian",
+  "category_code": "E1",
+  "reason": "choose up to N / several bullets: \"choose that many effects\""
+ },
+ {
+  "ygoprodeck_id": "81418467",
+  "name": "Primite Imperial Dragon",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"apply these effects\""
+ },
+ {
+  "ygoprodeck_id": "11496832",
+  "name": "Principug",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "61681816",
+  "name": "Propa Gandake",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"apply the following effects\""
+ },
+ {
+  "ygoprodeck_id": "49511705",
+  "name": "Proton Blast",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "70659412",
+  "name": "Psychic Omnibuster",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"apply these effects\""
+ },
+ {
+  "ygoprodeck_id": "53323475",
+  "name": "Puppet Shark",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"appropriate effect\""
+ },
+ {
+  "ygoprodeck_id": "55584558",
+  "name": "Purrely Delicious Memory",
+  "category_code": "H",
+  "reason": "name contains \"Purrely\""
+ },
+ {
+  "ygoprodeck_id": "82105704",
+  "name": "Purrely Happy Memory",
+  "category_code": "H",
+  "reason": "name contains \"Purrely\""
+ },
+ {
+  "ygoprodeck_id": "29599813",
+  "name": "Purrely Pretty Memory",
+  "category_code": "H",
+  "reason": "name contains \"Purrely\""
+ },
+ {
+  "ygoprodeck_id": "21347668",
+  "name": "Purrely Sleepy Memory",
+  "category_code": "H",
+  "reason": "name contains \"Purrely\""
+ },
+ {
+  "ygoprodeck_id": "84673574",
+  "name": "QQ Enneagon",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "72162751",
+  "name": "Queen of the Blazing Domain",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "32216688",
+  "name": "R.B. The Brute Blues",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"Gains the following effects\""
+ },
+ {
+  "ygoprodeck_id": "86310763",
+  "name": "Radiance of the Voiceless Voice",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "25940932",
+  "name": "Radiant Typhoon Ascendance",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "67115133",
+  "name": "Radiant Typhoon Chant",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "53813120",
+  "name": "Radiant Typhoon Mandate",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"apply the following effects\""
+ },
+ {
+  "ygoprodeck_id": "94103142",
+  "name": "Radiant Typhoon Manifestation",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "20508881",
+  "name": "Radiant Typhoon Vision",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "04841383",
+  "name": "Ragnaraika Bloom",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "52159691",
+  "name": "Raider's Wing",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "08617563",
+  "name": "Raidraptor - Brave Strix",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "81927732",
+  "name": "Raidraptor - Revolution Falcon",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "45184165",
+  "name": "Raidraptor - Skull Eagle",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "15092394",
+  "name": "Raidraptor - Stranger Falcon",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "86221741",
+  "name": "Raidraptor - Ultimate Falcon",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "02830693",
+  "name": "Rainbow Kuriboh",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "71345905",
+  "name": "Rank-Down-Magic Numeron Fall",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "47882565",
+  "name": "Rank-Up-Magic Cipher Ascension",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "43476205",
+  "name": "Rank-Up-Magic Revolution Force",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "87188910",
+  "name": "Ravenous Crocodragon Archethys",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "13386407",
+  "name": "Ravenous Vendread",
+  "category_code": "D1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "28651380",
+  "name": "Raviel, Lord of Phantasms - Shimmering Scraper",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "36920182",
+  "name": "Realm Resonance",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "09560338",
+  "name": "Reaper of Prophecy",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "87778106",
+  "name": "Recette de Poisson (Fish Recipe)",
+  "category_code": "D2",
+  "reason": "optional single bullet after a mandatory part: \"oned \"buerillabaisse de nouvelles\", you can apply the following effect\""
+ },
+ {
+  "ygoprodeck_id": "14166715",
+  "name": "Recette de Viande (Meat Recipe)",
+  "category_code": "D2",
+  "reason": "optional single bullet after a mandatory part: \"l summoned \"confiras de nouvelles\", you can apply the following effect\""
+ },
+ {
+  "ygoprodeck_id": "39357122",
+  "name": "Red-Eyes Archfiend of Lightning",
+  "category_code": "G",
+  "reason": "type field is Gemini Monster"
+ },
+ {
+  "ygoprodeck_id": "30079770",
+  "name": "Red-Eyes Black Flare Dragon",
+  "category_code": "G",
+  "reason": "type field is Gemini Monster"
+ },
+ {
+  "ygoprodeck_id": "21140872",
+  "name": "Red-Eyes Slash Dragon",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"as an Equip Spell with this effect\""
+ },
+ {
+  "ygoprodeck_id": "60439482",
+  "name": "Regulus' Arrow",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "68663427",
+  "name": "Reincarnation Unveiling Mail",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"gains these effects\""
+ },
+ {
+  "ygoprodeck_id": "85395151",
+  "name": "Release Brainwashing",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "81306186",
+  "name": "Renewal of the World",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "34989413",
+  "name": "Reprodocus",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "81615450",
+  "name": "Reptilianne Ramifications",
+  "category_code": "E1",
+  "reason": "choose up to N / several bullets: \"activate 2 of these\""
+ },
+ {
+  "ygoprodeck_id": "23912837",
+  "name": "Resh Shaddoll Incarnation",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "61466310",
+  "name": "Return of the Monarchs",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "87347365",
+  "name": "Revival Golem",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "11845050",
+  "name": "Right-Hand Shark",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "72498838",
+  "name": "Rilliona, the Magistus of Verre",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "56655675",
+  "name": "Ritual Beast Ulti-Gaiapelio",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "28168628",
+  "name": "Rock of the Vanquisher",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "74289646",
+  "name": "Royal Rhino with Deceitful Dice",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"appropriate effect\""
+ },
+ {
+  "ygoprodeck_id": "06906306",
+  "name": "Rubysapphirus, the Adamant Jewel",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"Gains the following effects\""
+ },
+ {
+  "ygoprodeck_id": "01516510",
+  "name": "Rune-Eyes Pendulum Dragon",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"appropriate effect\""
+ },
+ {
+  "ygoprodeck_id": "94445733",
+  "name": "Runick Destruction",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "66712905",
+  "name": "Runick Dispelling",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "68957034",
+  "name": "Runick Flashing Fire",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "30430448",
+  "name": "Runick Freezing Curses",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "20618850",
+  "name": "Runick Golden Droplet",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "67835547",
+  "name": "Runick Slumber",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "93229151",
+  "name": "Runick Smiting Storm",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "31562086",
+  "name": "Runick Tip",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "82661630",
+  "name": "Ryu-Ge Realm - Dino Domains",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gain this effect\""
+ },
+ {
+  "ygoprodeck_id": "28669235",
+  "name": "Ryu-Ge Realm - Sea Spires",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gain this effect\""
+ },
+ {
+  "ygoprodeck_id": "55154344",
+  "name": "Ryu-Ge Realm - Wyrm Winds",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gain this effect\""
+ },
+ {
+  "ygoprodeck_id": "53276089",
+  "name": "Ryzeal Mass Driver",
+  "category_code": "D1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "69761020",
+  "name": "S-Force Showdown",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of the following\""
+ },
+ {
+  "ygoprodeck_id": "63193879",
+  "name": "Saber Shark",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "98850929",
+  "name": "Sacred Serpent's Wake",
+  "category_code": "E1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "63926180",
+  "name": "Sacred Spirit Sword Aiwass",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "56350972",
+  "name": "Saffira, Queen of Dragons",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "83533296",
+  "name": "Salamangreat Charge",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "52155219",
+  "name": "Salamangreat Circle",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "71861848",
+  "name": "Salamangreat Coyote",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of the following\""
+ },
+ {
+  "ygoprodeck_id": "16313112",
+  "name": "Salamangreat Emerald Eagle",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "31313405",
+  "name": "Salamangreat Pyro Phoenix",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "14934922",
+  "name": "Salamangreat Rage",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "13173832",
+  "name": "Salamangreat Wolvie",
+  "category_code": "F",
+  "reason": "shared once-per-turn limit (\"only use 1 of the following effects\"): the bullets stay independent effects, the coupling belongs in usage_limit_text"
+ },
+ {
+  "ygoprodeck_id": "44161893",
+  "name": "Salamangreat Zebroid X",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "83838727",
+  "name": "Sandwich Day",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "66730191",
+  "name": "Sangen Kaimen",
+  "category_code": "E2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "74997493",
+  "name": "Saryuja Skull Dread",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "86466163",
+  "name": "Satellarknight Capella",
+  "category_code": "D2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "41619242",
+  "name": "Scareclaw Straddle",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of the following\""
+ },
+ {
+  "ygoprodeck_id": "84764038",
+  "name": "Scarm, Malebranche of the Burning Abyss",
+  "category_code": "F",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "08529136",
+  "name": "Scrap Fist",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"apply these effects\""
+ },
+ {
+  "ygoprodeck_id": "19089195",
+  "name": "Sea Stealth Attack",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"gains these effects\""
+ },
+ {
+  "ygoprodeck_id": "59514116",
+  "name": "Secrets of Dark Magic",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of the following\""
+ },
+ {
+  "ygoprodeck_id": "91140491",
+  "name": "Seraphim Papillion",
+  "category_code": "F",
+  "reason": "shared once-per-turn limit (\"only use 1 of the following effects\"): the bullets stay independent effects, the coupling belongs in usage_limit_text"
+ },
+ {
+  "ygoprodeck_id": "60158866",
+  "name": "Seventh Eternity",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "57232301",
+  "name": "Shadow Severing Strike",
+  "category_code": "B2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "05574510",
+  "name": "Shateki",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "11035075",
+  "name": "Shichi-Go-San",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "12197223",
+  "name": "Shiina, Twin Tempests of Celestial Thunder",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "35906693",
+  "name": "Shining Draw",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "49776811",
+  "name": "Shining Piecephilia",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "52711246",
+  "name": "Shiranui Squiresaga",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "78765160",
+  "name": "Shiranui Style Samsara",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "40364916",
+  "name": "Shiranui Style Solemnity",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "40005099",
+  "name": "Shiranui Style Synthesis",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "63180841",
+  "name": "Shooting Star Dragon T.G. EX",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "09634146",
+  "name": "Signal Warrior",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "85277313",
+  "name": "Signs of the Tistina",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"with the following effect\""
+ },
+ {
+  "ygoprodeck_id": "24440742",
+  "name": "Silhouhatte Trick",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"with the following effects\""
+ },
+ {
+  "ygoprodeck_id": "18300894",
+  "name": "Silk Bomb Moth",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"appropriate effect\""
+ },
+ {
+  "ygoprodeck_id": "22586618",
+  "name": "Simorgh of Darkness",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "95192919",
+  "name": "Simorgh, Lord of the Storm",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "25096909",
+  "name": "Simultaneous Equation Cannons",
+  "category_code": "D2",
+  "reason": "mandatory part, then optional single choice: \"then you can apply this effect\""
+ },
+ {
+  "ygoprodeck_id": "90386276",
+  "name": "Sinful Spoils Sanctification",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "16240772",
+  "name": "Sinful Spoils of Doom - Rciela",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"apply the following effects\""
+ },
+ {
+  "ygoprodeck_id": "03496543",
+  "name": "Sinful Spoils of the White Forest",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "28273805",
+  "name": "Six Strike - Double Assault",
+  "category_code": "E2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "89362180",
+  "name": "Skelesaurus",
+  "category_code": "G",
+  "reason": "type field is Gemini Monster"
+ },
+ {
+  "ygoprodeck_id": "88232397",
+  "name": "Skilled Brown Magician",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "15792576",
+  "name": "Sky Scourge Cidhels",
+  "category_code": "D2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "47870325",
+  "name": "Smile Action",
+  "category_code": "D1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "19739265",
+  "name": "Sol and Luna",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "78114463",
+  "name": "Solemn Accusation",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "27870337",
+  "name": "Solfachord Elegance",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "92043888",
+  "name": "Solfachord Formal",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"apply these effects\""
+ },
+ {
+  "ygoprodeck_id": "93481594",
+  "name": "Solfachord Happiness",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "29650040",
+  "name": "Solfachord Harmonia",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "56058749",
+  "name": "Solfachord Musica",
+  "category_code": "B1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "53265336",
+  "name": "Solfachord Scale",
+  "category_code": "E2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "56510115",
+  "name": "Solfachord Symphony",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "92487128",
+  "name": "Sosei Ryu-Ge Mistva",
+  "category_code": "D2",
+  "reason": "mandatory part, then optional single choice: \"then you can apply this effect\""
+ },
+ {
+  "ygoprodeck_id": "05253985",
+  "name": "Soul Crossing",
+  "category_code": "D1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "84117021",
+  "name": "Spell Wall",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "97997309",
+  "name": "Spellbook of Fate",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "88616795",
+  "name": "Spellbook of Wisdom",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "42544773",
+  "name": "Spenta, the Magistus Sealer",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "22866836",
+  "name": "Spin Turn",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of the following\""
+ },
+ {
+  "ygoprodeck_id": "82768499",
+  "name": "Spiral Flame Strike",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "71939275",
+  "name": "Spirit Illusion",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "42952160",
+  "name": "Split Mirror of the Underworld",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"appropriate effect\""
+ },
+ {
+  "ygoprodeck_id": "68250822",
+  "name": "Spright Double Cross",
+  "category_code": "B1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "88836438",
+  "name": "Spright Smashers",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "29601381",
+  "name": "Springans Captain Sargas",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "25415161",
+  "name": "Springans Interluder",
+  "category_code": "B2",
+  "reason": "apply exactly 1 bullet (resolution): \"apply 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "23499963",
+  "name": "Springans Watch",
+  "category_code": "D2",
+  "reason": "optional single bullet after a mandatory part: \" sea - gold golgonda\" is in your field zone, you can apply this effect\""
+ },
+ {
+  "ygoprodeck_id": "16598965",
+  "name": "Stained Glass of Light & Dark",
+  "category_code": "E2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "19671102",
+  "name": "Stairs of Mail",
+  "category_code": "B2",
+  "reason": "apply exactly 1 bullet (resolution): \"apply 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "24610207",
+  "name": "Star Drawing",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "64726269",
+  "name": "Star Seraph Scale",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "38331564",
+  "name": "Star Seraph Scepter",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "34244455",
+  "name": "Star Staring Starling",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "40390147",
+  "name": "Starliege Lord Galaxion",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "06278008",
+  "name": "Starry Dragon's Cycle",
+  "category_code": "D2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "21985407",
+  "name": "Starry Knight Arrival",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "15306543",
+  "name": "Stars Align Above the Shrine",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "74906081",
+  "name": "Startling Stare of the Snake-Eyes",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "07166709",
+  "name": "Steel-Stringed Sacrifice",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "69678646",
+  "name": "Stellarnova Bonds",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "27157727",
+  "name": "Stronghold the Hidden Fortress",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"with the following effects\""
+ },
+ {
+  "ygoprodeck_id": "89693655",
+  "name": "Subspace Battle",
+  "category_code": "D1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "74640994",
+  "name": "Subterror Final Battle",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "73575650",
+  "name": "Subterror Succession",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "81756619",
+  "name": "Succumbing-Song Morganite",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"apply the following effects\""
+ },
+ {
+  "ygoprodeck_id": "41139112",
+  "name": "Summon Dice",
+  "category_code": "C",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "44886582",
+  "name": "Super Duper Polymerization",
+  "category_code": "B2",
+  "reason": "apply exactly 1 bullet (resolution): \"apply 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "52481437",
+  "name": "Super Express Bullet Train",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "84025439",
+  "name": "Super Quantal Mech King Great Magnus",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"gains these effects\""
+ },
+ {
+  "ygoprodeck_id": "59975920",
+  "name": "Super Quantum Red Layer",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "51869363",
+  "name": "Superconductive Plasma Blast",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "14756848",
+  "name": "Superheavy Samurai Thief",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "53363708",
+  "name": "Supermagic Sword of Raptinus",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "70491413",
+  "name": "Surprise Chain",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "47961342",
+  "name": "Switch Point",
+  "category_code": "B2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "64605089",
+  "name": "Swordsman of Revealing Light",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "20579538",
+  "name": "Sylvan Princessprout",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "75304793",
+  "name": "Symph Amplifire",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "47699948",
+  "name": "Synchro Dilemma",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of the following\""
+ },
+ {
+  "ygoprodeck_id": "36742774",
+  "name": "Synchro World",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"appropriate effect\""
+ },
+ {
+  "ygoprodeck_id": "30348744",
+  "name": "T.G. Drill Fish",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "47027714",
+  "name": "T.G. Halberd Cannon/Assault Mode",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "99937842",
+  "name": "T.G. Star Guardian",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "71083002",
+  "name": "Tachyon Spiral of Destruction",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "12467005",
+  "name": "Tackle Crusader",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "16968936",
+  "name": "Tactical Trainer of the Six Samurai",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "01187243",
+  "name": "Tailwind of Gusto",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "07020743",
+  "name": "Tantrum Toddler",
+  "category_code": "D1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "82566662",
+  "name": "Taotie Dragon",
+  "category_code": "D1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "86304179",
+  "name": "Tempura of Fortune - EBI",
+  "category_code": "C",
+  "reason": "a coin toss decides which bullet applies (Heads / Tails), no player chooses"
+ },
+ {
+  "ygoprodeck_id": "04103668",
+  "name": "Tengu, the Winged Mayakashi",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "73121813",
+  "name": "Tenyi Spirit - Mula Adhara",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"gains these effects\""
+ },
+ {
+  "ygoprodeck_id": "06075533",
+  "name": "Terror of Trishula",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "39454112",
+  "name": "That Six",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"appropriate effect\""
+ },
+ {
+  "ygoprodeck_id": "45005708",
+  "name": "The Bystial Aluber",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"appropriate effect\""
+ },
+ {
+  "ygoprodeck_id": "48386462",
+  "name": "The Cuckoo Commanded to Croon",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "30271097",
+  "name": "The Fallen & The Virtuous",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "62849088",
+  "name": "The Iris Swordsoul",
+  "category_code": "C",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "63899196",
+  "name": "The Monarchs Masterplan",
+  "category_code": "D2",
+  "reason": "mandatory part, then optional single choice: \"and, then you can apply this effect\""
+ },
+ {
+  "ygoprodeck_id": "63821877",
+  "name": "The Phantom Knights of Ragged Gloves",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "62645025",
+  "name": "The Phantom Knights of Wrong Magnetring",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"with the following effect\""
+ },
+ {
+  "ygoprodeck_id": "62104532",
+  "name": "The Phantom Knights' Rank-Up-Magic Requiem",
+  "category_code": "D1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "24413299",
+  "name": "The Suppression Pluto",
+  "category_code": "B2",
+  "reason": "apply exactly 1 bullet (resolution): \"apply 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "83404468",
+  "name": "The Toil of the Normal",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "52834429",
+  "name": "The Weather Auroral Canvas",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gain this effect\""
+ },
+ {
+  "ygoprodeck_id": "53956001",
+  "name": "The Weather Cloudy Canvas",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gain this effect\""
+ },
+ {
+  "ygoprodeck_id": "95515518",
+  "name": "The Weather Painter Moonbow",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gain the following effect\""
+ },
+ {
+  "ygoprodeck_id": "54178659",
+  "name": "The Weather Painter Rainbow",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gain the following effect\""
+ },
+ {
+  "ygoprodeck_id": "74218258",
+  "name": "The Weather Rainbowed Canvas",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gain this effect\""
+ },
+ {
+  "ygoprodeck_id": "27561302",
+  "name": "The Weather Rainy Canvas",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gain this effect\""
+ },
+ {
+  "ygoprodeck_id": "80577258",
+  "name": "The Weather Snowy Canvas",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gain this effect\""
+ },
+ {
+  "ygoprodeck_id": "89355716",
+  "name": "The Weather Sunny Canvas",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gain this effect\""
+ },
+ {
+  "ygoprodeck_id": "16849715",
+  "name": "The Weather Thundery Canvas",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gain this effect\""
+ },
+ {
+  "ygoprodeck_id": "98986900",
+  "name": "Thelematech Clatis",
+  "category_code": "B2",
+  "reason": "apply exactly 1 bullet (resolution): \"apply 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "84332527",
+  "name": "Therion \"Bull\" Ain",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "57111330",
+  "name": "Therion \"Duke\" Yul",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "48806195",
+  "name": "Therion \"Empress\" Alasia",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "10604644",
+  "name": "Therion \"King\" Regulus",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "83610035",
+  "name": "Therion \"Lily\" Borea",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "21727231",
+  "name": "Therion \"Reaper\" Fum",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "43270827",
+  "name": "Therion Cross",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "69230391",
+  "name": "Thestalos the Mega Monarch",
+  "category_code": "D1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "77832858",
+  "name": "Thestalos the Shadowfire Monarch",
+  "category_code": "D2",
+  "reason": "optional single bullet after a mandatory part: \" level 8 or higher tribute summoned monster, you can apply this effect\""
+ },
+ {
+  "ygoprodeck_id": "95081386",
+  "name": "Three Strikes Barrier",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "42469671",
+  "name": "Thunderforce Attack",
+  "category_code": "D2",
+  "reason": "optional single bullet after a mandatory part: \"d this card during your main phase, you can apply the following effect\""
+ },
+ {
+  "ygoprodeck_id": "55557574",
+  "name": "Thunderspeed Summon",
+  "category_code": "D2",
+  "reason": "optional single bullet after a mandatory part: \"ight\", \"king's knight\", and \"jack's knight\", you can apply this effect\""
+ },
+ {
+  "ygoprodeck_id": "14554127",
+  "name": "Tiki Peace",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"with the following effect\""
+ },
+ {
+  "ygoprodeck_id": "15216188",
+  "name": "Time Engine",
+  "category_code": "D2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "91135480",
+  "name": "Time Thief Double Barrel",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "55285840",
+  "name": "Time Thief Redoer",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "19403423",
+  "name": "Time-Tearing Morganite",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"apply the following effects\""
+ },
+ {
+  "ygoprodeck_id": "21296502",
+  "name": "Toon Dark Magician",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "30064423",
+  "name": "Topologic Blaster Dragon",
+  "category_code": "B2",
+  "reason": "apply exactly 1 bullet (resolution): \"apply 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "24878656",
+  "name": "Toy Box",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "59071624",
+  "name": "Traptrix Allomerus",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "48183890",
+  "name": "Traptrix Atypus",
+  "category_code": "D2",
+  "reason": "mandatory part, then optional single choice: \"then you can apply this effect\""
+ },
+ {
+  "ygoprodeck_id": "73639099",
+  "name": "Traptrix Sera",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "92269002",
+  "name": "Tri-Brigade Hammer",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "10793085",
+  "name": "Tri-Brigade Roar",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "19304410",
+  "name": "Tri-Brigade Springans Kitt",
+  "category_code": "A2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "52445243",
+  "name": "Tri-Edge Master",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"appropriate effect\""
+ },
+ {
+  "ygoprodeck_id": "32617464",
+  "name": "Tri-Gate Wizard",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"gains these effects\""
+ },
+ {
+  "ygoprodeck_id": "26285788",
+  "name": "Trial and Tribulation",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "96100333",
+  "name": "Triamid Pulse",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "26866984",
+  "name": "Trias Hierarchia",
+  "category_code": "E2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "63181559",
+  "name": "Trickstar Diffusion",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "51208046",
+  "name": "Trickstar Live Stage",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "89875646",
+  "name": "Triple Borrel Launch",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "25311006",
+  "name": "Triple Tactics Talent",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "61159609",
+  "name": "Trismagistus",
+  "category_code": "F",
+  "reason": "shared once-per-turn limit (\"only use 1 of the following effects\"): the bullets stay independent effects, the coupling belongs in usage_limit_text"
+ },
+ {
+  "ygoprodeck_id": "61529473",
+  "name": "True Draco Apocalypse",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "35125879",
+  "name": "True King's Return",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "62089826",
+  "name": "True Light",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "77092311",
+  "name": "Tsuchigumo, the Poisonous Mayakashi",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "40945356",
+  "name": "Twilight Ninja Nichirin, the Chunin",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "89928517",
+  "name": "Two-for-One Team",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "16172067",
+  "name": "Tyrant Red Dragon Archfiend",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "49936169",
+  "name": "U.A. Locker Room",
+  "category_code": "D2",
+  "reason": "mandatory part, then optional single choice: \"then you can apply this effect\""
+ },
+ {
+  "ygoprodeck_id": "47021196",
+  "name": "U.A. Player Manager",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "49451215",
+  "name": "Ukanomitsune-no-Onari",
+  "category_code": "E2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "89019964",
+  "name": "Unchained Soul of Disaster",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "27753563",
+  "name": "Uradora of Fate",
+  "category_code": "D1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "62714453",
+  "name": "Ursarctic Polar Star",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "15758127",
+  "name": "Ursarctic Quint Charge",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of the following\""
+ },
+ {
+  "ygoprodeck_id": "19743887",
+  "name": "VARefar, the Judge of Ball",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "31971040",
+  "name": "Vaalmonica Chosen Melody",
+  "category_code": "E2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "65496951",
+  "name": "Vaalmonica Disarmonia",
+  "category_code": "B2",
+  "reason": "apply exactly 1 bullet (resolution): \"apply 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "04582942",
+  "name": "Vaalmonica Followed Rhythm",
+  "category_code": "E2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "78598237",
+  "name": "Vaalmonica Intonare",
+  "category_code": "B2",
+  "reason": "apply exactly 1 bullet (resolution): \"apply 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "38491852",
+  "name": "Vaalmonica Invitare",
+  "category_code": "B2",
+  "reason": "apply exactly 1 bullet (resolution): \"apply 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "05605529",
+  "name": "Vaalmonica Scelta",
+  "category_code": "B2",
+  "reason": "apply exactly 1 bullet (resolution): \"apply 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "42193638",
+  "name": "Vaalmonica Versare",
+  "category_code": "B2",
+  "reason": "apply exactly 1 bullet (resolution): \"apply 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "69700783",
+  "name": "Vampire's Desire",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "91073013",
+  "name": "Vanquish Soul Caesar Valius",
+  "category_code": "C",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "29280200",
+  "name": "Vanquish Soul Dr. Mad Love",
+  "category_code": "C",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "92895501",
+  "name": "Vanquish Soul Heavy Borger",
+  "category_code": "C",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "93156774",
+  "name": "Vanquish Soul Hollie Sue",
+  "category_code": "C",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "09091064",
+  "name": "Vanquish Soul Jiaolong",
+  "category_code": "C",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "66401502",
+  "name": "Vanquish Soul Pantera",
+  "category_code": "C",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "55688914",
+  "name": "Vanquish Soul Pluton HG",
+  "category_code": "C",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "29302858",
+  "name": "Vanquish Soul Razen",
+  "category_code": "C",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "77894049",
+  "name": "Vanquish Soul Rocks",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"Gains the following effects\""
+ },
+ {
+  "ygoprodeck_id": "60883493",
+  "name": "Vanquish Soul Snow Devil",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "64038662",
+  "name": "Variable Form",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "76075139",
+  "name": "Vaylantz Genesis Grand Duke",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "13179234",
+  "name": "Vaylantz Wars - The Place of Beginning",
+  "category_code": "D2",
+  "reason": "mandatory part, then optional single choice: \"and, then you can apply the following effect\""
+ },
+ {
+  "ygoprodeck_id": "84281045",
+  "name": "Vaylantz Wave - Master Phase",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "00613013",
+  "name": "Veiss Shark",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "70491682",
+  "name": "Vendread Anima",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains the following effect\""
+ },
+ {
+  "ygoprodeck_id": "49394035",
+  "name": "Vendread Core",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains the following effect\""
+ },
+ {
+  "ygoprodeck_id": "67267333",
+  "name": "Vendread Houndhorde",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains the following effect\""
+ },
+ {
+  "ygoprodeck_id": "31772684",
+  "name": "Vendread Revenants",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "49477180",
+  "name": "Vendread Striges",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains the following effect\""
+ },
+ {
+  "ygoprodeck_id": "73664385",
+  "name": "Verre Magic - Lacrima of Light",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "97345699",
+  "name": "Vesper Girsu",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "78910832",
+  "name": "Vic Viper Type-L",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "70488851",
+  "name": "Vidolium the Unstable Power Patron of Unity",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "14886190",
+  "name": "Virtual World City - Kauwloon",
+  "category_code": "E2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "95243515",
+  "name": "Virtual World Tiger - Fufu",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"Gains the following effects\""
+ },
+ {
+  "ygoprodeck_id": "35659410",
+  "name": "Vision with Eyes of Blue",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "41773061",
+  "name": "Voici la Carte (Today's Menu)",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "96235944",
+  "name": "Void Breach",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "61965407",
+  "name": "Void Purification",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "58143766",
+  "name": "Volcanic Emission",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "59805313",
+  "name": "Volcanic Rimfire",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "42138622",
+  "name": "Vortex of Time",
+  "category_code": "C",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "36974120",
+  "name": "Vouiburial, the Dragon Undertaker",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "47882774",
+  "name": "War Rock Dignity",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate either of\""
+ },
+ {
+  "ygoprodeck_id": "83880473",
+  "name": "War Rock Spirit",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "23068051",
+  "name": "Waterfall of Dragon Souls",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "31222701",
+  "name": "Wavering Eyes",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "81005500",
+  "name": "Ween, the Spirit of Treats",
+  "category_code": "B2",
+  "reason": "apply exactly 1 bullet (resolution): \"chooses 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "84335863",
+  "name": "White Rose Cloister",
+  "category_code": "D1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "12213463",
+  "name": "White Rose Dragon",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "39016067",
+  "name": "Wind Unicorn Parallel, the Dracoslayer",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "25484449",
+  "name": "Wind-Up Shark",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "01735088",
+  "name": "Wind-Up Zenmaintenance",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "83289866",
+  "name": "Witchcrafter Bystreet",
+  "category_code": "F",
+  "reason": "shared once-per-turn limit (\"only use 1 of the following effects\"): the bullets stay independent effects, the coupling belongs in usage_limit_text"
+ },
+ {
+  "ygoprodeck_id": "19673561",
+  "name": "Witchcrafter Scroll",
+  "category_code": "F",
+  "reason": "shared once-per-turn limit (\"only use 1 of the following effects\"): the bullets stay independent effects, the coupling belongs in usage_limit_text"
+ },
+ {
+  "ygoprodeck_id": "09603252",
+  "name": "Witchcrafter Vice-Madame",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "45935145",
+  "name": "Wollow, Founder of the Drudge Dragons",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"appropriate effect\""
+ },
+ {
+  "ygoprodeck_id": "47195442",
+  "name": "Wonky Quartet",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "57282724",
+  "name": "World Gears of Theurlogical Demiurgy",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "42388271",
+  "name": "World Legacy - \"World Ark\"",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "57288708",
+  "name": "World Legacy - \"World Chalice\"",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "46647144",
+  "name": "World Legacy - \"World Lance\"",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "93920420",
+  "name": "World Legacy - \"World Wand\"",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "59778096",
+  "name": "World Legacy Bestowal",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of the following\""
+ },
+ {
+  "ygoprodeck_id": "35183584",
+  "name": "World Legacy Guardragon Mardark",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "14604710",
+  "name": "World Legacy Monstrosity",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "25163979",
+  "name": "World Legacy's Nightmare",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "92781606",
+  "name": "X-Krawler Qualiark",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "09978697",
+  "name": "X-Saber Pellina",
+  "category_code": "B2",
+  "reason": "apply exactly 1 bullet (resolution): \"apply 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "63612442",
+  "name": "X-Saber Souza",
+  "category_code": "B1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "21723081",
+  "name": "XYZ Hyper Cannon",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depends on\""
+ },
+ {
+  "ygoprodeck_id": "94151981",
+  "name": "Xyz Armor Torpedo",
+  "category_code": "D1",
+  "reason": "one trigger applies the whole bundle together, never a subset: \"apply these effects\""
+ },
+ {
+  "ygoprodeck_id": "86062400",
+  "name": "Xyz Avenger",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "43150717",
+  "name": "Xyz Lay",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "90583279",
+  "name": "Yakusa, Lord of the Eight Thunders",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "04632019",
+  "name": "Yamatako Orochi",
+  "category_code": "C",
+  "reason": "the card gains one bullet at a time, picked by criteria on the card (continuous effect that depends on a state): \"based on\""
+ },
+ {
+  "ygoprodeck_id": "51474037",
+  "name": "Yamorimori",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "43577607",
+  "name": "Yang Zing Prana",
+  "category_code": "D1",
+  "reason": "last sentence before bullets grants several effects: \"gains these effects\""
+ },
+ {
+  "ygoprodeck_id": "43202238",
+  "name": "Yazi, Evil of the Yang Zing",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "03486020",
+  "name": "Yoko, the Graceful Mayakashi",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "57511992",
+  "name": "Yorishiro of the Aqua",
+  "category_code": "B2",
+  "reason": "apply exactly 1 bullet (resolution): \"apply 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "27918963",
+  "name": "Yosen Training Grounds",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"depending on\""
+ },
+ {
+  "ygoprodeck_id": "85970321",
+  "name": "Yosenju Izna",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "61884774",
+  "name": "Yosenju Oroshi Channeling",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of the following\""
+ },
+ {
+  "ygoprodeck_id": "58981727",
+  "name": "Yosenju Sabu",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "25244515",
+  "name": "Yosenju Tsujik",
+  "category_code": "F",
+  "reason": "separate effects (listing/usage limit)"
+ },
+ {
+  "ygoprodeck_id": "32056070",
+  "name": "You and A.I.",
+  "category_code": "C",
+  "reason": "criteria on card decide which bullet(s) apply: \"based on\""
+ },
+ {
+  "ygoprodeck_id": "29369059",
+  "name": "Yummy☆Surprise",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "68258355",
+  "name": "ZS - Armed Sage",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "04647954",
+  "name": "ZS - Ascended Sage",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "87602890",
+  "name": "Zaborg the Mega Monarch",
+  "category_code": "D1",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "04891376",
+  "name": "Zalen the Shackled Dragon",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "97946536",
+  "name": "Zektrike Kou-ou",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ },
+ {
+  "ygoprodeck_id": "62623659",
+  "name": "Zexal Construction",
+  "category_code": "A2",
+  "reason": null
+ },
+ {
+  "ygoprodeck_id": "88001391",
+  "name": "Zoma the Earthbound Spirit",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"with the following effect\""
+ },
+ {
+  "ygoprodeck_id": "04367330",
+  "name": "Zoodiac Bunnyblast",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "20155904",
+  "name": "Zoodiac Kataroost",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "04145852",
+  "name": "Zoodiac Ramram",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "78872731",
+  "name": "Zoodiac Ratpier",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "77150143",
+  "name": "Zoodiac Thoroughblade",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "31755044",
+  "name": "Zoodiac Whiptail",
+  "category_code": "D1",
+  "reason": "one binary gate grants this bullet once its trigger fires: \"gains this effect\""
+ },
+ {
+  "ygoprodeck_id": "62006866",
+  "name": "Zubababa Knight",
+  "category_code": "B1",
+  "reason": "activate exactly 1 bullet (activation): \"activate 1 of these\""
+ }
+]

@@ -5,7 +5,7 @@ __pycache__/
 *.egg-info/
 .coverage
 htmlcov/
-data/
+/data/
 .worktrees/
 .superpowers/
 graphify-out/
