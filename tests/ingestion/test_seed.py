@@ -32,6 +32,7 @@ def test_seed_card_stores_card_ruling_and_confirms_a_high_confidence_effect():
             "name": name,
             "type": "Quick-Play Spell",
             "desc": desc,
+            "misc_info": [{"konami_id": 11287}],
             "card_sets": [{"set_name": "Some Set"}],
         }
 
@@ -122,6 +123,7 @@ def test_seed_card_continues_when_fetching_rulings_fails():
             "name": name,
             "type": "Quick-Play Spell",
             "desc": desc,
+            "misc_info": [{"konami_id": 11287}],
             "card_sets": [{"set_name": "Some Set"}],
         }
 
@@ -141,6 +143,9 @@ def test_seed_card_continues_when_fetching_rulings_fails():
     assert get_card_by_name("Called by the Grave")["id"] == card_id
     assert get_rulings_for_card(card_id) == []
     assert len(get_confirmed_effects(card_id)) == 1
+    from aijudge.db.cards_repo import get_card_by_id
+
+    assert get_card_by_id(card_id)["rulings_status"] == "failed"
 
 
 def test_seed_card_auto_confirms_every_effect_while_review_parsed_effect_is_disabled():
@@ -698,3 +703,110 @@ def test_seed_card_stores_named_card_restriction_as_usage_limit_text_on_every_cl
     effects = get_confirmed_effects(card_id)
     assert len(effects) == 2
     assert all(e["usage_limit_text"] == restriction for e in effects)
+
+
+def _amazoness_call_card_data(name, **_kwargs):
+    return {
+        "id": 57312333,
+        "name": name,
+        "type": "Spell Card",
+        "race": "Quick-Play",
+        "desc": (
+            'Take 1 "Amazoness" card from your Deck, except "Amazoness Call", and either add it to your hand or '
+            'send it to the GY. During your Main Phase: You can banish this card from your GY, then target 1 '
+            '"Amazoness" monster you control; this turn, that monster can attack all monsters your opponent '
+            'controls, once each, also other monsters you control cannot attack. You can only activate 1 '
+            '"Amazoness Call" per turn.'
+        ),
+        "misc_info": [{"konami_id": 13174}],
+        "card_sets": [{"set_name": "Some Set"}],
+    }
+
+
+def _seed_amazoness_call(**kwargs):
+    from aijudge.ingestion.seed import seed_card
+    from aijudge.llm.client import MockLLMClient
+
+    kwargs.setdefault("fetch_card_fn", _amazoness_call_card_data)
+    kwargs.setdefault("fetch_sets_index_fn", lambda: {"Some Set": date(2020, 1, 1)})
+    return seed_card("Amazoness Call", llm_client=MockLLMClient(), **kwargs)
+
+
+def test_seed_card_stores_konami_id_status_and_resolved_rulings():
+    from aijudge.db.cards_repo import get_card_by_id
+    from aijudge.db.rulings_repo import get_rulings_for_card
+    from aijudge.ingestion.ygoresources_client import invert_name_index
+    from tests.rulings_fixtures import AMAZONESS_CALL_RULING_2017, NAME_INDEX_SLICE
+
+    card_id = _seed_amazoness_call(
+        fetch_rulings_fn=lambda konami_id: [{"text": AMAZONESS_CALL_RULING_2017, "date": "2017-07-22"}],
+        fetch_card_name_index_fn=lambda: invert_name_index(NAME_INDEX_SLICE),
+    )
+
+    card = get_card_by_id(card_id)
+    assert card["ygoresources_id"] == "13174"
+    assert card["rulings_status"] == "fetched"
+    [ruling] = get_rulings_for_card(card_id)
+    assert ruling["ruling_text"] == AMAZONESS_CALL_RULING_2017
+    assert ruling["ruling_text_resolved"].startswith("Q: I activate the second effect of Amazoness Call")
+    assert ruling["referenced_konami_ids"] == [13174, 8963, 5505, 5682]
+
+
+def test_seed_card_marks_zero_rulings_as_fetched():
+    from aijudge.db.cards_repo import get_card_by_id
+
+    card_id = _seed_amazoness_call(fetch_rulings_fn=lambda konami_id: [])
+
+    assert get_card_by_id(card_id)["rulings_status"] == "fetched"
+
+
+def test_seed_card_marks_a_failed_rulings_fetch_as_failed():
+    from aijudge.db.cards_repo import get_card_by_id
+    from aijudge.db.rulings_repo import get_rulings_for_card
+
+    def failing_fetch(konami_id):
+        raise requests.ConnectionError("ygoresources unreachable")
+
+    card_id = _seed_amazoness_call(fetch_rulings_fn=failing_fetch)
+
+    card = get_card_by_id(card_id)
+    assert card["rulings_status"] == "failed"
+    assert card["ygoresources_id"] == "13174"
+    assert get_rulings_for_card(card_id) == []
+
+
+def test_seed_card_marks_a_card_without_a_konami_id():
+    from aijudge.db.cards_repo import get_card_by_id
+
+    def card_data_without_konami_id(name, **_kwargs):
+        data = _amazoness_call_card_data(name)
+        data["misc_info"] = [{}]
+        return data
+
+    def must_not_fetch(konami_id):
+        raise AssertionError("no konami_id, nothing to fetch")
+
+    card_id = _seed_amazoness_call(fetch_card_fn=card_data_without_konami_id, fetch_rulings_fn=must_not_fetch)
+
+    card = get_card_by_id(card_id)
+    assert card["rulings_status"] == "no_konami_id"
+    assert card["ygoresources_id"] is None
+
+
+def test_seed_card_still_stores_rulings_when_the_name_index_is_unavailable():
+    from aijudge.db.cards_repo import get_card_by_id
+    from aijudge.db.rulings_repo import get_rulings_for_card
+    from tests.rulings_fixtures import AMAZONESS_CALL_RULING_2017
+
+    def failing_index():
+        raise requests.ConnectionError("ygoresources unreachable")
+
+    card_id = _seed_amazoness_call(
+        fetch_rulings_fn=lambda konami_id: [{"text": AMAZONESS_CALL_RULING_2017, "date": "2017-07-22"}],
+        fetch_card_name_index_fn=failing_index,
+    )
+
+    assert get_card_by_id(card_id)["rulings_status"] == "fetched"
+    [ruling] = get_rulings_for_card(card_id)
+    assert ruling["ruling_text_resolved"] is None
+    assert ruling["referenced_konami_ids"] == [13174, 8963, 5505, 5682]
