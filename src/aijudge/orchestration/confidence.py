@@ -41,6 +41,19 @@ def update_signals(state: SignalState, tool_name: str, result: dict) -> None:
                 state.citation_index[passcode_id] = citation
                 if confirmed_effects:
                     state.structured_effects[passcode_id] = confirmed_effects
+            for ruling in result.get("rulings") or ():
+                ruling_id = f"ruling:{ruling['id']}"
+                ruling_date = ruling.get("ruling_date")
+                date_text = ruling_date.isoformat() if ruling_date else "undated"
+                state.known_ids.add(ruling_id)
+                state.citation_index[ruling_id] = {
+                    "label": f"Official Q&A — {result.get('name', '')} ({date_text})",
+                    "text": ruling.get("display_text", ""),
+                }
+            # Zero rulings is complete data (many cards have no Q&As) and is not
+            # penalized; only a fetch that actually failed at ingestion is a gap.
+            if result.get("rulings_status") == "failed":
+                state.retrieval_gap = True
     elif tool_name == "get_rulings":
         rulings = result.get("rulings", [])
         if not rulings:
@@ -66,19 +79,20 @@ def update_signals(state: SignalState, tool_name: str, result: dict) -> None:
 
 
 def normalize_cited_ids(cited_ids: set[str], state: SignalState) -> set[str]:
-    """A local model sometimes drops the internal id's "card:" prefix in its
-    ||CITES: ...|| trailer while still meaning the exact card lookup_card (or
-    grounded_cards preseeding) already surfaced -- e.g. citing bare "abc123"
-    instead of "card:abc123". Treat that bare id as an alias for its prefixed
-    form, the same already-known source rather than a fabricated one,
-    mirroring the passcode-alias handling in update_signals above."""
+    """A local model sometimes drops the internal id's "card:" or "ruling:"
+    prefix in its ||CITES: ...|| trailer while still meaning the exact card
+    lookup_card (or grounded_cards preseeding) or ruling already surfaced --
+    e.g. citing bare "abc123" instead of "card:abc123", or bare UUID instead
+    of "ruling:<uuid>". Treat that bare id as an alias for its prefixed form,
+    the same already-known source rather than a fabricated one, mirroring the
+    passcode-alias handling in update_signals above."""
     normalized = set()
     for cited_id in cited_ids:
-        prefixed = f"card:{cited_id}"
-        if cited_id not in state.known_ids and prefixed in state.known_ids:
-            normalized.add(prefixed)
-        else:
+        if cited_id in state.known_ids:
             normalized.add(cited_id)
+            continue
+        aliases = [f"{prefix}:{cited_id}" for prefix in ("card", "ruling")]
+        normalized.add(next((alias for alias in aliases if alias in state.known_ids), cited_id))
     return normalized
 
 
