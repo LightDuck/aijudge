@@ -2,6 +2,7 @@ from datetime import date
 
 import pytest
 
+from aijudge.ingestion.ygoresources_client import invert_name_index, parse_referenced_ids, resolve_ruling_text
 from aijudge.orchestration import rulings_context
 from aijudge.orchestration.rulings_context import (
     RULINGS_HEADER,
@@ -12,8 +13,10 @@ from aijudge.orchestration.rulings_context import (
 )
 from tests.rulings_fixtures import (
     AMAZONESS_CALL_RULING_2017,
+    AMAZONESS_CALL_RULING_2025,
     AMAZONESS_CALL_RULING_2026,
     DIGITRON_RULING_2019,
+    NAME_INDEX_SLICE,
 )
 
 AMAZONESS_CALL = {
@@ -31,25 +34,25 @@ AMAZONESS_QUEEN = {
 DIGITRON = {"id": "card-digitron", "name": "Digitron", "ygoresources_id": "13192", "rulings_status": "fetched"}
 
 
-def _ruling(ruling_id, raw_text, ruling_date, referenced_ids, resolved=None):
+_NAMES = invert_name_index(NAME_INDEX_SLICE)
+
+
+def _ruling(ruling_id, raw_text, ruling_date, resolve=True):
     return {
         "id": ruling_id,
         "ruling_text": raw_text,
         "source": "db.ygoresources",
         "ruling_date": ruling_date,
-        "ruling_text_resolved": resolved,
-        "referenced_konami_ids": referenced_ids,
+        "ruling_text_resolved": resolve_ruling_text(raw_text, _NAMES)[0] if resolve else None,
+        "referenced_konami_ids": parse_referenced_ids(raw_text),
     }
 
 
-# 2026 references Amazoness Queen (8963); the 2025-dated stand-in does not.
-CALL_2017 = _ruling("r-2017", AMAZONESS_CALL_RULING_2017, date(2017, 7, 22), [13174, 8963, 5505, 5682],
-                    resolved="Q: Amazoness Call 2017 ruling (resolved).")
-CALL_2026 = _ruling("r-2026", AMAZONESS_CALL_RULING_2026, date(2026, 1, 1), [13174, 8963, 5914],
-                    resolved="Q: Amazoness Call 2026 ruling (resolved).")
-CALL_NO_QUEEN = _ruling("r-2025", "Q: <<6000>> and <<5020>> attack targets.\nA: No, you cannot.", date(2025, 7, 13),
-                        [6000, 5020], resolved="Q: Marshmallon and Patrician of Darkness attack targets.\nA: No, you cannot.")
-DIGITRON_2019 = _ruling("r-dig", DIGITRON_RULING_2019, date(2019, 3, 23), [13489, 13034, 13192, 14436])
+# 2026 and 2017 reference Amazoness Queen (8963); the 2025 ruling does not.
+CALL_2017 = _ruling("r-2017", AMAZONESS_CALL_RULING_2017, date(2017, 7, 22))
+CALL_2026 = _ruling("r-2026", AMAZONESS_CALL_RULING_2026, date(2026, 1, 1))
+CALL_NO_QUEEN = _ruling("r-2025", AMAZONESS_CALL_RULING_2025, date(2025, 7, 13))
+DIGITRON_2019 = _ruling("r-dig", DIGITRON_RULING_2019, date(2019, 3, 23), resolve=False)
 
 
 @pytest.fixture
@@ -74,7 +77,7 @@ def test_newest_first_when_no_other_card_is_in_the_question(stored):
 
     assert _ids(grounding, AMAZONESS_CALL) == ["r-2026", "r-2025", "r-2017"]
     assert grounding.context.startswith(RULINGS_HEADER)
-    assert "- ruling:r-2026 (Amazoness Call, 2026-01-01): Q: Amazoness Call 2026 ruling (resolved)." in grounding.context
+    assert "- ruling:r-2026 (Amazoness Call, 2026-01-01): Q: I activate the" in grounding.context
 
 
 def test_rulings_that_mention_another_card_in_the_question_come_first(stored):
@@ -97,7 +100,7 @@ def test_undated_rulings_sort_last(stored):
 
 
 def test_budget_skips_a_ruling_that_does_not_fit_and_tries_the_next(stored):
-    long_ruling = {**CALL_2026, "ruling_text_resolved": "Q: " + "x" * 400}
+    long_ruling = {**CALL_NO_QUEEN, "ruling_date": date(2026, 1, 1)}  # newest, so tried first
     stored[AMAZONESS_CALL["id"]] = [long_ruling, CALL_2017]
     short_line = rulings_context.render_ruling_line(AMAZONESS_CALL, CALL_2017)
 
@@ -105,7 +108,7 @@ def test_budget_skips_a_ruling_that_does_not_fit_and_tries_the_next(stored):
 
     assert _ids(grounding, AMAZONESS_CALL) == ["r-2017"]
     assert "- Amazoness Call: 1 more ruling not shown (context budget)." in grounding.context
-    assert "x" * 400 not in grounding.context  # never truncated into the block
+    assert long_ruling["ruling_text_resolved"][:60] not in grounding.context  # never truncated into the block
 
 
 def test_unused_share_is_pooled_for_another_cards_skipped_ruling(stored):
