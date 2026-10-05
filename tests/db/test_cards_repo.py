@@ -558,3 +558,61 @@ def test_run_migrations_zero_pads_existing_short_passcodes():
     run_migrations()
 
     assert get_card_by_name("Cynet Conflict")["ygoprodeck_id"] == "07403341"
+
+
+def _insert_digitron(**overrides):
+    from aijudge.db.cards_repo import insert_card
+
+    kwargs = dict(
+        name="Digitron",
+        card_text="A Cyberse born from the depths of cyberspace.",
+        card_type="Normal Monster",
+        race="Cyberse",
+        source="ygoprodeck",
+        fetched_at=date(2026, 10, 5),
+        ygoprodeck_id="32295838",
+        deterministic_parse_eligible=True,
+    )
+    kwargs.update(overrides)
+    return insert_card(**kwargs)
+
+
+def test_card_dict_carries_rulings_status_defaulting_to_none():
+    from aijudge.db.cards_repo import get_card_by_id
+
+    card_id = _insert_digitron()
+    assert get_card_by_id(card_id)["rulings_status"] is None
+
+
+def test_insert_card_stores_rulings_status_and_ygoresources_id():
+    from aijudge.db.cards_repo import get_card_by_name
+
+    _insert_digitron(rulings_status="fetched", ygoresources_id="13192")
+    card = get_card_by_name("Digitron")
+    assert card["rulings_status"] == "fetched"
+    assert card["ygoresources_id"] == "13192"
+
+
+def test_rulings_status_rejects_an_unknown_value():
+    import psycopg
+
+    with pytest.raises(psycopg.errors.CheckViolation):
+        _insert_digitron(rulings_status="maybe")
+
+
+def test_set_card_rulings_source_updates_status_and_keeps_id_when_none_given():
+    from aijudge.db.cards_repo import get_card_by_id, set_card_rulings_source
+
+    card_id = _insert_digitron(ygoresources_id="13192")
+    set_card_rulings_source(card_id, rulings_status="failed")
+
+    card = get_card_by_id(card_id)
+    assert card["rulings_status"] == "failed"
+    assert card["ygoresources_id"] == "13192"
+
+
+def test_list_cards_returns_every_card():
+    from aijudge.db.cards_repo import list_cards
+
+    _insert_digitron()
+    assert [card["name"] for card in list_cards()] == ["Digitron"]
