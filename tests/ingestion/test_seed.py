@@ -28,11 +28,11 @@ def test_seed_card_stores_card_ruling_and_confirms_a_high_confidence_effect():
 
     def fake_fetch_card(name, http_get=None):
         return {
-            "id": 47355498,
+            "id": 24224830,
             "name": name,
             "type": "Quick-Play Spell",
             "desc": desc,
-            "misc_info": [{"konami_id": 11287}],
+            "misc_info": [{"konami_id": 13619}],
             "card_sets": [{"set_name": "Some Set"}],
         }
 
@@ -53,7 +53,7 @@ def test_seed_card_stores_card_ruling_and_confirms_a_high_confidence_effect():
     card = get_card_by_name("Called by the Grave")
     assert card is not None
     assert card["id"] == card_id
-    assert card["ygoprodeck_id"] == "47355498"
+    assert card["ygoprodeck_id"] == "24224830"
 
     rulings = get_rulings_for_card(card_id)
     assert len(rulings) == 1
@@ -119,11 +119,11 @@ def test_seed_card_continues_when_fetching_rulings_fails():
 
     def fake_fetch_card(name, http_get=None):
         return {
-            "id": 47355498,
+            "id": 24224830,
             "name": name,
             "type": "Quick-Play Spell",
             "desc": desc,
-            "misc_info": [{"konami_id": 11287}],
+            "misc_info": [{"konami_id": 13619}],
             "card_sets": [{"set_name": "Some Set"}],
         }
 
