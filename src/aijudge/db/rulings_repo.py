@@ -39,6 +39,37 @@ def insert_ruling(
         return str(row[0])
 
 
+def insert_rulings(card_id: str, rulings: Sequence[dict]) -> list[str]:
+    """Insert all of a card's rulings in one transaction: either every row
+    lands or none does, so a failure never leaves a card partially stored.
+    Each dict has ruling_text, source, ruling_date, ruling_text_resolved and
+    referenced_konami_ids."""
+    with get_connection() as conn:
+        ids = [
+            str(
+                conn.execute(
+                    """
+                    INSERT INTO rulings
+                        (card_id, ruling_text, source, ruling_date, ruling_text_resolved, referenced_konami_ids)
+                    VALUES (%s, %s, %s, %s, %s, %s::integer[])
+                    RETURNING id
+                    """,
+                    (
+                        card_id,
+                        ruling["ruling_text"],
+                        ruling["source"],
+                        ruling["ruling_date"],
+                        ruling["ruling_text_resolved"],
+                        list(ruling["referenced_konami_ids"]),
+                    ),
+                ).fetchone()[0]
+            )
+            for ruling in rulings
+        ]
+        conn.commit()
+        return ids
+
+
 def get_rulings_for_card(card_id: str) -> list[dict]:
     with get_connection() as conn:
         rows = conn.execute(f"{_RULING_SELECT} FROM rulings WHERE card_id = %s", (card_id,)).fetchall()
@@ -51,6 +82,17 @@ def list_unresolved_rulings() -> list[dict]:
             f"{_RULING_SELECT}, card_id FROM rulings WHERE ruling_text_resolved IS NULL ORDER BY id"
         ).fetchall()
     return [{**_row_to_ruling(r), "card_id": str(r[6])} for r in rows]
+
+
+def update_ruling_referenced_ids(ruling_id: str, referenced_konami_ids: Sequence[int]) -> None:
+    """Set only a ruling's referenced ids, leaving ruling_text_resolved as it is
+    (NULL), so a later run with the name index still resolves it."""
+    with get_connection() as conn:
+        conn.execute(
+            "UPDATE rulings SET referenced_konami_ids = %s::integer[] WHERE id = %s",
+            (list(referenced_konami_ids), ruling_id),
+        )
+        conn.commit()
 
 
 def update_ruling_resolution(

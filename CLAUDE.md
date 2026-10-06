@@ -165,8 +165,24 @@ spec:
     older rows. It accepts the passcode as a `str` or the raw `int` (converted with `str()` first), so no caller has
     to convert YGOPRODeck's int before passing it in. The column stays `TEXT`: an integer column would lose the zero
     for good. It's `NOT NULL` (always available from the source API); `ygoresources_id` is nullable
-    since that API's shape is still unverified. `get_card_by_ygoprodeck_id` / `get_card_by_ygoresources_id` exist
-    to reconcile the two id spaces once `ygoresources_id` starts being populated.
+    until ingestion stores it. `get_card_by_ygoprodeck_id` / `get_card_by_ygoresources_id` exist
+    to reconcile the two id spaces. `ygoresources_id` now holds the card's Konami id (the id db.ygoresources keys
+    cards and rulings on), stored by `seed_card` and `rulings_backfill`.
+  - `card.rulings_status` (nullable TEXT, CHECK-constrained) records the outcome of ingestion's ygoresources rulings
+    fetch: `'fetched'`, `'failed'` (the fetch raised -- previously indistinguishable from a card with no rulings),
+    `'no_konami_id'` (no Konami id to fetch with), or `NULL` for rows created before the column existed.
+    `cards_repo.insert_card(..., rulings_status=)` writes it, every card getter returns it,
+    `set_card_rulings_source(card_id, *, rulings_status, ygoresources_id=None)` updates it (a `None`
+    `ygoresources_id` keeps the stored one), and `list_cards()` returns every card ordered by name.
+  - `rulings.ruling_text_resolved` (nullable TEXT, `NULL` until resolved) and `rulings.referenced_konami_ids`
+    (`INTEGER[] NOT NULL DEFAULT '{}'`) hold the readable form of a ruling: ygoresources writes other cards as
+    `<<konami_id>>` placeholders in `ruling_text`, which is **never modified** after insert. `insert_ruling()` takes
+    both new columns; `insert_rulings(card_id, rulings)` inserts a card's whole list of rulings in **one
+    transaction** (all rows land or none do -- what `seed_card` and the backfill use, so a failure never leaves a
+    card partially stored); `get_rulings_for_card()` returns them alongside `id`/`ruling_text`/`source`/
+    `ruling_date`; `list_unresolved_rulings()` (rows whose `ruling_text_resolved IS NULL`, each with its
+    `card_id`), `update_ruling_resolution()` and `update_ruling_referenced_ids()` (ids only, text left `NULL`)
+    serve the backfill.
   - `card.race` is nullable TEXT, CHECK-constrained to the closed 33-value enum YGOPRODeck's API itself accepts
     (7 Spell/Trap subtypes — `Normal`/`Field`/`Equip`/`Continuous`/`Quick-Play`/`Ritual`/`Counter` — plus the 26
     monster Types — `Dragon`/`Zombie`/`Spellcaster`/etc.). It mirrors YGOPRODeck's `race` field verbatim, which is
@@ -223,7 +239,7 @@ spec:
     than guessing; both feed the `damage_step_category`/`usage_limit_text` columns in `db/`.
   - `review_agent.py` — `review_parsed_effect()` sends the raw text + parsed fields to an `LLMClient`, expects a
     bare `0.0`–`1.0` confidence string back, and returns `auto_confirmed = confidence >= threshold` (default
-    `DEFAULT_CONFIDENCE_THRESHOLD = 0.9`). Takes an optional `damage_step_category` parameter, included in the
+    `DEFAULT_CONFIDENCE_THRESHOLD = 0.75`). Takes an optional `damage_step_category` parameter, included in the
     review prompt alongside the other parsed fields when present.
 
 - **`embeddings/` and `llm/`** — thin `Protocol` interfaces (`EmbeddingClient.embed`, `LLMClient.complete`).
@@ -245,7 +261,10 @@ spec:
   and strips any `<think>...</think>` block defensively, since `run_loop`'s protocol parses an exact
   `TOOL:`/`FINAL:` text format that a reasoning preamble would break. `AnthropicLLMClient` doesn't need this:
   thinking blocks arrive as separate `content` entries from the Messages API rather than inline in the text, so
-  there's nothing to strip.
+  there's nothing to strip. `OllamaLLMClient` also sends an explicit `options.num_ctx` on every request (constructor
+  `num_ctx`, else the `OLLAMA_NUM_CTX` env var, default `DEFAULT_OLLAMA_NUM_CTX = 8192`): without it Ollama uses a
+  small default window and silently drops the start of an overlong prompt, which with KNOWN FACTS plus the RULINGS
+  block would cut off the system prompt's instructions.
 
 - **`call_log.py`** — cross-cutting LLM call logging, kept separate from `logging`/stdlib debug output so calls
   and their failure reasons stay queryable after the fact. `CallLogger` appends one JSON object per line to a
@@ -284,23 +303,34 @@ spec:
     behind the branch's core fix: previously the LLM could optionally skip `lookup_card` and answer from memory,
     ungrounded and uncited, scoring a perfect confidence of `1.0`; now the final turn is deterministically grounded
     (via `preflight.py`/`card_effect_pipeline.py`'s KNOWN FACTS injected into `clarification_context`) or has no
-    tool available to fabricate a citation with in the first place.
+    tool available to fabricate a citation with in the first place. It also explains the RULINGS block (when
+    present): a ruling whose situation matches the question is preferred over the model's own reasoning and cited
+    as `ruling:<id>`, and one whose situation differs is not applied; the `||CITES: ...||` format lists
+    `card:<id>` or `ruling:<id>` ids.
   - `tools.py` — `build_tool_dispatch()` wires the DB/embedding-backed tool implementations
     (`lookup_card`, `get_rulings`, `search_rulebook`, `resolve_chain`) into the `{name: callable}` dict the loop
     dispatches against. `resolve_chain` delegates to `rules_engine.resolve.resolve_chain`, which raises
     `UnsupportedScenarioError` for step kinds it doesn't recognize.
   - `confidence.py` — `compute_confidence()`: starts at `1.0`, returns `0.0` outright if the answer cites an id
     no tool result actually surfaced (`known_ids`), otherwise subtracts `RETRIEVAL_GAP_PENALTY` (0.3) if any
-    `get_rulings`/`search_rulebook` call came back empty and `MISSING_STRUCTURED_EFFECT_PENALTY` (0.2) if a
+    `get_rulings`/`search_rulebook` call came back empty (or, for a grounded card, its `rulings_status` is
+    `'failed'` -- see below) and `MISSING_STRUCTURED_EFFECT_PENALTY` (0.2) if a
     looked-up card had no `confirmed_effects`. `update_signals()` accumulates these signals per tool call, and on
     a `lookup_card` hit with non-empty `confirmed_effects` also populates `SignalState.structured_effects` --
     keyed under both the internal id and, when present, the passcode alias (same dual-keying as
     `citation_index`) -- with the card's full `confirmed_effects` list (the whole
-    activation_condition/cost/targeting/effect breakdown, not just `effect` text). `verify.py`'s grounding gate
-    (below) reads this directly rather than re-fetching.
+    activation_condition/cost/targeting/effect breakdown, not just `effect` text). For a grounded card carrying
+    `"rulings"` (see `rulings_context.py`), `update_signals` also registers each shown ruling as `ruling:<id>` in
+    `known_ids` and `citation_index` (label `Official Q&A — <card name> (<date or undated>)`, text the ruling's
+    `display_text`), so the answer may cite it, records its owning card in `SignalState.ruling_card_ids`
+    (`ruling:<id>` -> `card:<id>`, used by `loop.py`'s verification gate), and sets `retrieval_gap` only when the
+    card's `rulings_status` is `'failed'`. Zero stored rulings, `'no_konami_id'` and `NULL` carry no penalty: a
+    card with no Q&As is complete data. `normalize_cited_ids` treats a bare id as an alias for whichever of
+    `card:<id>`/`ruling:<id>` is known, so a sloppy bare-UUID ruling citation doesn't score `0.0`. `verify.py`'s
+    grounding gate (below) reads this directly rather than re-fetching.
   - `loop.py` — `run_loop()`: repeatedly calls the LLM, dispatches `ToolCall`s and folds results back into the
     conversation, and on a `FinalAnswer` scores it via `compute_confidence()` against `threshold` (default
-    `DEFAULT_CONFIDENCE_THRESHOLD = 0.9`) — below threshold escalates instead of answering. A `Refusal` short-
+    `DEFAULT_CONFIDENCE_THRESHOLD = 0.75`, defined in `confidence.py`) — below threshold escalates instead of answering. A `Refusal` short-
     circuits immediately to `LoopResult(kind="off_topic", ...)`, bypassing confidence scoring entirely -- this is
     the enforcement half of the scope pin: without it, an off-topic question the LLM answers anyway (no tool
     calls, no citations) would score a perfect `1.0` and sail through as a normal answer, since
@@ -310,7 +340,10 @@ spec:
     `resolve_chain`, ends the loop with `kind="not_supported"` rather than looping forever or guessing. Once a
     `FinalAnswer` clears the confidence gate, a second, independent gate runs: `verify_structured_grounding()`
     (from `verify.py`) checks, via a second LLM call, whether the answer's prose actually matches the stored
-    effect breakdown of any structured-effect card it cites. A mismatch is fed back into `conversation` as a
+    effect breakdown of any structured-effect card it cites. A cited `ruling:<id>` counts as citing its owning
+    card here (the cited ids are expanded via `state.ruling_card_ids` for verification and for the
+    dropped-citation check below, never for confidence scoring), so an answer citing only a card's ruling can't
+    skip that card's check. A mismatch is fed back into `conversation` as a
     `VERIFICATION_FAILED` message -- naming each mismatched card by name (via `state.citation_index`, not its raw
     citation id) with its stored breakdown, plus the prior draft text (`parsed.text`) so the model can see what it
     got wrong -- and the loop retries, bounded by `MAX_VERIFICATION_RETRIES = 2`, a separate budget from
@@ -391,18 +424,40 @@ spec:
     re-fetched: rather than ever return `status="resolved"` with `card=None` (which would later crash
     `build_known_facts_context`/`build_grounded_result` with an unguarded `TypeError`), it downgrades that case to
     `"not_found"`, which every caller already handles.
+  - `rulings_context.py` — deterministic grounding of a question's stored official rulings, no LLM or network.
+    `build_rulings_grounding(cards, *, budget_chars=DEFAULT_RULINGS_BUDGET_CHARS)` (6,000 chars) first dedupes
+    `cards` by id (first occurrence kept, via `dedupe_cards_by_id`; a card listed twice used to lose all its
+    rulings to the cross-card text dedupe), reads each card's rulings via `get_rulings_for_card`, drops duplicate
+    texts across cards, ranks them (rulings mentioning another card in the same question via
+    `referenced_konami_ids` first, then newest first, undated last) and renders one `RULINGS (...)` block: each
+    ruling as `- ruling:<id> (<card>, <date>): <resolved text>` (an unresolved ruling falls back to
+    `unresolved_display_text`, which renders `[card #<id>]`, never a guessed name or bare `<<id>>`; the header
+    tells the model `[card #N]` marks an unresolved card and not to guess which). The budget is split evenly per
+    card with unused share pooled for the rest, and a ruling is included whole or not at all -- never truncated,
+    since a cut could drop the "A:" half; skipped ones become a `N more rulings not shown (context budget)` line.
+    A card with zero stored rulings gets one status line: `rulings could not be retrieved -- do not guess what
+    they say` (`rulings_status == 'failed'`), `rulings unavailable for this card (no ygoresources id) -- do not
+    guess what they say` (`'no_konami_id'`; still no confidence penalty), or `no official rulings on record`
+    (`'fetched'`/`NULL`). A card whose rulings were all deduped away under another card gets none of these.
+    Returns `RulingsGrounding(context, rulings_by_card_id)`.
+    `attach_rulings(grounded_cards, cards, grounding)` adds `"rulings"`/`"rulings_status"` to each
+    `build_grounded_result` dict (whose one-argument signature is unchanged); `join_context()` joins non-empty
+    context parts.
   - `card_effect_pipeline.py` — composes the two modules above into the mandatory fallback used whenever
     `preflight.find_matched_cards` finds nothing locally (or a multi-match disambiguation answer doesn't resolve
-    to any candidate -- see `cli.py`/`api/` below). `build_pipeline_context(resolutions)` renders one
-    `build_known_facts_context` block per resolved `CardResolution` plus, when any name failed to resolve, a
-    "LOOKUP FAILURES (deterministic -- report these to the user, do not guess their effects)" block listing each
-    by name and status -- so the LLM is told explicitly to report a lookup miss rather than fabricate an answer
-    for it. `resolve_card_effect_question(question, *, llm_client, online_ingest_enabled=True,
-    on_ingest_start=None)` ties it together into a `PipelineResolution(supported, context="", grounded_cards=[])`:
-    `supported=False` (with no context/grounded_cards) if `extraction.py` finds no card names at all, otherwise
-    `supported=True` with the rendered context and a `build_grounded_result`-shaped entry per resolved card, ready
-    to hand straight to `run_loop(..., clarification_context=resolution.context,
-    grounded_cards=resolution.grounded_cards)`.
+    to any candidate -- see `cli.py`/`api/` below). `build_pipeline_context(resolutions, *, rulings_context="")`
+    renders one `build_known_facts_context` block per resolved `CardResolution`, then the RULINGS block, plus,
+    when any name failed to resolve, a "LOOKUP FAILURES (deterministic -- report these to the user, do not guess
+    their effects)" block listing each by name and status -- so the LLM is told explicitly to report a lookup
+    miss rather than fabricate an answer for it. `resolve_card_effect_question(question, *, llm_client,
+    online_ingest_enabled=True, on_ingest_start=None)` ties it together into a `PipelineResolution(supported,
+    context="", grounded_cards=[])`: `supported=False` (with no context/grounded_cards) if `extraction.py` finds
+    no card names at all, otherwise `supported=True` with the rendered context and a `build_grounded_result`-shaped
+    entry per resolved card, ready to hand straight to `run_loop(..., clarification_context=resolution.context,
+    grounded_cards=resolution.grounded_cards)`. Two extracted names resolving to the same card id (extraction
+    isn't deduped) ground it once -- one KNOWN FACTS block, one grounded card; LOOKUP FAILURES are unaffected. It
+    builds the rulings grounding once for all resolved cards (`build_rulings_grounding_fn`, injectable) and
+    attaches it to `grounded_cards`.
 
 - **`cli.py`** — `run_cli()`: a REPL (`input_fn`/`print_fn`, plus `find_matched_cards_fn`/`build_known_facts_context_fn`/
   `build_grounded_result_fn`/`resolve_card_effect_question_fn`, defaulting to `preflight.find_matched_cards`/
@@ -418,7 +473,10 @@ spec:
   `resolve_card_effect_question_fn` pipeline (`card_effect_pipeline.py`, below) instead of proceeding ungrounded;
   an unsupported pipeline result (no card names extracted at all) prints `NOT_SUPPORTED_MESSAGE` and skips the
   question entirely rather than calling `run_loop`. Either way, the resulting `KNOWN FACTS`
-  context/`grounded_cards` are folded in ahead of the clarification context, then `run_loop` is called with
+  context/`grounded_cards` are folded in ahead of the clarification context -- for a card matched locally by
+  preflight (single match or resolved disambiguation) its rulings grounding is built once per question
+  (`build_rulings_grounding_fn`, injectable) and joined into that context, while the pipeline fallback grounds its
+  own cards' rulings -- then `run_loop` is called with
   `tools={}` and `system_prompt=protocol.build_answering_system_prompt()` -- never a real tool dispatch --
   and the result is printed. Wired to a real entrypoint by both `__main__.py` (Ollama, default) and
   `entrypoint.py` (OpenRouter/OpenAI, alternate).
@@ -434,7 +492,9 @@ spec:
   `KNOWN FACTS` (falling back to `resolve_card_effect_question_fn` when there were 0 local matches) and runs
   `run_loop` directly; `POST /questions/answer` takes the client's echoed-back question/items/answers, rebuilds
   `ClarificationItem`s, resolves the disambiguation answer (if any) via the module-private
-  `_resolve_preflight_card()` helper, and runs `run_loop` with the resulting context. Preflight mirrors `cli.py`'s
+  `_resolve_preflight_card()` helper, and runs `run_loop` with the resulting context. Both build a locally matched card's rulings grounding once per
+  question (`build_rulings_grounding_fn`, injectable, like the CLI) and fold it into the context and
+  `grounded_cards`; a ruling surfaces to the client as a `{"label", "text"}` citation. Preflight mirrors `cli.py`'s
   logic (`find_matched_cards`, `build_known_facts_context`, both from `orchestration/preflight.py`, injectable the
   same way the other functions are) but is re-run from scratch on *every* call, since the API has no in-process
   session to carry a resolved card across the two endpoints the way the CLI's single request-handling loop does: a
@@ -461,10 +521,20 @@ spec:
   `resolve_card_effect_question_fn` fallback and the `tools`-parameter removal, both from this branch).
 
 - **`ingestion/`** — `ygoprodeck_client.fetch_card()` and `ygoresources_client.fetch_rulings()` pull only the
-  fields this project uses (not a full API mirror). `seed.py` ties it together: `seed_card()` fetches card +
-  rulings, calls `effect_parser.clause_splitter.resolve_effect_clauses()` to split the card text into individual
-  effect clauses (gated by two independent safety checks: a deterministic verbatim-reconstruction check and an
-  LLM-scored split-quality check; a failed split falls back to treating the whole card as one effect), runs each
+  fields this project uses (not a full API mirror). `ygoresources_client` also resolves ruling placeholders:
+  `parse_referenced_ids()`, `cached_card_name_index()` (one download of the `/data/idx/card/name/en` index per
+  process, inverted to Konami id -> names), and `resolve_ruling_text()` (a renamed card with several names is looked
+  up for its current one; an id that can't be named becomes `[card #<id>]`, never a guess). `seed.py` ties it
+  together: `seed_card()` fetches card + rulings, records the fetch outcome in `card.rulings_status` (a raised fetch
+  is `'failed'`, stored with no rulings, not swallowed) and the Konami id in `ygoresources_id`, stores all its
+  rulings with their resolved text and referenced ids in one `rulings_repo.insert_rulings()` transaction (an
+  unavailable name index stores rulings unresolved; if the insert itself raises, it's logged, nothing lands, and
+  the card -- still ingested -- is set to `'failed'` so the backfill refetches it). Seed and backfill both build
+  rows with `ygoresources_client.ruling_row()`, whose `parse_ruling_date()` stores a ruling with a missing or
+  invalid date (e.g. `"2025-13-45"`) undated rather than guessing or crashing. It then calls
+  `effect_parser.clause_splitter.resolve_effect_clauses()` to split the card text into individual effect clauses
+  (gated by two independent safety checks: a deterministic verbatim-reconstruction check and an LLM-scored
+  split-quality check; a failed split falls back to treating the whole card as one effect), runs each
   resulting effect through the parser and review agent, inserts one `card_effects_structured` row per effect,
   and auto-confirms if the review score clears threshold. `run_seed()` iterates `HAND_PICKED_CARDS` — despite the
   name, this list is now a random sample (Digitron, Shafu the Wheeled Mayakashi, Cyber Angel Benten, Masked HERO
@@ -494,6 +564,17 @@ spec:
   every category code first and raises `UnknownBulletCategoryError` without writing anything on a mismatch.
   Re-running is safe (upsert on passcode, `note` never overwritten), and is how fixture corrections are applied.
   Run `run_migrations()` first.
+  - `rulings_backfill.py` — `backfill_rulings()` is the one-off, re-runnable catch-up for cards ingested before
+    rulings grounding: it stores each card's Konami id (a card YGOPRODeck gives none is marked `'no_konami_id'`
+    and skipped on later runs), re-fetches rulings for `'failed'`/`NULL` cards with none stored (a past swallowed
+    failure) in one `insert_rulings()` transaction, and resolves every ruling's placeholders, returning a
+    `BackfillReport(konami_ids_stored, rulings_refetched, rulings_resolved, failures)`. Each card is processed
+    inside its own try/except: an error is logged, the card's name goes into `failures`, its status is left as it
+    was (`'fetched'` is only set after its insert commits), and the next card is processed. When the name index
+    can't be fetched, each unresolved ruling still gets its `referenced_konami_ids` (network-free, via
+    `update_ruling_referenced_ids`) while `ruling_text_resolved` stays `NULL` for a later run. It never deletes a
+    ruling or rewrites raw `ruling_text`. Run `run_migrations()` first, then
+    `python -c "from aijudge.ingestion.rulings_backfill import backfill_rulings; print(backfill_rulings())"`.
 
 ## Not yet built
 

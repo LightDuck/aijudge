@@ -810,3 +810,43 @@ def test_seed_card_still_stores_rulings_when_the_name_index_is_unavailable():
     [ruling] = get_rulings_for_card(card_id)
     assert ruling["ruling_text_resolved"] is None
     assert ruling["referenced_konami_ids"] == [13174, 8963, 5505, 5682]
+
+
+def test_seed_card_stores_a_ruling_with_an_invalid_date_as_undated():
+    from aijudge.db.rulings_repo import get_rulings_for_card
+    from tests.rulings_fixtures import AMAZONESS_CALL_RULING_2017
+
+    card_id = _seed_amazoness_call(
+        fetch_rulings_fn=lambda konami_id: [{"text": AMAZONESS_CALL_RULING_2017, "date": "2025-13-45"}],
+    )
+
+    [ruling] = get_rulings_for_card(card_id)
+    assert ruling["ruling_text"] == AMAZONESS_CALL_RULING_2017
+    assert ruling["ruling_date"] is None
+
+
+def test_seed_card_marks_rulings_failed_when_storing_them_fails(monkeypatch):
+    from aijudge.db import rulings_repo
+    from aijudge.db.cards_repo import get_card_by_id
+    from aijudge.db.rulings_repo import get_rulings_for_card
+    from aijudge.ingestion import seed
+    from tests.rulings_fixtures import AMAZONESS_CALL_RULING_2017, AMAZONESS_CALL_RULING_2026
+
+    def insert_with_a_bad_second_row(card_id, rulings):
+        # The real insert, with the second row made invalid so the DB rejects it.
+        rows = [rulings[0], {**rulings[1], "referenced_konami_ids": ["not-an-int"]}]
+        return rulings_repo.insert_rulings(card_id, rows)
+
+    monkeypatch.setattr(seed, "insert_rulings", insert_with_a_bad_second_row)
+
+    card_id = _seed_amazoness_call(
+        fetch_rulings_fn=lambda konami_id: [
+            {"text": AMAZONESS_CALL_RULING_2017, "date": "2017-07-22"},
+            {"text": AMAZONESS_CALL_RULING_2026, "date": None},
+        ],
+    )
+
+    card = get_card_by_id(card_id)
+    assert card["rulings_status"] == "failed"
+    assert card["ygoresources_id"] == "13174"
+    assert get_rulings_for_card(card_id) == []

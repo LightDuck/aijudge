@@ -19,6 +19,7 @@ from aijudge.orchestration.clarify import (
     format_clarification_context,
     parse_clarification_response,
 )
+from aijudge.orchestration import rulings_context
 from aijudge.orchestration.loop import NOT_SUPPORTED_MESSAGE, LoopResult, run_loop
 from aijudge.orchestration.preflight import (
     build_grounded_result,
@@ -27,6 +28,7 @@ from aijudge.orchestration.preflight import (
     find_mentioned_card_names,
 )
 from aijudge.orchestration.protocol import build_answering_system_prompt, build_system_prompt
+from aijudge.orchestration.rulings_context import RulingsGrounding, attach_rulings, join_context
 
 from .schemas import AnswerRequest, NeedsClarificationResponse, QuestionRequest, ResultResponse
 
@@ -104,6 +106,7 @@ def create_app(
     build_known_facts_context_fn: Callable[[dict], str] | None = None,
     build_grounded_result_fn: Callable[[dict], dict] | None = None,
     resolve_card_effect_question_fn: Callable[..., PipelineResolution] | None = None,
+    build_rulings_grounding_fn: Callable[[list[dict]], RulingsGrounding] | None = None,
     online_ingest_enabled: bool = True,
     call_logger: CallLogger | None = None,
 ) -> FastAPI:
@@ -120,6 +123,10 @@ def create_app(
         if resolve_card_effect_question_fn is not None
         else resolve_card_effect_question
     )
+
+    def _ground_rulings(context: str, grounded_cards: list[dict], card: dict) -> tuple[str, list[dict]]:
+        grounding = (build_rulings_grounding_fn or rulings_context.build_rulings_grounding)([card])
+        return join_context(context, grounding.context), attach_rulings(grounded_cards, [card], grounding)
 
     def _backend_unavailable_handler(request: Request, exc: Exception) -> JSONResponse:
         logger.exception("backend connection error", exc_info=exc)
@@ -188,6 +195,9 @@ def create_app(
             preflight_context = resolution.context
             grounded_cards = resolution.grounded_cards
 
+        if len(matches) == 1:
+            preflight_context, grounded_cards = _ground_rulings(preflight_context, grounded_cards, matches[0])
+
         result = run_loop(
             question,
             llm_client=llm_client,
@@ -228,6 +238,9 @@ def create_app(
                 return _result_response(LoopResult(kind="not_supported", text=NOT_SUPPORTED_MESSAGE))
             preflight_context = resolution.context
             grounded_cards = resolution.grounded_cards
+
+        if card is not None:
+            preflight_context, grounded_cards = _ground_rulings(preflight_context, grounded_cards, card)
 
         context = format_clarification_context(items, body.answers)
         if preflight_context:

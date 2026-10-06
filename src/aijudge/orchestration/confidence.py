@@ -10,6 +10,9 @@ class SignalState:
     known_ids: set[str] = field(default_factory=set)
     citation_index: dict[str, dict] = field(default_factory=dict)
     structured_effects: dict[str, list[dict]] = field(default_factory=dict)
+    # ruling:<id> -> card:<id> of the card it was grounded under, so a ruling
+    # citation still gets that card's structured-grounding verification.
+    ruling_card_ids: dict[str, str] = field(default_factory=dict)
     missing_structured_effect: bool = False
     retrieval_gap: bool = False
 
@@ -46,6 +49,7 @@ def update_signals(state: SignalState, tool_name: str, result: dict) -> None:
                 ruling_date = ruling.get("ruling_date")
                 date_text = ruling_date.isoformat() if ruling_date else "undated"
                 state.known_ids.add(ruling_id)
+                state.ruling_card_ids[ruling_id] = card_id
                 state.citation_index[ruling_id] = {
                     "label": f"Official Q&A — {result.get('name', '')} ({date_text})",
                     "text": ruling.get("display_text", ""),

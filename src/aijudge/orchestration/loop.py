@@ -149,8 +149,11 @@ def run_loop(
             )
             return LoopResult(kind="escalate", text=ESCALATE_MESSAGE)
 
-        verification = verify_structured_grounding(parsed.text, cited_ids, state, llm_client)
-        if verification.ok and flagged_card_ids and not (flagged_card_ids & cited_ids):
+        # A ruling citation stands in for its card here: citing only a card's
+        # ruling must not skip that card's structured-grounding check.
+        verified_ids = cited_ids | {state.ruling_card_ids[c] for c in cited_ids if c in state.ruling_card_ids}
+        verification = verify_structured_grounding(parsed.text, verified_ids, state, llm_client)
+        if verification.ok and flagged_card_ids and not (flagged_card_ids & verified_ids):
             # The prior turn's answer failed verification for these card(s);
             # this redraft cites none of them, so verify_structured_grounding
             # correctly found nothing to check -- but that's exactly the

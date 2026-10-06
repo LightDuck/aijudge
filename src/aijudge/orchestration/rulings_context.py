@@ -16,7 +16,8 @@ DEFAULT_RULINGS_BUDGET_CHARS = 6000
 
 RULINGS_HEADER = (
     "RULINGS (official Q&A from db.ygoresources -- do not contradict. A ruling applies only when the "
-    "question's situation matches it. Cite each ruling you rely on as ruling:<id>.):"
+    "question's situation matches it. [card #N] marks a card whose name couldn't be resolved -- do not guess "
+    "which card it is. Cite each ruling you rely on as ruling:<id>.):"
 )
 
 
@@ -28,6 +29,17 @@ class RulingsGrounding:
 
 def join_context(*parts: str) -> str:
     return "\n\n".join(part for part in parts if part)
+
+
+def dedupe_cards_by_id(cards: list[dict]) -> list[dict]:
+    """`cards` with repeats of an already-seen id dropped, first occurrence order kept."""
+    seen: set[str] = set()
+    unique = []
+    for card in cards:
+        if card["id"] not in seen:
+            seen.add(card["id"])
+            unique.append(card)
+    return unique
 
 
 def _display_text(ruling: dict) -> str:
@@ -58,6 +70,8 @@ def _rank_key(ruling: dict, other_konami_ids: set[int]) -> tuple:
 def build_rulings_grounding(
     cards: list[dict], *, budget_chars: int = DEFAULT_RULINGS_BUDGET_CHARS
 ) -> RulingsGrounding:
+    # A card listed twice would otherwise have its rulings deduped away under its own first copy.
+    cards = dedupe_cards_by_id(cards)
     if not cards:
         return RulingsGrounding()
 
@@ -113,6 +127,11 @@ def build_rulings_grounding(
         if stored_counts[card["id"]] == 0:
             if card.get("rulings_status") == "failed":
                 lines.append(f"- {card['name']}: rulings could not be retrieved -- do not guess what they say.")
+            elif card.get("rulings_status") == "no_konami_id":
+                lines.append(
+                    f"- {card['name']}: rulings unavailable for this card (no ygoresources id) "
+                    "-- do not guess what they say."
+                )
             else:
                 lines.append(f"- {card['name']}: no official rulings on record.")
     return RulingsGrounding(context="\n".join(lines), rulings_by_card_id=rulings_by_card_id)
