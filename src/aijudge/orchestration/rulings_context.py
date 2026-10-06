@@ -16,7 +16,8 @@ DEFAULT_RULINGS_BUDGET_CHARS = 6000
 
 RULINGS_HEADER = (
     "RULINGS (official Q&A from db.ygoresources -- do not contradict. A ruling applies only when the "
-    "question's situation matches it. Cite each ruling you rely on as ruling:<id>.):"
+    "question's situation matches it. [card #N] marks a card whose name couldn't be resolved -- do not guess "
+    "which card it is. Cite each ruling you rely on as ruling:<id>.):"
 )
 
 

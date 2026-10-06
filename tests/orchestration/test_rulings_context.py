@@ -186,6 +186,10 @@ def test_a_pre_backfill_card_renders_unknown_card_markers_without_crashing(store
     assert ruling["display_text"].startswith("Q: I Link Summon a [card #13489]")
 
 
+def test_the_header_explains_unresolved_card_markers():
+    assert "[card #N] marks a card whose name couldn't be resolved -- do not guess which card it is." in RULINGS_HEADER
+
+
 def test_attach_rulings_adds_rulings_and_status_to_each_grounded_card(stored):
     stored[AMAZONESS_CALL["id"]] = [CALL_2017]
     grounding = build_rulings_grounding([AMAZONESS_CALL])
