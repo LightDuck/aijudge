@@ -154,6 +154,100 @@ def _insert_legacy_digitron():
     )
 
 
+def test_backfill_refetches_a_failed_card_that_already_has_its_konami_id():
+    from aijudge.db.cards_repo import get_card_by_id, insert_card
+    from aijudge.db.rulings_repo import get_rulings_for_card
+    from aijudge.ingestion.rulings_backfill import backfill_rulings
+    from tests.rulings_fixtures import DIGITRON_RULING_2019
+
+    card_id = insert_card(
+        name="Digitron",
+        card_text="A Cyberse born from the depths of cyberspace.",
+        card_type="Normal Monster",
+        race="Cyberse",
+        source="ygoprodeck",
+        fetched_at=date(2026, 10, 5),
+        ygoprodeck_id="32295838",
+        deterministic_parse_eligible=True,
+        ygoresources_id="13192",
+        rulings_status="failed",
+    )
+    ygoprodeck_calls = []
+    fetched_konami_ids = []
+
+    def fetch_rulings(konami_id):
+        fetched_konami_ids.append(konami_id)
+        return [{"text": DIGITRON_RULING_2019, "date": "2019-03-23"}]
+
+    report = backfill_rulings(
+        fetch_card_fn=lambda *args, **kwargs: ygoprodeck_calls.append(args),
+        fetch_rulings_fn=fetch_rulings,
+        fetch_card_name_index_fn=_index,
+    )
+
+    assert ygoprodeck_calls == []
+    assert fetched_konami_ids == [13192]
+    assert get_card_by_id(card_id)["rulings_status"] == "fetched"
+    assert len(get_rulings_for_card(card_id)) == 1
+    assert report.failures == []
+
+
+def test_backfill_marks_a_card_without_a_konami_id_and_skips_it_next_run():
+    from aijudge.db.cards_repo import get_card_by_id
+    from aijudge.ingestion.rulings_backfill import backfill_rulings
+
+    card_id = _insert_legacy_digitron()
+    ygoprodeck_calls = []
+
+    def fetch_card_without_konami_id(query, *, field=None):
+        ygoprodeck_calls.append(query)
+        return {"misc_info": [{}]}
+
+    def must_not_fetch_rulings(konami_id):
+        raise AssertionError("no konami_id, nothing to fetch")
+
+    kwargs = dict(
+        fetch_card_fn=fetch_card_without_konami_id,
+        fetch_rulings_fn=must_not_fetch_rulings,
+        fetch_card_name_index_fn=_index,
+    )
+    first = backfill_rulings(**kwargs)
+    assert get_card_by_id(card_id)["rulings_status"] == "no_konami_id"
+
+    second = backfill_rulings(**kwargs)
+
+    assert ygoprodeck_calls == ["32295838"]
+    assert first.failures == [] and second.failures == []
+    assert get_card_by_id(card_id)["rulings_status"] == "no_konami_id"
+
+
+def test_backfill_reports_a_failed_ygoprodeck_lookup_and_processes_the_other_cards():
+    from aijudge.db.cards_repo import get_card_by_id
+    from aijudge.db.rulings_repo import get_rulings_for_card
+    from aijudge.ingestion.rulings_backfill import backfill_rulings
+    from tests.rulings_fixtures import DIGITRON_RULING_2019
+
+    call_id = _insert_legacy_amazoness_call()
+    digitron_id = _insert_legacy_digitron()
+
+    def fetch_card(query, *, field=None):
+        if query == "57312333":
+            raise requests.ConnectionError("YGOPRODeck unreachable")
+        return {"misc_info": [{"konami_id": 13192}]}
+
+    report = backfill_rulings(
+        fetch_card_fn=fetch_card,
+        fetch_rulings_fn=lambda konami_id: [{"text": DIGITRON_RULING_2019, "date": "2019-03-23"}],
+        fetch_card_name_index_fn=_index,
+    )
+
+    assert report.failures == ["Amazoness Call"]
+    call = get_card_by_id(call_id)
+    assert (call["rulings_status"], call["ygoresources_id"]) == (None, None)
+    assert get_card_by_id(digitron_id)["rulings_status"] == "fetched"
+    assert len(get_rulings_for_card(digitron_id)) == 1
+
+
 def test_backfill_continues_past_a_card_whose_rulings_cannot_be_stored(monkeypatch):
     from aijudge.db import rulings_repo
     from aijudge.db.cards_repo import get_card_by_id
