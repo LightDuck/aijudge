@@ -17,6 +17,7 @@ from aijudge.db.rulings_repo import (
     get_rulings_for_card,
     insert_rulings,
     list_unresolved_rulings,
+    update_ruling_referenced_ids,
     update_ruling_resolution,
 )
 from aijudge.ingestion import ygoresources_client
@@ -124,6 +125,10 @@ def backfill_rulings(
     except Exception:
         logger.exception("card name index unavailable; rulings left unresolved")
         report.failures.append("card name index")
+        # Ids need no network, so ranking can still use them now; the text
+        # stays unresolved (NULL) for a later run to resolve.
+        for ruling in unresolved:
+            update_ruling_referenced_ids(ruling["id"], parse_referenced_ids(ruling["ruling_text"]))
         return report
     for ruling in unresolved:
         resolved, referenced_ids = resolve_ruling_text(ruling["ruling_text"], name_index)

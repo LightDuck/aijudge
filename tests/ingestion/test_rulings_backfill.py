@@ -248,6 +248,30 @@ def test_backfill_reports_a_failed_ygoprodeck_lookup_and_processes_the_other_car
     assert len(get_rulings_for_card(digitron_id)) == 1
 
 
+def test_backfill_fills_referenced_ids_but_leaves_rulings_unresolved_when_the_name_index_is_unavailable():
+    from aijudge.db.rulings_repo import get_rulings_for_card, insert_ruling
+    from aijudge.ingestion.rulings_backfill import backfill_rulings
+    from tests.rulings_fixtures import AMAZONESS_CALL_RULING_2017
+
+    card_id = _insert_legacy_amazoness_call()
+    insert_ruling(card_id=card_id, ruling_text=AMAZONESS_CALL_RULING_2017, source="db.ygoresources")
+
+    def failing_index():
+        raise requests.ConnectionError("ygoresources unreachable")
+
+    report = backfill_rulings(
+        fetch_card_fn=_fake_fetch_card({"57312333": 13174}),
+        fetch_rulings_fn=lambda konami_id: [],
+        fetch_card_name_index_fn=failing_index,
+    )
+
+    [ruling] = get_rulings_for_card(card_id)
+    assert ruling["referenced_konami_ids"] == [13174, 8963, 5505, 5682]
+    assert ruling["ruling_text_resolved"] is None  # a later run with the index still resolves it
+    assert report.failures == ["card name index"]
+    assert report.rulings_resolved == 0
+
+
 def test_backfill_continues_past_a_card_whose_rulings_cannot_be_stored(monkeypatch):
     from aijudge.db import rulings_repo
     from aijudge.db.cards_repo import get_card_by_id

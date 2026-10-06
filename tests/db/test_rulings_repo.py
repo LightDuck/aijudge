@@ -157,6 +157,27 @@ def test_insert_rulings_is_all_or_nothing():
     assert get_rulings_for_card(card_id) == []
 
 
+def test_update_ruling_referenced_ids_leaves_the_ruling_unresolved():
+    from aijudge.db.rulings_repo import (
+        get_rulings_for_card,
+        insert_ruling,
+        list_unresolved_rulings,
+        update_ruling_referenced_ids,
+    )
+    from tests.rulings_fixtures import AMAZONESS_CALL_RULING_2017
+
+    card_id = _insert_amazoness_call()
+    ruling_id = insert_ruling(card_id=card_id, ruling_text=AMAZONESS_CALL_RULING_2017, source="db.ygoresources")
+
+    update_ruling_referenced_ids(ruling_id, [13174, 8963, 5505, 5682])
+
+    [ruling] = get_rulings_for_card(card_id)
+    assert ruling["referenced_konami_ids"] == [13174, 8963, 5505, 5682]
+    assert ruling["ruling_text_resolved"] is None
+    assert ruling["ruling_text"] == AMAZONESS_CALL_RULING_2017
+    assert [r["id"] for r in list_unresolved_rulings()] == [ruling_id]
+
+
 def test_list_unresolved_rulings_and_update_ruling_resolution():
     from aijudge.db.rulings_repo import (
         get_rulings_for_card,
