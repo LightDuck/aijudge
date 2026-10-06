@@ -30,6 +30,17 @@ def join_context(*parts: str) -> str:
     return "\n\n".join(part for part in parts if part)
 
 
+def dedupe_cards_by_id(cards: list[dict]) -> list[dict]:
+    """`cards` with repeats of an already-seen id dropped, first occurrence order kept."""
+    seen: set[str] = set()
+    unique = []
+    for card in cards:
+        if card["id"] not in seen:
+            seen.add(card["id"])
+            unique.append(card)
+    return unique
+
+
 def _display_text(ruling: dict) -> str:
     return ruling["ruling_text_resolved"] or unresolved_display_text(ruling["ruling_text"])
 
@@ -58,6 +69,8 @@ def _rank_key(ruling: dict, other_konami_ids: set[int]) -> tuple:
 def build_rulings_grounding(
     cards: list[dict], *, budget_chars: int = DEFAULT_RULINGS_BUDGET_CHARS
 ) -> RulingsGrounding:
+    # A card listed twice would otherwise have its rulings deduped away under its own first copy.
+    cards = dedupe_cards_by_id(cards)
     if not cards:
         return RulingsGrounding()
 

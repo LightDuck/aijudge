@@ -257,3 +257,39 @@ def test_resolve_card_effect_question_grounds_resolved_cards_with_their_rulings(
     assert resolution.context == "FACTS|RULINGS block|FAILURES"
     assert resolution.grounded_cards[0]["rulings"] == [_RULING]
     assert resolution.grounded_cards[0]["rulings_status"] == "fetched"
+
+
+def test_a_card_resolved_under_two_extracted_names_is_grounded_once():
+    card = {
+        "id": "abc",
+        "name": "Amazoness Call",
+        "card_type": "Spell Card",
+        "race": "Quick-Play",
+        "card_text": 'Take 1 "Amazoness" card from your Deck, except "Amazoness Call", and either add it to your '
+        "hand or send it to the GY.",
+        "ygoprodeck_id": None,
+        "rulings_status": "fetched",
+    }
+    seen_cards = []
+
+    def fake_grounding(cards):
+        seen_cards.extend(cards)
+        return RulingsGrounding(context="RULINGS block", rulings_by_card_id={"abc": [_RULING]})
+
+    resolution = resolve_card_effect_question(
+        "What does Amazoness Call do?",
+        llm_client=MockLLMClient(),
+        extract_card_names_fn=lambda question, **kw: ["Amazoness Call", "amazoness call", "Amazoness Qeen"],
+        resolve_named_cards_fn=lambda names, **kw: [
+            CardResolution(name="Amazoness Call", status="resolved", card=card),
+            CardResolution(name="amazoness call", status="resolved", card=dict(card)),
+            CardResolution(name="Amazoness Qeen", status="not_found"),
+        ],
+        build_rulings_grounding_fn=fake_grounding,
+    )
+
+    assert seen_cards == [card]
+    assert resolution.context.count("KNOWN FACTS") == 1
+    assert '- "Amazoness Qeen": not_found' in resolution.context
+    assert [g["id"] for g in resolution.grounded_cards] == ["abc"]
+    assert resolution.grounded_cards[0]["rulings"] == [_RULING]

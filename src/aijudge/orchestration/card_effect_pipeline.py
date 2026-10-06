@@ -61,6 +61,17 @@ def resolve_card_effect_question(
         on_ingest_start=on_ingest_start,
     )
     build_rulings_grounding_fn = build_rulings_grounding_fn or rulings_context.build_rulings_grounding
+    # Extraction isn't deduped: two names can resolve to the same card. Ground
+    # it once; unresolved names (LOOKUP FAILURES) are kept as they are.
+    seen_card_ids: set[str] = set()
+    unique_resolutions = []
+    for r in resolutions:
+        if r.status == "resolved":
+            if r.card["id"] in seen_card_ids:
+                continue
+            seen_card_ids.add(r.card["id"])
+        unique_resolutions.append(r)
+    resolutions = unique_resolutions
     resolved_cards = [r.card for r in resolutions if r.status == "resolved"]
     grounding = build_rulings_grounding_fn(resolved_cards)
     return PipelineResolution(

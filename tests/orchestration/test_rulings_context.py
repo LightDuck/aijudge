@@ -126,6 +126,33 @@ def test_unused_share_is_pooled_for_another_cards_skipped_ruling(stored):
     assert "not shown" not in grounding.context
 
 
+def test_a_skipped_ruling_the_pooled_pass_cannot_fit_is_still_reported_not_shown(stored):
+    stored[AMAZONESS_CALL["id"]] = [CALL_2026, CALL_2017]
+    stored[DIGITRON["id"]] = [DIGITRON_2019]
+    line_2026 = rulings_context.render_ruling_line(AMAZONESS_CALL, CALL_2026)
+    line_2017 = rulings_context.render_ruling_line(AMAZONESS_CALL, CALL_2017)
+    line_digitron = rulings_context.render_ruling_line(DIGITRON, DIGITRON_2019)
+    # Each share fits exactly one ruling; what's left over pooled can't fit the 2017 one.
+    share = max(len(line_2026), len(line_digitron))
+    assert 2 * share - len(line_2026) - len(line_digitron) < len(line_2017)
+
+    grounding = build_rulings_grounding([AMAZONESS_CALL, DIGITRON], budget_chars=2 * share)
+
+    assert _ids(grounding, AMAZONESS_CALL) == ["r-2026"]
+    assert _ids(grounding, DIGITRON) == ["r-dig"]
+    assert "- Amazoness Call: 1 more ruling not shown (context budget)." in grounding.context
+
+
+def test_a_card_listed_twice_keeps_its_rulings_and_renders_them_once(stored):
+    stored[AMAZONESS_CALL["id"]] = [CALL_2017]
+
+    grounding = build_rulings_grounding([AMAZONESS_CALL, dict(AMAZONESS_CALL)])
+
+    assert _ids(grounding, AMAZONESS_CALL) == ["r-2017"]
+    assert grounding.context.count("- ruling:r-2017 ") == 1
+    assert "no official rulings on record" not in grounding.context
+
+
 def test_a_qa_stored_under_two_grounded_cards_is_rendered_once(stored):
     stored[AMAZONESS_CALL["id"]] = [CALL_2017]
     stored[AMAZONESS_QUEEN["id"]] = [{**CALL_2017, "id": "r-2017-queen-copy"}]
