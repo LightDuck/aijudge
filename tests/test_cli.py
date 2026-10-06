@@ -1,5 +1,7 @@
 import json
 
+import pytest
+
 from aijudge.call_log import CallLogger, LoggingLLMClient
 from aijudge.cli import run_cli
 from aijudge.embeddings.client import MockEmbeddingClient
@@ -7,6 +9,13 @@ from aijudge.llm.client import MockLLMClient
 from aijudge.orchestration.card_effect_pipeline import PipelineResolution
 from aijudge.orchestration.loop import NOT_SUPPORTED_MESSAGE
 from aijudge.orchestration.protocol import build_answering_system_prompt, build_system_prompt
+
+
+@pytest.fixture(autouse=True)
+def no_rulings_grounding(monkeypatch):
+    from aijudge.orchestration import rulings_context
+
+    monkeypatch.setattr(rulings_context, "build_rulings_grounding", lambda cards, **kwargs: rulings_context.RulingsGrounding())
 
 
 class _CapturingLLMClient:
@@ -504,3 +513,41 @@ def test_run_cli_passes_online_ingest_enabled_false_through_to_the_pipeline():
     )
 
     assert captured["online_ingest_enabled"] is False
+
+
+def test_run_cli_grounds_a_matched_card_with_its_rulings_and_accepts_a_ruling_citation():
+    from datetime import date
+
+    from aijudge.orchestration.rulings_context import RulingsGrounding
+
+    printed = []
+    inputs = iter(["Does Amazoness Call still apply if my Amazoness Queen changes control?", "quit"])
+    ruling = {
+        "id": "6f1c2a7e-0000-4000-8000-000000000001",
+        "ruling_date": date(2017, 7, 22),
+        "display_text": "Q: I activate the second effect of Amazoness Call, targeting an Amazoness Queen ...",
+    }
+    llm = _CapturingLLMClient([
+        "PROCEED",
+        f"FINAL: The effect is still applied normally. ||CITES: card:1, ruling:{ruling['id']}||",
+    ])
+    card = {"id": "1", "name": "Amazoness Call", "card_type": "Spell Card", "rulings_status": "fetched"}
+
+    run_cli(
+        llm,
+        MockEmbeddingClient(),
+        input_fn=lambda _: next(inputs),
+        print_fn=printed.append,
+        find_matched_cards_fn=lambda question: [card],
+        build_known_facts_context_fn=lambda c: "KNOWN FACTS block",
+        # Empty confirmed_effects: no structured-effect verification LLM call
+        # (only two responses are queued); score 1.0 - 0.2 = 0.8 clears 0.75.
+        build_grounded_result_fn=lambda c: {"found": True, "id": c["id"], "name": c["name"], "confirmed_effects": []},
+        build_rulings_grounding_fn=lambda cards: RulingsGrounding(
+            context=f"RULINGS block ruling:{ruling['id']}", rulings_by_card_id={"1": [ruling]}
+        ),
+    )
+
+    answering_prompt = llm.prompts[1]
+    assert answering_prompt.index("KNOWN FACTS block") < answering_prompt.index("RULINGS block")
+    assert "The effect is still applied normally." in printed

@@ -3,6 +3,7 @@ import logging
 import traceback
 
 import psycopg
+import pytest
 import requests
 from fastapi.testclient import TestClient
 
@@ -12,6 +13,13 @@ from aijudge.embeddings.client import MockEmbeddingClient
 from aijudge.llm.client import MockLLMClient
 from aijudge.orchestration.card_effect_pipeline import PipelineResolution
 from aijudge.orchestration.protocol import build_system_prompt
+
+
+@pytest.fixture(autouse=True)
+def no_rulings_grounding(monkeypatch):
+    from aijudge.orchestration import rulings_context
+
+    monkeypatch.setattr(rulings_context, "build_rulings_grounding", lambda cards, **kwargs: rulings_context.RulingsGrounding())
 
 
 def _client(llm: MockLLMClient, **kwargs) -> TestClient:
@@ -800,3 +808,70 @@ def test_create_app_passes_online_ingest_enabled_false_through():
     TestClient(app).post("/questions", json={"question": "What does Some New Card do?"})
 
     assert captured["online_ingest_enabled"] is False
+
+
+def _amazoness_call_grounding():
+    from datetime import date
+
+    from aijudge.orchestration.rulings_context import RulingsGrounding
+
+    ruling = {
+        "id": "6f1c2a7e-0000-4000-8000-000000000001",
+        "ruling_date": date(2017, 7, 22),
+        "display_text": "Q: I activate the second effect of Amazoness Call, targeting an Amazoness Queen ...",
+    }
+    return ruling, RulingsGrounding(context=f"RULINGS block ruling:{ruling['id']}", rulings_by_card_id={"1": [ruling]})
+
+
+_AMAZONESS_CALL = {"id": "1", "name": "Amazoness Call", "card_type": "Spell Card", "rulings_status": "fetched"}
+
+
+def _grounded(card):
+    # Empty confirmed_effects: no structured-effect verification LLM call, and
+    # the score (1.0 - 0.2 = 0.8) still clears the 0.75 threshold.
+    return {"found": True, "id": card["id"], "name": card["name"], "confirmed_effects": []}
+
+
+def test_post_questions_cites_a_grounded_ruling_with_a_readable_label():
+    ruling, grounding = _amazoness_call_grounding()
+    llm = _CapturingLLMClient([
+        "PROCEED",
+        f"FINAL: The effect is still applied normally. ||CITES: card:1, ruling:{ruling['id']}||",
+    ])
+
+    response = _client(
+        llm,
+        find_matched_cards_fn=lambda question: [_AMAZONESS_CALL],
+        build_known_facts_context_fn=lambda c: "KNOWN FACTS block",
+        build_grounded_result_fn=_grounded,
+        build_rulings_grounding_fn=lambda cards: grounding,
+    ).post("/questions", json={"question": "Does Amazoness Call still apply if my Amazoness Queen changes control?"})
+
+    body = response.json()
+    assert body["status"] == "answer"
+    assert {"label": "Official Q&A — Amazoness Call (2017-07-22)", "text": ruling["display_text"]} in body["citations"]
+    assert "RULINGS block" in llm.prompts[1]
+
+
+def test_post_questions_answer_grounds_the_disambiguated_card_with_its_rulings():
+    ruling, grounding = _amazoness_call_grounding()
+    other = {"id": "2", "name": "Amazoness Queen", "card_type": "Effect Monster", "rulings_status": "fetched"}
+    llm = _CapturingLLMClient([f"FINAL: Applied normally. ||CITES: ruling:{ruling['id']}||"])
+
+    response = _client(
+        llm,
+        find_matched_cards_fn=lambda question: [_AMAZONESS_CALL, other],
+        build_known_facts_context_fn=lambda c: "KNOWN FACTS block",
+        build_grounded_result_fn=_grounded,
+        build_rulings_grounding_fn=lambda cards: grounding,
+    ).post(
+        "/questions/answer",
+        json={
+            "question": "Does Amazoness Call still apply?",
+            "items": [{"kind": "disambiguate_card", "text": "Which card?"}],
+            "answers": ["Amazoness Call"],
+        },
+    )
+
+    assert response.json()["status"] == "answer"
+    assert "RULINGS block" in llm.prompts[0]

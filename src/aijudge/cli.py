@@ -12,6 +12,7 @@ from .orchestration.clarify import (
     format_clarification_context,
     parse_clarification_response,
 )
+from .orchestration import rulings_context
 from .orchestration.loop import NOT_SUPPORTED_MESSAGE, run_loop
 from .orchestration.preflight import (
     build_grounded_result,
@@ -20,6 +21,7 @@ from .orchestration.preflight import (
     find_mentioned_card_names,
 )
 from .orchestration.protocol import build_answering_system_prompt, build_system_prompt
+from .orchestration.rulings_context import RulingsGrounding, attach_rulings, join_context
 
 
 def run_cli(
@@ -32,6 +34,7 @@ def run_cli(
     build_known_facts_context_fn: Callable[[dict], str] = build_known_facts_context,
     build_grounded_result_fn: Callable[[dict], dict] = build_grounded_result,
     resolve_card_effect_question_fn: Callable[..., PipelineResolution] = resolve_card_effect_question,
+    build_rulings_grounding_fn: Callable[[list[dict]], RulingsGrounding] | None = None,
     online_ingest_enabled: bool = True,
     call_logger: CallLogger | None = None,
 ) -> None:
@@ -53,7 +56,9 @@ def run_cli(
         disambiguation_items: list[ClarificationItem] = []
         preflight_context = ""
         grounded_cards: list[dict] = []
+        local_card: dict | None = None
         if len(matches) == 1:
+            local_card = matches[0]
             preflight_context = build_known_facts_context_fn(matches[0])
             grounded_cards = [build_grounded_result_fn(matches[0])]
         elif len(matches) > 1:
@@ -81,12 +86,14 @@ def run_cli(
             matched_names = find_mentioned_card_names(answers[0], candidate_names)
             chosen = next((match for match in matches if match["name"] == matched_names[0]), None) if matched_names else None
             if chosen is not None:
+                local_card = chosen
                 preflight_context = build_known_facts_context_fn(chosen)
                 grounded_cards = [build_grounded_result_fn(chosen)]
             else:
                 print_fn("Couldn't match your answer to a specific card -- proceeding without that card's confirmed details.")
 
         if not matches or not grounded_cards:
+            local_card = None
             # 0 local matches, or a disambiguation-miss (matches > 1 but the
             # user's answer didn't fuzzy-resolve to any candidate, leaving
             # grounded_cards empty): try mandatory extraction + deterministic
@@ -102,6 +109,13 @@ def run_cli(
                 continue
             preflight_context = resolution.context
             grounded_cards = resolution.grounded_cards
+
+        if local_card is not None:
+            # The pipeline fallback grounds its own cards' rulings; this covers
+            # a card matched locally by preflight.
+            grounding = (build_rulings_grounding_fn or rulings_context.build_rulings_grounding)([local_card])
+            preflight_context = join_context(preflight_context, grounding.context)
+            grounded_cards = attach_rulings(grounded_cards, [local_card], grounding)
 
         context = format_clarification_context(items, answers)
         if preflight_context:
