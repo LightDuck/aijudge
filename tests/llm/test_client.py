@@ -179,3 +179,34 @@ def test_mock_llm_client_records_none_when_system_not_given():
     client.complete("prompt")
 
     assert client.system_prompts == [None]
+
+
+def test_ollama_client_sends_the_default_context_window_on_generate(monkeypatch):
+    monkeypatch.delenv("OLLAMA_NUM_CTX", raising=False)
+    captured = {}
+
+    def fake_post(url, json, timeout):
+        captured["json"] = json
+        return FakeResponse({"response": "0.95"})
+
+    OllamaLLMClient(http_post=fake_post).complete("prompt")
+
+    assert captured["json"]["options"] == {"num_ctx": 8192}
+
+
+def test_ollama_client_reads_the_context_window_from_the_environment_on_chat(monkeypatch):
+    monkeypatch.setenv("OLLAMA_NUM_CTX", "16384")
+    captured = {}
+
+    def fake_post(url, json, timeout):
+        captured["json"] = json
+        return FakeResponse({"message": {"content": "FINAL: ok ||CITES: ||"}})
+
+    OllamaLLMClient(http_post=fake_post).complete("prompt", system="system text")
+
+    assert captured["json"]["options"] == {"num_ctx": 16384}
+
+
+def test_ollama_client_explicit_context_window_wins_over_the_environment(monkeypatch):
+    monkeypatch.setenv("OLLAMA_NUM_CTX", "16384")
+    assert OllamaLLMClient(num_ctx=4096, http_post=lambda **kw: None).num_ctx == 4096

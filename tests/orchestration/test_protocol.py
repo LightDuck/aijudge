@@ -158,3 +158,10 @@ def test_build_answering_system_prompt_explains_generic_apply_wording():
     lowered = prompt.lower()
     assert "apply" in lowered
     assert "as much" in lowered
+
+
+def test_answering_prompt_explains_rulings_and_their_citation_ids():
+    prompt = build_answering_system_prompt()
+    assert "RULINGS" in prompt
+    assert "ruling:<id>" in prompt
+    assert "situation" in prompt.lower()

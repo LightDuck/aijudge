@@ -9,6 +9,7 @@ load_dotenv()
 
 DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434"
 DEFAULT_OLLAMA_MODEL = "qwen3:8b"
+DEFAULT_OLLAMA_NUM_CTX = 8192
 
 _THINK_BLOCK_RE = re.compile(r"<think>.*?</think>", re.DOTALL)
 
@@ -63,12 +64,18 @@ class OllamaLLMClient:
         base_url: str | None = None,
         think: bool = False,
         timeout: float = 120.0,
+        num_ctx: int | None = None,
         http_post: Callable[..., "requests.Response"] = requests.post,
     ) -> None:
         self.model = model or os.environ.get("OLLAMA_MODEL") or DEFAULT_OLLAMA_MODEL
         self.base_url = (base_url or os.environ.get("OLLAMA_BASE_URL") or DEFAULT_OLLAMA_BASE_URL).rstrip("/")
         self.think = think
         self.timeout = timeout
+        # Explicit context window: without it Ollama uses its small default and
+        # silently drops the start of an overlong prompt (KNOWN FACTS + RULINGS).
+        self.num_ctx = (
+            num_ctx if num_ctx is not None else int(os.environ.get("OLLAMA_NUM_CTX") or DEFAULT_OLLAMA_NUM_CTX)
+        )
         self._http_post = http_post
 
     def complete(self, prompt: str, *, system: str | None = None) -> str:
@@ -83,6 +90,7 @@ class OllamaLLMClient:
                     ],
                     "stream": False,
                     "think": self.think,
+                    "options": {"num_ctx": self.num_ctx},
                 },
                 timeout=self.timeout,
             )
@@ -96,6 +104,7 @@ class OllamaLLMClient:
                 "prompt": prompt,
                 "stream": False,
                 "think": self.think,
+                "options": {"num_ctx": self.num_ctx},
             },
             timeout=self.timeout,
         )
