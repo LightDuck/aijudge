@@ -174,6 +174,16 @@ def test_a_failed_fetch_is_reported_as_unretrievable(stored):
     assert "- Digitron: rulings could not be retrieved -- do not guess what they say." in grounding.context
 
 
+def test_a_card_without_a_ygoresources_id_is_reported_as_unavailable(stored):
+    grounding = build_rulings_grounding([{**DIGITRON, "ygoresources_id": None, "rulings_status": "no_konami_id"}])
+
+    assert (
+        "- Digitron: rulings unavailable for this card (no ygoresources id) -- do not guess what they say."
+        in grounding.context
+    )
+    assert "no official rulings on record" not in grounding.context
+
+
 def test_a_pre_backfill_card_renders_unknown_card_markers_without_crashing(stored):
     legacy_card = {**DIGITRON, "ygoresources_id": None, "rulings_status": None}
     stored[DIGITRON["id"]] = [DIGITRON_2019]

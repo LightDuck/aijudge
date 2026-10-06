@@ -127,6 +127,11 @@ def build_rulings_grounding(
         if stored_counts[card["id"]] == 0:
             if card.get("rulings_status") == "failed":
                 lines.append(f"- {card['name']}: rulings could not be retrieved -- do not guess what they say.")
+            elif card.get("rulings_status") == "no_konami_id":
+                lines.append(
+                    f"- {card['name']}: rulings unavailable for this card (no ygoresources id) "
+                    "-- do not guess what they say."
+                )
             else:
                 lines.append(f"- {card['name']}: no official rulings on record.")
     return RulingsGrounding(context="\n".join(lines), rulings_by_card_id=rulings_by_card_id)
