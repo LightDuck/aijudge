@@ -10,19 +10,23 @@ raw text. Run after run_migrations():
 
 import logging
 from dataclasses import dataclass, field
-from datetime import date
 from typing import Callable
 
 from aijudge.db.cards_repo import list_cards, set_card_rulings_source
 from aijudge.db.rulings_repo import (
     get_rulings_for_card,
-    insert_ruling,
+    insert_rulings,
     list_unresolved_rulings,
     update_ruling_resolution,
 )
 from aijudge.ingestion import ygoresources_client
 from aijudge.ingestion.ygoprodeck_client import fetch_card
-from aijudge.ingestion.ygoresources_client import fetch_rulings, parse_referenced_ids, resolve_ruling_text
+from aijudge.ingestion.ygoresources_client import (
+    fetch_rulings,
+    parse_referenced_ids,
+    resolve_ruling_text,
+    ruling_row,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -65,17 +69,30 @@ def _refetch_if_empty(
         set_card_rulings_source(card["id"], rulings_status="failed")
         report.failures.append(card["name"])
         return
-    for ruling in rulings:
-        raw_date = ruling.get("date")
-        insert_ruling(
-            card_id=card["id"],
-            ruling_text=ruling["text"],
-            source="db.ygoresources",
-            ruling_date=date.fromisoformat(raw_date) if raw_date else None,
-            referenced_konami_ids=parse_referenced_ids(ruling["text"]),
-        )
+    insert_rulings(
+        card["id"],
+        [
+            ruling_row(ruling, ruling_text_resolved=None, referenced_konami_ids=parse_referenced_ids(ruling["text"]))
+            for ruling in rulings
+        ],
+    )
     report.rulings_refetched += len(rulings)
     set_card_rulings_source(card["id"], rulings_status="fetched")
+
+
+def _backfill_card(
+    card: dict,
+    fetch_card_fn: Callable[..., dict],
+    fetch_rulings_fn: Callable[..., list[dict]],
+    report: BackfillReport,
+) -> None:
+    konami_id = int(card["ygoresources_id"]) if card["ygoresources_id"] else None
+    if konami_id is None:
+        konami_id = _store_konami_id(card, fetch_card_fn, report)
+        if konami_id is None:
+            return
+    if card["rulings_status"] in (None, "failed"):
+        _refetch_if_empty(card, konami_id, fetch_rulings_fn, report)
 
 
 def backfill_rulings(
@@ -89,13 +106,14 @@ def backfill_rulings(
     for card in list_cards():
         if card["rulings_status"] == "no_konami_id":
             continue
-        konami_id = int(card["ygoresources_id"]) if card["ygoresources_id"] else None
-        if konami_id is None:
-            konami_id = _store_konami_id(card, fetch_card_fn, report)
-            if konami_id is None:
-                continue
-        if card["rulings_status"] in (None, "failed"):
-            _refetch_if_empty(card, konami_id, fetch_rulings_fn, report)
+        try:
+            _backfill_card(card, fetch_card_fn, fetch_rulings_fn, report)
+        except Exception:
+            # One card's failure (e.g. its rulings insert, rolled back whole)
+            # must not stop the rest; its status stays as it was, so the next
+            # run retries it.
+            logger.exception("backfill failed for %s", card["name"])
+            report.failures.append(card["name"])
 
     unresolved = list_unresolved_rulings()
     if not unresolved:

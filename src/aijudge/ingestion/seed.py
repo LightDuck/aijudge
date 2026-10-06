@@ -1,10 +1,10 @@
 import logging
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 from typing import Callable
 
-from aijudge.db.cards_repo import insert_card
+from aijudge.db.cards_repo import insert_card, set_card_rulings_source
 from aijudge.db.effects_repo import confirm_effect, insert_pending_effect
-from aijudge.db.rulings_repo import insert_ruling
+from aijudge.db.rulings_repo import insert_rulings
 from aijudge.effect_parser.clause_splitter import resolve_effect_clauses
 from aijudge.effect_parser.parser import (
     classify_damage_step_category,
@@ -18,7 +18,12 @@ from aijudge.effect_parser.usage_limit import resolve_ambiguous_scope
 from aijudge.ingestion.printing_eligibility import fetch_sets_index, is_deterministic_parse_eligible
 from aijudge.ingestion.ygoprodeck_client import fetch_card
 from aijudge.ingestion import ygoresources_client
-from aijudge.ingestion.ygoresources_client import fetch_rulings, parse_referenced_ids, resolve_ruling_text
+from aijudge.ingestion.ygoresources_client import (
+    fetch_rulings,
+    parse_referenced_ids,
+    resolve_ruling_text,
+    ruling_row,
+)
 from aijudge.llm.client import LLMClient
 from aijudge.rules_engine.models import EffectType
 
@@ -72,20 +77,14 @@ def _load_name_index(
 
 
 def _insert_rulings(card_id: str, rulings: list[dict], name_index: dict[int, list[str]] | None) -> None:
+    rows = []
     for ruling in rulings:
-        raw_date = ruling.get("date")
         if name_index is not None:
             resolved, referenced_ids = resolve_ruling_text(ruling["text"], name_index)
         else:
             resolved, referenced_ids = None, parse_referenced_ids(ruling["text"])
-        insert_ruling(
-            card_id=card_id,
-            ruling_text=ruling["text"],
-            source="db.ygoresources",
-            ruling_date=date.fromisoformat(raw_date) if raw_date else None,
-            ruling_text_resolved=resolved,
-            referenced_konami_ids=referenced_ids,
-        )
+        rows.append(ruling_row(ruling, ruling_text_resolved=resolved, referenced_konami_ids=referenced_ids))
+    insert_rulings(card_id, rows)
 
 
 def seed_card(
@@ -125,7 +124,14 @@ def seed_card(
     )
 
     if rulings:
-        _insert_rulings(card_id, rulings, _load_name_index(fetch_card_name_index_fn))
+        try:
+            _insert_rulings(card_id, rulings, _load_name_index(fetch_card_name_index_fn))
+        except Exception:
+            # The insert is one transaction, so none of the rulings landed:
+            # 'failed' makes the backfill refetch them instead of the card
+            # looking like it has no rulings. The card itself stays ingested.
+            logger.exception("storing rulings failed for %s", card_data["name"])
+            set_card_rulings_source(card_id, rulings_status="failed")
 
     if not eligible:
         _insert_unclassified(card_id, card_text)

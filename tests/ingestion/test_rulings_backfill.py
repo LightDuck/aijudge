@@ -139,3 +139,51 @@ def test_backfill_is_a_no_op_on_a_second_run():
 
     assert (second.konami_ids_stored, second.rulings_refetched, second.rulings_resolved) == (0, 0, 0)
     assert len(get_rulings_for_card(card_id)) == 1
+
+
+def _insert_legacy_amazoness_call():
+    return _insert_legacy_card(
+        "Amazoness Call", "57312333", "Spell Card", "Quick-Play",
+        'Take 1 "Amazoness" card from your Deck, except "Amazoness Call", and either add it to your hand or send it to the GY.',
+    )
+
+
+def _insert_legacy_digitron():
+    return _insert_legacy_card(
+        "Digitron", "32295838", "Normal Monster", "Cyberse", "A Cyberse born from the depths of cyberspace."
+    )
+
+
+def test_backfill_continues_past_a_card_whose_rulings_cannot_be_stored(monkeypatch):
+    from aijudge.db import rulings_repo
+    from aijudge.db.cards_repo import get_card_by_id
+    from aijudge.db.rulings_repo import get_rulings_for_card
+    from aijudge.ingestion import rulings_backfill
+    from tests.rulings_fixtures import AMAZONESS_CALL_RULING_2017, DIGITRON_RULING_2019
+
+    call_id = _insert_legacy_amazoness_call()
+    digitron_id = _insert_legacy_digitron()
+
+    def insert_failing_for_amazoness_call(card_id, rulings):
+        if card_id == call_id:
+            # The real insert, with a row the DB rejects.
+            rulings = [{**rulings[0], "referenced_konami_ids": ["not-an-int"]}]
+        return rulings_repo.insert_rulings(card_id, rulings)
+
+    monkeypatch.setattr(rulings_backfill, "insert_rulings", insert_failing_for_amazoness_call)
+    rulings_by_konami_id = {
+        13174: [{"text": AMAZONESS_CALL_RULING_2017, "date": "2017-07-22"}],
+        13192: [{"text": DIGITRON_RULING_2019, "date": "2019-03-23"}],
+    }
+
+    report = rulings_backfill.backfill_rulings(
+        fetch_card_fn=_fake_fetch_card({"57312333": 13174, "32295838": 13192}),
+        fetch_rulings_fn=rulings_by_konami_id.__getitem__,
+        fetch_card_name_index_fn=_index,
+    )
+
+    assert report.failures == ["Amazoness Call"]
+    assert get_card_by_id(call_id)["rulings_status"] is None  # never marked fetched
+    assert get_rulings_for_card(call_id) == []
+    assert get_card_by_id(digitron_id)["rulings_status"] == "fetched"
+    assert len(get_rulings_for_card(digitron_id)) == 1

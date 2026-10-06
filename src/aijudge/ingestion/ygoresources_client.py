@@ -1,6 +1,7 @@
 import functools
 import logging
 import re
+from datetime import date
 from typing import Callable
 
 import requests
@@ -94,6 +95,31 @@ def resolve_ruling_text(
 def unresolved_display_text(text: str) -> str:
     """Display form of a ruling whose names were never resolved."""
     return _PLACEHOLDER_RE.sub(lambda match: _unknown_card(match.group(1)), text)
+
+
+def parse_ruling_date(raw_date: str | None) -> date | None:
+    """A fetched ruling's date, or None when it's missing or not a real date
+    (e.g. "2025-13-45"): an undated ruling is honest, a guessed date is not."""
+    if not raw_date:
+        return None
+    try:
+        return date.fromisoformat(raw_date)
+    except ValueError:
+        logger.warning("ruling date %r is not a valid date; storing the ruling undated", raw_date)
+        return None
+
+
+def ruling_row(
+    ruling: dict, *, ruling_text_resolved: str | None, referenced_konami_ids: list[int]
+) -> dict:
+    """A fetched ruling ({"text", "date"}) as a rulings_repo.insert_rulings row."""
+    return {
+        "ruling_text": ruling["text"],
+        "source": "db.ygoresources",
+        "ruling_date": parse_ruling_date(ruling.get("date")),
+        "ruling_text_resolved": ruling_text_resolved,
+        "referenced_konami_ids": referenced_konami_ids,
+    }
 
 
 def fetch_rulings(
