@@ -645,3 +645,63 @@ def test_run_loop_wraps_its_own_llm_calls_in_the_loop_call_site(tmp_path):
         records = [json.loads(line) for line in f if line.strip()]
     llm_calls = [r for r in records if r["type"] == "llm_call"]
     assert llm_calls and all(r["site"] == "loop" for r in llm_calls)
+
+
+_AMAZONESS_CALL_RULING_ID = "6f1c2a7e-0000-4000-8000-000000000001"
+_AMAZONESS_CALL_TEXT = (
+    'Take 1 "Amazoness" card from your Deck, except "Amazoness Call", and either add it to your hand or send it '
+    "to the GY."
+)
+
+
+def _grounded_amazoness_call():
+    from tests.rulings_fixtures import AMAZONESS_CALL_RULING_2017
+
+    return {
+        "found": True,
+        "id": "card-amazoness-call",
+        "ygoprodeck_id": "57312333",
+        "name": "Amazoness Call",
+        "card_text": _AMAZONESS_CALL_TEXT,
+        "confirmed_effects": [{"effect": _AMAZONESS_CALL_TEXT}],
+        "rulings": [
+            {"id": _AMAZONESS_CALL_RULING_ID, "ruling_date": None, "display_text": AMAZONESS_CALL_RULING_2017}
+        ],
+        "rulings_status": "fetched",
+    }
+
+
+def test_ruling_only_citation_still_runs_structured_grounding_verification_against_its_card():
+    wrong = "FINAL: Amazoness Call destroys all monsters your opponent controls."
+    right = 'FINAL: Amazoness Call takes 1 "Amazoness" card from your Deck to your hand or GY.'
+    cites = f" ||CITES: ruling:{_AMAZONESS_CALL_RULING_ID}||"
+    llm = _CapturingLLMClient([wrong + cites, "NO", right + cites, "YES"])
+
+    result = run_loop(
+        "What does Amazoness Call do?", llm_client=llm, tools={}, grounded_cards=[_grounded_amazoness_call()]
+    )
+
+    assert result.kind == "answer"
+    assert len(llm.prompts) == 4
+    assert "Amazoness Call destroys all monsters your opponent controls." in llm.prompts[1]
+    feedback = llm.prompts[2].split("VERIFICATION_FAILED", 1)[1]
+    assert "- Amazoness Call:" in feedback
+
+
+def test_redraft_switching_from_card_to_its_ruling_citation_is_still_verified():
+    # The flagged id is card:<id>; a redraft citing only that card's ruling has
+    # not dropped the flagged card -- it is verified again, and keeps failing.
+    wrong = "FINAL: Amazoness Call destroys all monsters your opponent controls."
+    ruling_cite = f" ||CITES: ruling:{_AMAZONESS_CALL_RULING_ID}||"
+    llm = _CapturingLLMClient([
+        wrong + " ||CITES: card:card-amazoness-call||", "NO",
+        wrong + ruling_cite, "NO",
+        wrong + ruling_cite, "NO",
+    ])
+
+    result = run_loop(
+        "What does Amazoness Call do?", llm_client=llm, tools={}, grounded_cards=[_grounded_amazoness_call()]
+    )
+
+    assert result.kind == "escalate"
+    assert len(llm.prompts) == 6

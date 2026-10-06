@@ -275,3 +275,10 @@ def test_a_bare_ruling_uuid_is_normalized_to_its_known_ruling_id():
     update_signals(state, "lookup_card", {**_AMAZONESS_CALL_RESULT, "rulings": [_RULING], "rulings_status": "fetched"})
 
     assert normalize_cited_ids({_RULING["id"]}, state) == {f"ruling:{_RULING['id']}"}
+
+
+def test_grounded_rulings_record_their_owning_card():
+    state = SignalState()
+    update_signals(state, "lookup_card", {**_AMAZONESS_CALL_RESULT, "rulings": [_RULING], "rulings_status": "fetched"})
+
+    assert state.ruling_card_ids == {f"ruling:{_RULING['id']}": "card:card-amazoness-call"}
