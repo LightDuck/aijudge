@@ -5,7 +5,7 @@ from .connection import get_connection
 _CARD_COLUMNS = [
     "id", "name", "card_text", "card_type", "race", "attribute", "monster_type",
     "level", "rank", "link_rating", "archetype", "atk", "def", "has_errata",
-    "ygoprodeck_id", "ygoresources_id", "deterministic_parse_eligible",
+    "ygoprodeck_id", "ygoresources_id", "deterministic_parse_eligible", "rulings_status",
 ]
 
 PASSCODE_DIGITS = 8
@@ -41,6 +41,7 @@ def insert_card(
     atk: int | None = None,
     def_: int | None = None,
     ygoresources_id: str | None = None,
+    rulings_status: str | None = None,
 ) -> str:
     with get_connection() as conn:
         row = conn.execute(
@@ -48,14 +49,16 @@ def insert_card(
             INSERT INTO card (
                 name, card_text, card_type, race, attribute, monster_type,
                 level, rank, link_rating, archetype, atk, def,
-                ygoprodeck_id, ygoresources_id, source, fetched_at, deterministic_parse_eligible
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ygoprodeck_id, ygoresources_id, source, fetched_at, deterministic_parse_eligible,
+                rulings_status
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
             """,
             (
                 name, card_text, card_type, race, attribute, monster_type,
                 level, rank, link_rating, archetype, atk, def_,
                 normalize_passcode(ygoprodeck_id), ygoresources_id, source, fetched_at, deterministic_parse_eligible,
+                rulings_status,
             ),
         ).fetchone()
         conn.commit()
@@ -67,7 +70,7 @@ def get_card_by_name(name: str) -> dict | None:
         row = conn.execute(
             "SELECT id, name, card_text, card_type, race, attribute, monster_type, "
             "level, rank, link_rating, archetype, atk, def, has_errata, "
-            "ygoprodeck_id, ygoresources_id, deterministic_parse_eligible "
+            "ygoprodeck_id, ygoresources_id, deterministic_parse_eligible, rulings_status "
             "FROM card WHERE name = %s",
             (name,),
         ).fetchone()
@@ -83,7 +86,7 @@ def get_card_by_id(card_id: str) -> dict | None:
         row = conn.execute(
             "SELECT id, name, card_text, card_type, race, attribute, monster_type, "
             "level, rank, link_rating, archetype, atk, def, has_errata, "
-            "ygoprodeck_id, ygoresources_id, deterministic_parse_eligible "
+            "ygoprodeck_id, ygoresources_id, deterministic_parse_eligible, rulings_status "
             "FROM card WHERE id = %s",
             (card_id,),
         ).fetchone()
@@ -99,7 +102,7 @@ def get_cards_by_fname(fname: str) -> list[dict]:
         rows = conn.execute(
             "SELECT id, name, card_text, card_type, race, attribute, monster_type, "
             "level, rank, link_rating, archetype, atk, def, has_errata, "
-            "ygoprodeck_id, ygoresources_id, deterministic_parse_eligible "
+            "ygoprodeck_id, ygoresources_id, deterministic_parse_eligible, rulings_status "
             "FROM card WHERE name ILIKE %s",
             (f"%{fname}%",),
         ).fetchall()
@@ -111,7 +114,7 @@ def get_cards_by_archetype(archetype: str) -> list[dict]:
         rows = conn.execute(
             "SELECT id, name, card_text, card_type, race, attribute, monster_type, "
             "level, rank, link_rating, archetype, atk, def, has_errata, "
-            "ygoprodeck_id, ygoresources_id, deterministic_parse_eligible "
+            "ygoprodeck_id, ygoresources_id, deterministic_parse_eligible, rulings_status "
             "FROM card WHERE archetype = %s",
             (archetype,),
         ).fetchall()
@@ -123,7 +126,7 @@ def get_card_by_ygoprodeck_id(ygoprodeck_id: str) -> dict | None:
         row = conn.execute(
             "SELECT id, name, card_text, card_type, race, attribute, monster_type, "
             "level, rank, link_rating, archetype, atk, def, has_errata, "
-            "ygoprodeck_id, ygoresources_id, deterministic_parse_eligible "
+            "ygoprodeck_id, ygoresources_id, deterministic_parse_eligible, rulings_status "
             "FROM card WHERE ygoprodeck_id = %s",
             (normalize_passcode(ygoprodeck_id),),
         ).fetchone()
@@ -165,7 +168,7 @@ def get_card_by_ygoresources_id(ygoresources_id: str) -> dict | None:
         row = conn.execute(
             "SELECT id, name, card_text, card_type, race, attribute, monster_type, "
             "level, rank, link_rating, archetype, atk, def, has_errata, "
-            "ygoprodeck_id, ygoresources_id, deterministic_parse_eligible "
+            "ygoprodeck_id, ygoresources_id, deterministic_parse_eligible, rulings_status "
             "FROM card WHERE ygoresources_id = %s",
             (ygoresources_id,),
         ).fetchone()
@@ -195,3 +198,27 @@ def list_card_names() -> list[str]:
     with get_connection() as conn:
         rows = conn.execute("SELECT name FROM card").fetchall()
     return [row[0] for row in rows]
+
+
+def list_cards() -> list[dict]:
+    with get_connection() as conn:
+        rows = conn.execute(
+            "SELECT id, name, card_text, card_type, race, attribute, monster_type, "
+            "level, rank, link_rating, archetype, atk, def, has_errata, "
+            "ygoprodeck_id, ygoresources_id, deterministic_parse_eligible, rulings_status "
+            "FROM card ORDER BY name"
+        ).fetchall()
+    return [dict(zip(_CARD_COLUMNS, [str(row[0])] + list(row[1:]))) for row in rows]
+
+
+def set_card_rulings_source(
+    card_id: str, *, rulings_status: str | None, ygoresources_id: str | None = None
+) -> None:
+    """Record a card's ygoresources rulings fetch outcome (and its Konami id,
+    when known). A None ygoresources_id keeps whatever is already stored."""
+    with get_connection() as conn:
+        conn.execute(
+            "UPDATE card SET rulings_status = %s, ygoresources_id = COALESCE(%s, ygoresources_id) WHERE id = %s",
+            (rulings_status, ygoresources_id, card_id),
+        )
+        conn.commit()

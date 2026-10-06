@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 
+import pytest
 from dotenv import dotenv_values, load_dotenv
 
 load_dotenv()
@@ -18,3 +19,12 @@ if _test_database_url and _test_database_url == _app_database_url:
     raise RuntimeError("TEST_DATABASE_URL must not be the app's DATABASE_URL: DB tests truncate its tables")
 
 os.environ["DATABASE_URL"] = _test_database_url or "postgresql://test-database-not-configured.invalid/aijudge_test"
+
+
+@pytest.fixture(autouse=True)
+def no_real_card_name_index(monkeypatch):
+    """seed_card/backfill fall back to ygoresources_client.cached_card_name_index
+    when no index function is injected; never let that reach the network in tests."""
+    from aijudge.ingestion import ygoresources_client
+
+    monkeypatch.setattr(ygoresources_client, "cached_card_name_index", lambda: {})

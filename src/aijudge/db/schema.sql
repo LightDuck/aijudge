@@ -84,6 +84,22 @@ CREATE TABLE IF NOT EXISTS rulings (
     embedding VECTOR(384)
 );
 
+-- Rulings grounding (docs/superpowers/specs/2026-10-05-rulings-grounding-design.md).
+-- rulings_status records whether ingestion's ygoresources fetch worked, so a
+-- failed fetch is no longer indistinguishable from a card with no rulings.
+-- NULL means a row created before this column existed.
+ALTER TABLE card ADD COLUMN IF NOT EXISTS rulings_status TEXT;
+DO $$ BEGIN
+    ALTER TABLE card ADD CONSTRAINT card_rulings_status_check
+        CHECK (rulings_status IN ('fetched', 'failed', 'no_konami_id') OR rulings_status IS NULL);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- ruling_text stays exactly as ygoresources wrote it (<<konami_id>> placeholders
+-- included); ruling_text_resolved is the readable form, NULL until resolved.
+ALTER TABLE rulings ADD COLUMN IF NOT EXISTS ruling_text_resolved TEXT;
+ALTER TABLE rulings ADD COLUMN IF NOT EXISTS referenced_konami_ids INTEGER[] NOT NULL DEFAULT '{}';
+
 CREATE TABLE IF NOT EXISTS card_effects_structured (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     card_id UUID NOT NULL REFERENCES card (id),

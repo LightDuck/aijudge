@@ -1,4 +1,5 @@
 import pytest
+from datetime import date
 
 from aijudge.orchestration.confidence import (
     MISSING_STRUCTURED_EFFECT_PENALTY,
@@ -214,3 +215,63 @@ def test_normalize_cited_ids_leaves_unknown_bare_id_unchanged():
 def test_normalize_cited_ids_leaves_already_prefixed_id_unchanged():
     state = SignalState(known_ids={"card:abc"})
     assert normalize_cited_ids({"card:abc"}, state) == {"card:abc"}
+
+
+_AMAZONESS_CALL_RESULT = {
+    "found": True,
+    "id": "card-amazoness-call",
+    "ygoprodeck_id": "57312333",
+    "name": "Amazoness Call",
+    "card_text": 'Take 1 "Amazoness" card from your Deck, except "Amazoness Call", ...',
+    "confirmed_effects": [{"effect": "..."}],
+}
+_RULING = {
+    "id": "6f1c2a7e-0000-4000-8000-000000000001",
+    "ruling_date": date(2017, 7, 22),
+    "display_text": "Q: I activate the second effect of Amazoness Call, targeting an Amazoness Queen ...",
+}
+
+
+def test_grounded_rulings_become_known_citable_ids_with_readable_labels():
+    state = SignalState()
+    update_signals(state, "lookup_card", {**_AMAZONESS_CALL_RESULT, "rulings": [_RULING], "rulings_status": "fetched"})
+
+    ruling_id = f"ruling:{_RULING['id']}"
+    assert ruling_id in state.known_ids
+    assert state.citation_index[ruling_id] == {
+        "label": "Official Q&A — Amazoness Call (2017-07-22)",
+        "text": _RULING["display_text"],
+    }
+    assert compute_confidence({"card:card-amazoness-call", ruling_id}, state) == pytest.approx(1.0)
+
+
+def test_an_undated_ruling_is_labelled_undated():
+    state = SignalState()
+    undated = {**_RULING, "ruling_date": None}
+    update_signals(state, "lookup_card", {**_AMAZONESS_CALL_RESULT, "rulings": [undated], "rulings_status": "fetched"})
+
+    assert state.citation_index[f"ruling:{_RULING['id']}"]["label"] == "Official Q&A — Amazoness Call (undated)"
+
+
+@pytest.mark.parametrize("status", ["fetched", "no_konami_id", None])
+def test_zero_rulings_never_lowers_confidence(status):
+    state = SignalState()
+    update_signals(state, "lookup_card", {**_AMAZONESS_CALL_RESULT, "rulings": [], "rulings_status": status})
+
+    assert state.retrieval_gap is False
+    assert compute_confidence({"card:card-amazoness-call"}, state) == pytest.approx(1.0)
+
+
+def test_a_failed_rulings_fetch_is_a_retrieval_gap():
+    state = SignalState()
+    update_signals(state, "lookup_card", {**_AMAZONESS_CALL_RESULT, "rulings": [], "rulings_status": "failed"})
+
+    assert state.retrieval_gap is True
+    assert compute_confidence({"card:card-amazoness-call"}, state) == pytest.approx(1.0 - RETRIEVAL_GAP_PENALTY)
+
+
+def test_a_bare_ruling_uuid_is_normalized_to_its_known_ruling_id():
+    state = SignalState()
+    update_signals(state, "lookup_card", {**_AMAZONESS_CALL_RESULT, "rulings": [_RULING], "rulings_status": "fetched"})
+
+    assert normalize_cited_ids({_RULING["id"]}, state) == {f"ruling:{_RULING['id']}"}

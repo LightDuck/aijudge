@@ -1,3 +1,4 @@
+import logging
 from datetime import date, datetime, timezone
 from typing import Callable
 
@@ -16,9 +17,12 @@ from aijudge.effect_parser.sentence_splitter import extract_card_material
 from aijudge.effect_parser.usage_limit import resolve_ambiguous_scope
 from aijudge.ingestion.printing_eligibility import fetch_sets_index, is_deterministic_parse_eligible
 from aijudge.ingestion.ygoprodeck_client import fetch_card
-from aijudge.ingestion.ygoresources_client import fetch_rulings
+from aijudge.ingestion import ygoresources_client
+from aijudge.ingestion.ygoresources_client import fetch_rulings, parse_referenced_ids, resolve_ruling_text
 from aijudge.llm.client import LLMClient
 from aijudge.rules_engine.models import EffectType
+
+logger = logging.getLogger(__name__)
 
 # One random card per major card category (7 monster summoning mechanics,
 # Quick-Play Spell, Continuous Trap, Counter Trap), each first printed
@@ -42,6 +46,48 @@ HAND_PICKED_CARDS: list[str] = [
 ]
 
 
+def _fetch_rulings_outcome(
+    konami_id: int | None, fetch_rulings_fn: Callable[..., list[dict]]
+) -> tuple[list[dict], str]:
+    """The rulings plus card.rulings_status. A failed fetch is recorded as
+    'failed' instead of looking exactly like a card with no rulings."""
+    if konami_id is None:
+        return [], "no_konami_id"
+    try:
+        return fetch_rulings_fn(konami_id), "fetched"
+    except Exception:
+        logger.exception("rulings fetch failed for konami_id=%s", konami_id)
+        return [], "failed"
+
+
+def _load_name_index(
+    fetch_card_name_index_fn: Callable[[], dict[int, list[str]]] | None,
+) -> dict[int, list[str]] | None:
+    fetch_index = fetch_card_name_index_fn or ygoresources_client.cached_card_name_index
+    try:
+        return fetch_index()
+    except Exception:
+        logger.exception("card name index unavailable; rulings stored unresolved")
+        return None
+
+
+def _insert_rulings(card_id: str, rulings: list[dict], name_index: dict[int, list[str]] | None) -> None:
+    for ruling in rulings:
+        raw_date = ruling.get("date")
+        if name_index is not None:
+            resolved, referenced_ids = resolve_ruling_text(ruling["text"], name_index)
+        else:
+            resolved, referenced_ids = None, parse_referenced_ids(ruling["text"])
+        insert_ruling(
+            card_id=card_id,
+            ruling_text=ruling["text"],
+            source="db.ygoresources",
+            ruling_date=date.fromisoformat(raw_date) if raw_date else None,
+            ruling_text_resolved=resolved,
+            referenced_konami_ids=referenced_ids,
+        )
+
+
 def seed_card(
     name: str,
     *,
@@ -49,6 +95,7 @@ def seed_card(
     fetch_card_fn: Callable[..., dict] = fetch_card,
     fetch_rulings_fn: Callable[..., list[dict]] = fetch_rulings,
     fetch_sets_index_fn: Callable[..., dict] = fetch_sets_index,
+    fetch_card_name_index_fn: Callable[[], dict[int, list[str]]] | None = None,
     field: str | None = None,
 ) -> str:
     card_data = fetch_card_fn(name, field=field) if field is not None else fetch_card_fn(name)
@@ -60,6 +107,10 @@ def seed_card(
     sets_index = fetch_sets_index_fn()
     eligible = is_deterministic_parse_eligible(card_sets, sets_index)
 
+    misc_info = card_data.get("misc_info") or [{}]
+    konami_id = misc_info[0].get("konami_id")
+    rulings, rulings_status = _fetch_rulings_outcome(konami_id, fetch_rulings_fn)
+
     card_id = insert_card(
         name=card_data["name"],
         card_text=card_text,
@@ -69,24 +120,12 @@ def seed_card(
         fetched_at=datetime.now(timezone.utc).date(),
         ygoprodeck_id=str(card_data["id"]),
         deterministic_parse_eligible=eligible,
+        ygoresources_id=str(konami_id) if konami_id is not None else None,
+        rulings_status=rulings_status,
     )
 
-    misc_info = card_data.get("misc_info") or [{}]
-    konami_id = misc_info[0].get("konami_id")
-
-    try:
-        rulings = fetch_rulings_fn(konami_id)
-    except Exception:
-        rulings = []
-
-    for ruling in rulings:
-        raw_date = ruling.get("date")
-        insert_ruling(
-            card_id=card_id,
-            ruling_text=ruling["text"],
-            source="db.ygoresources",
-            ruling_date=date.fromisoformat(raw_date) if raw_date else None,
-        )
+    if rulings:
+        _insert_rulings(card_id, rulings, _load_name_index(fetch_card_name_index_fn))
 
     if not eligible:
         _insert_unclassified(card_id, card_text)
